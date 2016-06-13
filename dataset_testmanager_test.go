@@ -43,6 +43,7 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 		managerRegistry.Register("mysql", manager)
 	}
 	{
+
 		//test connection
 		encodedParameters, _ := toolbox.ExpandValue(datasetTestManager.MacroEvaluator(), "user:<ds:env [\"DB_TEST_USER\"]>,password:<ds:env [\"DB_TEST_PASSWORD\"]>,url:tcp(127.0.0.1:3306)/bar_test?parseTime=true")
 		config := dsc.NewConfig("mysql", "[user]:[password]@[url]", encodedParameters)
