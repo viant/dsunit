@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/viant/dsunit"
 	//Place all your datastore driver here
 	_ "github.com/go-sql-driver/mysql"
@@ -9,7 +10,7 @@ import (
 
 const (
 	defaultPort = "8071"
-	usage         = "dsunit-server port"
+	usage       = "dsunit-server port"
 )
 
 func main() {
