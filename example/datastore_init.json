@@ -1,0 +1,87 @@
+{
+  "DatastoreConfigs": [
+    {
+      "Datastore": "mytestdb",
+      "AdminDbName": "mysql",
+      "ClearDatastore": true,
+      "Config": {
+        "DriverName": "mysql",
+        "UserName": "root",
+        "Password": "dev",
+        "Descriptor": "[user]:[password]@[url]",
+        "Parameters":{
+          "user":"root",
+          "password":"***",
+          "url":"tcp(127.0.0.1:3306)/mytestdb?parseTime=true"
+        }
+      },
+      "Descriptors": [
+        { "Table": "users", "Autoincrement": true,"PkColumns": [ "id"]},
+        { "Table": "interests", "Autoincrement": true,"PkColumns": [ "id"]}
+      ]
+    },
+    {
+      "Datastore": "mysql",
+      "Config": {
+        "DriverName": "mysql",
+        "UserName": "root",
+        "Password": "dev",
+        "Descriptor": "[user]:[password]@[url]",
+        "Parameters":{
+          "user":"root",
+          "password":"****",
+          "url":"tcp(127.0.0.1:3306)/mysql?parseTime=true"
+        }
+      }
+    },
+
+
+
+    {
+      "Datastore": "test",
+      "AdminDbName": "test",
+      "ClearDatastore": true,
+      "Config": {
+        "DriverName": "aerospike",
+        "Parameters":{
+          "namespace":"test",
+          "host":"127.0.0.1",
+          "port":"3000",
+          "generationColumnName":"scn",
+          "dateFormay":"2006-01-02 15:04:05.000"
+        }
+      },
+      "Descriptors": [
+        {
+          "Table": "users",
+          "Autoincrement": false, "PkColumns": ["id"]
+        }
+      ]
+    },
+    {
+      "Datastore": "MyDataset",
+      "AdminDbName": "MyDataset",
+      "ClearDatastore": true,
+      "Config": {
+        "DriverName": "bigquery",
+        "Parameters": {
+          "serviceAccountId": "******-hu98foqgnunu6a1a043plvl03ip60j5g@developer.gserviceaccount.com",
+          "privateKeyPath": "/etc/test_service.pem",
+          "projectId": "spheric-arcadia-98015",
+          "datasetId": "MyDataset",
+          "dateFormat": "yyyy-MM-dd HH:mm:ss z"
+        }
+      },
+      "Descriptors": [
+        {
+          "Table": "travelers1",
+          "PkColumns": [
+            "id"
+          ],
+          "SchemaUrl": "test:///test/example/traveler_schema.json"
+        }
+      ]
+    }
+  ]
+}
+

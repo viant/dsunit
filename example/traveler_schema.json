@@ -1,0 +1,55 @@
+{
+  "Fields": [
+    {
+      "name": "id",
+      "type": "integer"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "lastVisitTime",
+      "type": "timestamp"
+    },
+    {
+      "mode": "repeated",
+      "name": "visitedCities",
+      "type": "record",
+      "fields": [
+        {
+          "name": "visits",
+          "type": "integer"
+        },
+        {
+          "name": "city",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "mode": "repeated",
+      "name": "achievements",
+      "type": "string"
+    },
+    {
+      "name": "mostLikedCity",
+      "type": "record",
+      "fields": [
+        {
+          "name": "visits",
+          "type": "integer"
+        },
+        {
+          "name": "city",
+          "type": "string"
+        },
+        {
+          "mode": "repeated",
+          "name": "souvenirs",
+          "type": "string"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "DatastoreConfigs": [
+    {
+      "Datastore": "bar_test",
+      "AdminDbName": "mysql",
+      "ClearDatastore": true,
+      "Config": {
+        "DriverName": "mysql",
+        "UserName": "root",
+        "Password": "dev",
+        "Descriptor": "[user]:[password]@[url]",
+        "Parameters": {
+          "user": "root",
+          "password": "dev",
+          "url": "tcp(127.0.0.1:3306)/bar_test?parseTime=true"
+        }
+      },
+      "Descriptors": [
+        {
+          "Table": "users",
+          "Autoincrement": true,
+          "PkColumns": [
+            "id"
+          ]
+        },
+        {
+          "Table": "order_lines",
+          "Autoincrement": true,
+          "PkColumns": [
+            "id"
+          ]
+        },
+        {
+          "Table": "products",
+          "Autoincrement": false,
+          "PkColumns": [
+            "id"
+          ]
+        }
+      ],
+      "DatasetMapping": {
+        "v_order_lines": {
+          "Table": "order_lines",
+          "Columns": [
+            {
+              "Name": "id",
+              "Required": true
+            },
+            {
+              "Name": "order_id"
+            },
+            {
+              "Name": "seq"
+            },
+            {
+              "Name": "quantity"
+            },
+            {
+              "Name": "create_time",
+              "DefaultValue": "<ds:current_timestamp>"
+            },
+            {
+              "Name": "product_price"
+            },
+            {
+              "Name": "product_id"
+            }
+          ],
+          "Associations": [
+            {
+              "Table": "products",
+              "Columns": [
+                {
+                  "Name": "id",
+                  "FromColumn": "product_id",
+                  "Required": true
+                },
+                {
+                  "Name": "price",
+                  "FromColumn": "product_price"
+                },
+                {
+                  "Name": "name",
+                  "FromColumn": "product_name"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "Datastore": "mysql",
+      "Config": {
+        "DriverName": "mysql",
+        "UserName": "root",
+        "Password": "dev",
+        "Descriptor": "[user]:[password]@[url]",
+        "Parameters": {
+          "user": "root",
+          "password": "dev",
+          "url": "tcp(127.0.0.1:3306)/mysql?parseTime=true"
+        }
+      }
+    }
+  ]
+}
+

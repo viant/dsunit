@@ -1,0 +1,5 @@
+[
+  {"id":1, "username":"Dudi", "active":true, "salary":12400, "comments":"abc","last_access_time": "2016-03-01 03:10:00"},
+  {"id":2, "username":"Rudi", "active":true, "salary":12600, "comments":"def","last_access_time": "2016-03-01 05:10:00"},
+  {"id":4, "username":"Vudi", "active":true, "salary":12800, "comments":"xyz","last_access_time": "2016-03-01 08:43:00"}
+]
