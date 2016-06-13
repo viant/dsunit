@@ -7,14 +7,14 @@ This package describes the datastore unit  (dsunit) API in detail.
 
 ## Datastore initialization
 
-Before preparing dataset, dsunit needs to know what datastore is being used and  details for all tables used in tests.
-The easiest way to provide that is to create a test directory and placing there datastore_init.json. 
-This json represent  [InitDatastoresRequest] (./../api.go#InitDatastoresRequest).
+Before preparing dataset, dsunit needs to know what datastore is being used including details about all tables used in tests.
+The easiest way to provide that is to create a test directory with datastore_init.json. 
+This JSON represent  [InitDatastoresRequest] (./../api.go#InitDatastoresRequest).
 
 Please refer to [datastore_init.json](./../example/datastore_init.json) as example for various datatsore.
-Note that different datastore implementation needs different configuration parameter specified.
-Datastore  clear operation is only possible on datastores, which name contain 'test' keyword. This is safety meassures to avoid droping schema on staging/production datastore.
-
+Note that different datastore implementation needs different configuration parameters.
+Note that datastore  clear operation is only possible on datastores, which name contain 'test' keyword. 
+This is safety meassures to avoid droping schema on staging/production datastore.
 
 
 

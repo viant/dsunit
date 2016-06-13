@@ -23,7 +23,7 @@ Data focused testing belongs to blackbox group, where the main interest goes dow
 To set the initial state of ta datastore, this framework provies utilities to either create empty datastore, or to prepare it with 
 dataset data to test that application works correctly.
 
-The final state testing focuses on checking that a dataset data match an expected set of values after tests run.
+The final state testing focuses on checking that a dataset data matches an expected set of values after application logic run.
 In this case this library has ability to verify  either complete or snapshot state of a datastore.
 While the first approach will be comparing all tables data with expected set of values, the latter will reduced verification to the range provided by expected dataset.
 
@@ -32,13 +32,12 @@ While the first approach will be comparing all tables data with expected set of 
 
 ## Motivation
 
-This library has been design to provide easy and unified way of testing any datastore (SQL, NoSSQL) on any platform, language and on the cloud.
-It simplifies test organization by auto discovery of dataset used for datastore preparation and verification. 
-Dataset data can be loaded from various sources like:  memory, application domain classes, local or remote csv, json files.
-It can use macro expression to dynamically evaluate value of data i.e <ds:sql ["SELECT CURRENT_DATE()"]> 
-
-Expected data, can also use predicate expressions to delegate verification of the data values i.e. <ds:between [11301, 11303]>. 
-Finally a dataset like a view can store data for many datastore sources in one place.
+This library has been design to provide easy and unified way of testing any datastore (SQL, NoSSQL,file logs) on any platform, language and on the cloud.
+It simplifies test organization by dataset auto discovery used for datastore preparation and verification. 
+Dataset data can be loaded from various sources like:  memory, local or remote csv, json files.
+All dataset support macro expression to dynamically evaluate value of data i.e <ds:sql ["SELECT CURRENT_DATE()"]> 
+On top of that expected data, can also use predicate expressions to delegate verification of the data values i.e. <ds:between [11301, 11303]>. 
+Finally a dataset like a view can be used to store data for many datastore sources in in just one dataset file.
 
 Datastore initialization and dataset data verification can by managed locally or remotely on remote data store unit test server.
 
