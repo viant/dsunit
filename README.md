@@ -1,6 +1,6 @@
 # Datastore Testibility (dsunit)
 
-Datastore testibility library for Go.
+[![Datastore testibility library for Go.](https://goreportcard.com/badge/github.com/viant/dsunit)](https://goreportcard.com/report/github.com/viant/dsunit)
 
 This library is compatible with Go 1.5+
 

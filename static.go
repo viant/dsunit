@@ -19,16 +19,16 @@
 package dsunit
 
 import (
-	"strings"
-	"runtime"
-	"testing"
-	"github.com/viant/toolbox"
 	"path"
+	"runtime"
+	"strings"
+	"testing"
+
+	"github.com/viant/toolbox"
 )
 
-
-var dsUnitService Service;
-var baseDirectory string;
+var dsUnitService Service
+var baseDirectory string
 
 //SetService sets global dsunit service.
 func SetService(service Service) {
@@ -40,7 +40,7 @@ func GetService() Service {
 	if dsUnitService == nil {
 		file, _, _ := getCallerInfo(4)
 		baseDirectory = path.Dir(file) + "/"
-		dsUnitService =  NewServiceLocal(baseDirectory)
+		dsUnitService = NewServiceLocal(baseDirectory)
 	}
 	return dsUnitService
 }
@@ -48,51 +48,44 @@ func GetService() Service {
 //UseRemoteTestServer this method changes service to run all operation remotely using passed in URL.
 func UseRemoteTestServer(serverURL string) {
 	file, _, _ := getCallerInfo(3)
-	baseDirectory := path.Dir(file)+ "/"
+	baseDirectory := path.Dir(file) + "/"
 	SetService(NewServiceClient(baseDirectory, serverURL))
 }
-
 
 func getCallerFileAndMethod() (string, string) {
 	file, method, _ := getCallerInfo(3)
 	return file, method
 }
 
-
 func handleResponse(t *testing.T, response *Response) {
 	if response.hasError() {
 		file, method, line := getCallerInfo(4)
 		_, file = path.Split(file)
-		t.Errorf("\n%v.%v:%v %v",file, method, line, response.Message)
+		t.Errorf("\n%v.%v:%v %v", file, method, line, response.Message)
 		t.FailNow()
 	} else {
 		t.Logf(response.Message)
 	}
 }
 
-
 func getCallerInfo(callerIndex int) (string, string, int) {
-	var callerPointer = make([]uintptr, 10)  // at least 1 entry needed
+	var callerPointer = make([]uintptr, 10) // at least 1 entry needed
 	runtime.Callers(callerIndex, callerPointer)
 	callerInfo := runtime.FuncForPC(callerPointer[0])
 	file, line := callerInfo.FileLine(callerPointer[0])
 	callerName := callerInfo.Name()
 	dotPosition := strings.LastIndex(callerName, ".")
-	return file, callerName[dotPosition + 1:len(callerName)], line
+	return file, callerName[dotPosition+1 : len(callerName)], line
 }
-
-
 
 //PrepareDatastore matches all dataset files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name.
 func PrepareDatastore(t *testing.T, datastore string) {
 	testFile, method, _ := getCallerInfo(3)
 	pathPrefix := removeFileExtension(testFile)
 	service := GetService()
-	response := service.PrepareDatastoreFor(datastore, pathPrefix +"_", method)
+	response := service.PrepareDatastoreFor(datastore, pathPrefix+"_", method)
 	handleResponse(t, response)
 }
-
-
 
 //PrepareDatastoreFor matches all dataset files that are located in baseDirectory with method name and
 // populate datastore with all listed dataset
@@ -117,11 +110,9 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) {
 	file, method, _ := getCallerInfo(3)
 	pathPrefix := removeFileExtension(file)
 	service := GetService()
-	response := service.ExpectDatasetsFor(datastore, pathPrefix +"_", method, checkPolicy)
+	response := service.ExpectDatasetsFor(datastore, pathPrefix+"_", method, checkPolicy)
 	handleResponse(t, response)
 }
-
-
 
 //ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name and
 // verifies that all listed dataset values are present in datastore
@@ -134,13 +125,11 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) {
 //  read_all_expect_users.json
 //  read_all_expect_permissions.json
 //
-func ExpectDatasetFor(t *testing.T,  datastore string, checkPolicy int, baseDirectory string, method string) {
+func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) {
 	service := GetService()
 	response := service.ExpectDatasetsFor(datastore, baseDirectory, method, checkPolicy)
 	handleResponse(t, response)
 }
-
-
 
 //InitDatastoreFromURL initialises datastore from URL, URL needs to point to  InitDatastoreRequest JSON
 //it register datastore, table descriptor, data mapping, and optionally recreate datastore

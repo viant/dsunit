@@ -19,18 +19,16 @@
 package dsunit
 
 import (
-	"testing"
-	"github.com/stretchr/testify/assert"
 	"bytes"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-
-
-
 func TestParseColumnarData(t *testing.T) {
-	data :="id,name,delays,active,income\n1,A\"bc,3,true,1232.3\n2,Bbc,8,FALSE,0.33\n3,\"X\\\"b,c\",8,,2.53"
+	data := "id,name,delays,active,income\n1,A\"bc,3,true,1232.3\n2,Bbc,8,FALSE,0.33\n3,\"X\\\"b,c\",8,,2.53"
 	reader := bytes.NewReader([]byte(data))
-	columns, rows:= parseColumnarData(reader, ",")
+	columns, rows := parseColumnarData(reader, ",")
 	assert.Equal(t, 5, len(columns), "should have 5 columns")
 	assert.Equal(t, 3, len(rows), "should have 3 rows")
 	assert.Equal(t, 1, rows[0][0])

@@ -20,11 +20,11 @@ package dsunit
 
 import (
 	"fmt"
-	"github.com/viant/dsc"
 	"reflect"
+
+	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 )
-
 
 //AsRow cast instance as Row.
 func AsRow(instance interface{}) *Row {
@@ -37,15 +37,13 @@ func AsRow(instance interface{}) *Row {
 	panic(fmt.Sprintf("Instance should be a Row type, but had: %T", instance))
 }
 
-
 //Value returns raw column value for this row.
-func (r Row) Value(column string) interface {} {
-	if value,ok := r.Values[column] ;ok {
+func (r Row) Value(column string) interface{} {
+	if value, ok := r.Values[column]; ok {
 		return value
 	}
 	return nil
 }
-
 
 //ValueAsString returns column value as string.
 func (r Row) ValueAsString(column string) string {
@@ -59,7 +57,7 @@ func (r Row) Columns() []string {
 }
 
 //SetValue sets column value on this row.
-func (r Row) SetValue(column string, value interface{})  {
+func (r Row) SetValue(column string, value interface{}) {
 	r.Values[column] = value
 }
 
@@ -90,7 +88,6 @@ func (r Row) String() string {
 	return "{" + result + "}"
 }
 
-
 func readValues(instance interface{}, columns []string) []interface{} {
 	row := AsRow(instance)
 	var result = make([]interface{}, len(columns))
@@ -104,7 +101,6 @@ func readValue(row *Row, column string) interface{} {
 	return (*row).Value(column)
 }
 
-
 type datasetDmlProvider struct {
 	dmlBuilder *dsc.DmlBuilder
 }
@@ -113,13 +109,13 @@ func (p *datasetDmlProvider) PkColumns() []string {
 	return p.dmlBuilder.TableDescriptor.PkColumns
 }
 
-func (p *datasetDmlProvider) Key(instance interface{}) [] interface{} {
+func (p *datasetDmlProvider) Key(instance interface{}) []interface{} {
 	result := readValues(instance, p.dmlBuilder.TableDescriptor.PkColumns)
 	return result
 }
 
 func (p *datasetDmlProvider) SetKey(instance interface{}, seq int64) {
-	key := p.dmlBuilder.TableDescriptor.PkColumns[0];
+	key := p.dmlBuilder.TableDescriptor.PkColumns[0]
 	row := AsRow(instance)
 	(*row).SetValue(key, seq)
 }
@@ -131,7 +127,7 @@ func (p *datasetDmlProvider) Get(sqlType int, instance interface{}) *dsc.Paramet
 	})
 }
 
-func newDatasetDmlProvider(dmlBuilder *dsc.DmlBuilder) (dsc.DmlProvider) {
+func newDatasetDmlProvider(dmlBuilder *dsc.DmlBuilder) dsc.DmlProvider {
 	var result dsc.DmlProvider = &datasetDmlProvider{dmlBuilder}
 	return result
 }
@@ -141,18 +137,18 @@ type datasetRowMapper struct {
 	columnToIndexMap map[string]int
 }
 
-func (m *datasetRowMapper) Map(scanner  dsc.Scanner) (interface{}, error) {
+func (m *datasetRowMapper) Map(scanner dsc.Scanner) (interface{}, error) {
 	columnValues, columns, err := dsc.ScanRow(scanner)
-	if (err != nil) {
+	if err != nil {
 		return nil, err
 	}
 	var values = make(map[string]interface{})
-	for i, item:=range columnValues {
-		values[columns[i]]= item
+	for i, item := range columnValues {
+		values[columns[i]] = item
 	}
 	var result = Row{
-		Source:"DatasetRowMapper",
-		Values:values,
+		Source: "DatasetRowMapper",
+		Values: values,
 	}
 	return &result, nil
 
@@ -160,7 +156,8 @@ func (m *datasetRowMapper) Map(scanner  dsc.Scanner) (interface{}, error) {
 
 func newDatasetRowMapper(columns []string, columnToIndexMap map[string]int) dsc.RecordMapper {
 	if columnToIndexMap == nil {
-		index :=0;columnToIndexMap=make(map[string]int)
+		index := 0
+		columnToIndexMap = make(map[string]int)
 		toolbox.SliceToMap(columns, columnToIndexMap, toolbox.CopyStringValueProvider, func(column string) int {
 			index++
 			return index
@@ -168,9 +165,8 @@ func newDatasetRowMapper(columns []string, columnToIndexMap map[string]int) dsc.
 	}
 
 	var result dsc.RecordMapper = &datasetRowMapper{
-		columns:columns,
-		columnToIndexMap:columnToIndexMap,
+		columns:          columns,
+		columnToIndexMap: columnToIndexMap,
 	}
 	return result
 }
-

@@ -19,8 +19,9 @@
 package dsunit
 
 import (
-	"time"
 	"fmt"
+	"time"
+
 	"github.com/viant/toolbox"
 )
 
@@ -50,8 +51,8 @@ func (p *withinSecPredicate) ToString() string {
 //NewWithinPredicate returns new NewWithinPredicate predicate, it takes base time, delta in second, and dateLayout
 func NewWithinPredicate(baseTime time.Time, deltaInSeconds int, dateLayout string) toolbox.Predicate {
 	return &withinSecPredicate{
-		baseTime: baseTime,
-		deltaInSeconds:deltaInSeconds,
-		dateLayout:dateLayout,
+		baseTime:       baseTime,
+		deltaInSeconds: deltaInSeconds,
+		dateLayout:     dateLayout,
 	}
 }

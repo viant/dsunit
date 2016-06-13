@@ -23,32 +23,30 @@ import (
 	"github.com/viant/toolbox"
 )
 
-
 //DatasetTransformer represents a dataset transformer.
-type DatasetTransformer struct {}
+type DatasetTransformer struct{}
 
 func getDataset(datasets map[string]*Dataset, table string, registry dsc.TableDescriptorRegistry, tables *[]string) *Dataset {
-	if result, found := datasets[table];found {
+	if result, found := datasets[table]; found {
 		return result
 	}
 	result := &Dataset{
-		TableDescriptor:*registry.Get(table),
-		Rows:make([]Row, 0),
+		TableDescriptor: *registry.Get(table),
+		Rows:            make([]Row, 0),
 	}
 	datasets[table] = result
 	(*tables) = append((*tables), table)
 	return result
 }
 
-
 func (dt *DatasetTransformer) mapRowToDataset(row *Row, mapping *DatasetMapping) map[string]interface{} {
 	var values = make(map[string]interface{})
-	for _, column :=range mapping.Columns {
+	for _, column := range mapping.Columns {
 		fromColumn := column.FromColumn
 		if fromColumn == "" {
 			fromColumn = column.Name
 		}
-		if rowValue, found := row.Values[fromColumn];found {
+		if rowValue, found := row.Values[fromColumn]; found {
 			values[column.Name] = rowValue
 		} else {
 			if column.DefaultValue != "" {
@@ -62,16 +60,15 @@ func (dt *DatasetTransformer) mapRowToDataset(row *Row, mapping *DatasetMapping)
 	return values
 }
 
-
 func (dt *DatasetTransformer) isRowDuplicated(dataset *Dataset, mapping *DatasetMapping, row *Row, tablesPk map[string]bool) bool {
-	if ! dataset.Autoincrement {
-		pkValue := "__ "  + mapping.Table +":"
+	if !dataset.Autoincrement {
+		pkValue := "__ " + mapping.Table + ":"
 		for _, pkColumn := range dataset.PkColumns {
-			if value, ok := row.Values[pkColumn];ok {
-				pkValue += toolbox.AsString(value)+":"
+			if value, ok := row.Values[pkColumn]; ok {
+				pkValue += toolbox.AsString(value) + ":"
 			}
 		}
-		if _, found := tablesPk[pkValue];found {
+		if _, found := tablesPk[pkValue]; found {
 			return true
 		}
 		tablesPk[pkValue] = true
@@ -79,14 +76,12 @@ func (dt *DatasetTransformer) isRowDuplicated(dataset *Dataset, mapping *Dataset
 	return false
 }
 
-
-
-func (dt *DatasetTransformer) mapRowToDatasets(row *Row, mapping *DatasetMapping, datasets map[string]*Dataset, registry dsc.TableDescriptorRegistry, tables *[]string, tablesPk map[string]bool)  {
+func (dt *DatasetTransformer) mapRowToDatasets(row *Row, mapping *DatasetMapping, datasets map[string]*Dataset, registry dsc.TableDescriptorRegistry, tables *[]string, tablesPk map[string]bool) {
 	values := dt.mapRowToDataset(row, mapping)
 	if values != nil {
 		dataset := getDataset(datasets, mapping.Table, registry, tables)
-		mappedRow := Row{Source:row.Source, Values:values}
-		if(dt.isRowDuplicated(dataset, mapping, &mappedRow, tablesPk)) {
+		mappedRow := Row{Source: row.Source, Values: values}
+		if dt.isRowDuplicated(dataset, mapping, &mappedRow, tablesPk) {
 			return
 		}
 		dataset.Rows = append(dataset.Rows, mappedRow)
@@ -98,21 +93,20 @@ func (dt *DatasetTransformer) mapRowToDatasets(row *Row, mapping *DatasetMapping
 	}
 }
 
-
 //Transform routes source dataset data into mapping dataset, it uses source dataset and table descriptor registry to build resulting datasets.
-func (dt *DatasetTransformer) Transform(datastore string, sourceDataset *Dataset, mapping *DatasetMapping, registry dsc.TableDescriptorRegistry) (*Datasets) {
+func (dt *DatasetTransformer) Transform(datastore string, sourceDataset *Dataset, mapping *DatasetMapping, registry dsc.TableDescriptorRegistry) *Datasets {
 	var datasets = make(map[string]*Dataset)
-	var tables =make([]string,0)
+	var tables = make([]string, 0)
 	var tablesPk = make(map[string]bool)
-	for _, row:= range sourceDataset.Rows {
+	for _, row := range sourceDataset.Rows {
 		dt.mapRowToDatasets(&row, mapping, datasets, registry, &tables, tablesPk)
 	}
 	result := &Datasets{
-		Datastore:datastore,
-		Datasets:make([]Dataset,0),
+		Datastore: datastore,
+		Datasets:  make([]Dataset, 0),
 	}
 
-	for _, table:=range tables {
+	for _, table := range tables {
 		value := datasets[table]
 		if value == nil || (*value).Rows == nil || len((*value).Rows) == 0 {
 			continue
@@ -138,7 +132,7 @@ func (r *datasetTransformerRegistry) register(name string, mapping *DatasetMappi
 
 //Get returns dataset mapping for passed in name.
 func (r *datasetTransformerRegistry) get(name string) *DatasetMapping {
-	if result, ok := r.registry[name];ok {
+	if result, ok := r.registry[name]; ok {
 		return result
 	}
 	return nil
@@ -146,7 +140,7 @@ func (r *datasetTransformerRegistry) get(name string) *DatasetMapping {
 
 //Has returns true if data mapping has been registered.
 func (r *datasetTransformerRegistry) has(name string) bool {
-	if _, ok := r.registry[name];ok {
+	if _, ok := r.registry[name]; ok {
 		return true
 	}
 	return false
@@ -160,6 +154,6 @@ func (r *datasetTransformerRegistry) names() []string {
 //NewDatasetTransformerRegistry returns new NewDatasetTransformerRegistry
 func newDatasetTransformerRegistry() *datasetTransformerRegistry {
 	return &datasetTransformerRegistry{
-		registry:make(map[string]*DatasetMapping),
+		registry: make(map[string]*DatasetMapping),
 	}
 }

@@ -19,12 +19,11 @@
 package dsunit
 
 import (
-	"github.com/viant/dsc"
 	"strings"
+
+	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 )
-
-
 
 type sequence struct {
 	seq map[string]int64
@@ -49,7 +48,7 @@ func (p *sequenceValueProvider) countInsertable(dataset *Dataset) int64 {
 
 func (p *sequenceValueProvider) fetchSequence(context toolbox.Context, sequenceName string) (int64, error) {
 	manager := *context.GetRequired((*dsc.Manager)(nil)).(*dsc.Manager)
-	dataset :=context.GetRequired((*Dataset)(nil)).(*Dataset)
+	dataset := context.GetRequired((*Dataset)(nil)).(*Dataset)
 	sqlDialectable := *context.GetRequired((*dsc.DatastoreDialect)(nil)).(*dsc.DatastoreDialect)
 	seq, err := sqlDialectable.GetSequence(manager, sequenceName)
 	if err != nil {
@@ -59,19 +58,19 @@ func (p *sequenceValueProvider) fetchSequence(context toolbox.Context, sequenceN
 	return seq - insertableCount, nil
 }
 
-func (p *sequenceValueProvider) Get(context toolbox.Context, arguments ... interface{}) (interface{}, error) {
+func (p *sequenceValueProvider) Get(context toolbox.Context, arguments ...interface{}) (interface{}, error) {
 	sequenceName := toolbox.AsString(arguments[0])
 
 	if !context.Contains((*sequence)(nil)) {
 		seq, err := p.fetchSequence(context, sequenceName)
-		if (err != nil) {
+		if err != nil {
 			return nil, err
 		}
-		var sequenceValue = sequence{seq:make(map[string]int64)}
+		var sequenceValue = sequence{seq: make(map[string]int64)}
 		sequenceValue.seq[sequenceName] = seq
 		context.Put((*sequence)(nil), &sequenceValue)
 	}
-	var sequence =context.GetRequired((*sequence)(nil)).(*sequence)
+	var sequence = context.GetRequired((*sequence)(nil)).(*sequence)
 	result := sequence.seq[sequenceName]
 	sequence.seq[sequenceName]++
 	return result, nil
@@ -82,11 +81,9 @@ func newSequenceValueProvider() toolbox.ValueProvider {
 	return result
 }
 
+type queryValueProvider struct{}
 
-
-type queryValueProvider struct {}
-
-func (p *queryValueProvider) Get(context toolbox.Context, arguments ... interface{}) (interface{}, error) {
+func (p *queryValueProvider) Get(context toolbox.Context, arguments ...interface{}) (interface{}, error) {
 	manager := *context.GetRequired((*dsc.Manager)(nil)).(*dsc.Manager)
 	sql := toolbox.AsString(arguments[0])
 	var row = make([]interface{}, 0)
@@ -94,12 +91,12 @@ func (p *queryValueProvider) Get(context toolbox.Context, arguments ... interfac
 	if err != nil {
 		return nil, dsUnitError{"Failed to evalue macro with sql: " + sql + " due to:\n\t" + err.Error()}
 	}
-	if ! success {
+	if !success {
 		return nil, nil
 	}
 	return row[0], nil
 }
 
 func newQueryValueProvider() toolbox.ValueProvider {
-	return  &queryValueProvider{}
+	return &queryValueProvider{}
 }

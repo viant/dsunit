@@ -20,14 +20,14 @@ package dsunit_test
 
 import (
 	"testing"
-	"github.com/viant/dsunit"
+
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/viant/dsunit"
 )
 
 func init() {
 	//dsunit.UseRemoteTestServer("http://localhost:8071")
 }
-
 
 func TestSetup(t *testing.T) {
 	if dsunit.SkipTestIfNeeded(t) {
@@ -41,9 +41,6 @@ func TestSetup(t *testing.T) {
 	dsunit.ExpectDatasets(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy)
 }
 
-
-
-
 func TestTest1p(t *testing.T) {
 	if dsunit.SkipTestIfNeeded(t) {
 		return
@@ -53,11 +50,8 @@ func TestTest1p(t *testing.T) {
 
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "test1")
 	//business test logic comes here
-	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy,"test://test/", "test1")
+	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy, "test://test/", "test1")
 }
-
-
-
 
 func TestDatasetMapping(t *testing.T) {
 	if dsunit.SkipTestIfNeeded(t) {
@@ -66,6 +60,5 @@ func TestDatasetMapping(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "mapping")
-	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy,"test://test/", "mapping")
+	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy, "test://test/", "mapping")
 }
-

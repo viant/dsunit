@@ -19,12 +19,13 @@
 package dsunit
 
 import (
-	"reflect"
 	"fmt"
+	"reflect"
 	"strconv"
-	"time"
-	"github.com/viant/toolbox"
 	"strings"
+	"time"
+
+	"github.com/viant/toolbox"
 )
 
 const (
@@ -35,7 +36,6 @@ const (
 	//ViolationTypeRowNotEqual 'AssertionRowNotEqual; constant used to report difference in values in the expected and actual row.
 	ViolationTypeRowNotEqual = "AssertionRowNotEqual"
 )
-
 
 type assertViolations struct {
 	violations []AssertViolation
@@ -65,7 +65,6 @@ func (v *assertViolations) String() string {
 		}
 		(*casesForThisKey) = append(*casesForThisKey, violation)
 	}
-
 
 	for _, key := range aggregateKey {
 		result = result + "--  " + key + " --\n\t"
@@ -100,9 +99,8 @@ func (v *assertViolations) String() string {
 }
 
 func newAssertViolations(violations []AssertViolation) AssertViolations {
-	return  &assertViolations{violations:violations}
+	return &assertViolations{violations: violations}
 }
-
 
 //DatasetTester represent a dataset tester.
 type DatasetTester struct {
@@ -121,18 +119,18 @@ func (t DatasetTester) Assert(datastore string, expected, actual *Dataset) []Ass
 	if len(violations) > 0 {
 		result = append(result, violations...)
 	}
-	return result;
+	return result
 }
 
 func (t DatasetTester) assertRowCount(datastore string, expected, actual *Dataset) *AssertViolation {
 	if len(actual.Rows) != len(expected.Rows) {
 		return &AssertViolation{
-			Datastore:datastore,
-			Table:    expected.TableDescriptor.Table,
-			Type:ViolationTypeInvalidRowCount,
-			Expected: toolbox.AsString(len(expected.Rows)),
-			Actual: toolbox.AsString(len(actual.Rows)),
-			Source:   "",
+			Datastore: datastore,
+			Table:     expected.TableDescriptor.Table,
+			Type:      ViolationTypeInvalidRowCount,
+			Expected:  toolbox.AsString(len(expected.Rows)),
+			Actual:    toolbox.AsString(len(actual.Rows)),
+			Source:    "",
 		}
 	}
 	return nil
@@ -144,17 +142,17 @@ func (t DatasetTester) assertRows(datastore string, expected, actual *Dataset) [
 	expectedRows := indexDataset(*expected)
 	expectedKeys := toolbox.SortStrings(toolbox.MapKeysToStringSlice(expectedRows))
 	for _, key := range expectedKeys {
-		expectedRow := expectedRows[key];
+		expectedRow := expectedRows[key]
 		actualRow, ok := actualRows[key]
-		if ! ok {
+		if !ok {
 			result = append(result, AssertViolation{
-				Datastore:datastore,
-				Type:ViolationTypeMissingActualRow,
-				Table:    expected.TableDescriptor.Table,
-				Key:key,
-				Expected: expectedRow.String(),
-				Actual: "",
-				Source:   expectedRow.Source,
+				Datastore: datastore,
+				Type:      ViolationTypeMissingActualRow,
+				Table:     expected.TableDescriptor.Table,
+				Key:       key,
+				Expected:  expectedRow.String(),
+				Actual:    "",
+				Source:    expectedRow.Source,
 			})
 			continue
 		}
@@ -173,7 +171,7 @@ func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset
 	expectedDiff, actualDiff := "", ""
 	var sortedColumns = toolbox.SortStrings(expected.Columns())
 	for _, column := range sortedColumns {
-		expectedValue := expected.Value(column);
+		expectedValue := expected.Value(column)
 		var actualValue interface{}
 		if actual.HasColumn(column) {
 			actualValue = actual.Value(column)
@@ -193,8 +191,8 @@ func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset
 			quote = "\""
 		}
 
-		if ! isEqual(expectedValue, actualValue, t.dateLayout) {
-			if (len(expectedDiff) > 0) {
+		if !isEqual(expectedValue, actualValue, t.dateLayout) {
+			if len(expectedDiff) > 0 {
 				expectedDiff = expectedDiff + ","
 				actualDiff = actualDiff + ","
 			}
@@ -204,13 +202,13 @@ func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset
 	}
 	if len(expectedDiff) > 0 {
 		result = append(result, AssertViolation{
-			Datastore:datastore,
-			Type:ViolationTypeRowNotEqual,
-			Table:    expectedDataset.TableDescriptor.Table,
-			Key:        key,
-			Expected: "{" + expectedDiff + "}",
-			Actual: "{" + actualDiff + "}",
-			Source:   expected.Source,
+			Datastore: datastore,
+			Type:      ViolationTypeRowNotEqual,
+			Table:     expectedDataset.TableDescriptor.Table,
+			Key:       key,
+			Expected:  "{" + expectedDiff + "}",
+			Actual:    "{" + actualDiff + "}",
+			Source:    expected.Source,
 		})
 	}
 	return result
@@ -220,7 +218,7 @@ func isFloatEqual(floatValue interface{}, value interface{}) bool {
 	if toolbox.IsString(value) || toolbox.IsInt(value) {
 		floatAsText := toolbox.AsString(floatValue)
 		valueAsText := toolbox.AsString(value)
-		if (floatAsText == valueAsText) {
+		if floatAsText == valueAsText {
 			return true
 		}
 		valueAsFloat, err := strconv.ParseFloat(valueAsText, reflect.TypeOf(floatValue).Bits())
@@ -243,7 +241,7 @@ func isTimeEqual(timeValue interface{}, value interface{}) bool {
 		valueAsText := value.(string)
 		timeValueAsText := timeValueAsTime.String()
 		if len(valueAsText) < len(timeValueAsText) {
-			timeValueAsText = timeValueAsText[0: len(valueAsText)]
+			timeValueAsText = timeValueAsText[0:len(valueAsText)]
 		}
 		if timeValueAsText == valueAsText {
 			return true
@@ -275,7 +273,7 @@ func isMapEqual(expected, actual interface{}, dateLayout string) bool {
 	for expectedKey, expectedValue := range expectedMap {
 		if actualValue, found := actualMap[expectedKey]; found {
 			isEqual := isEqual(expectedValue, actualValue, dateLayout)
-			if ! isEqual {
+			if !isEqual {
 				return false
 			}
 		}
@@ -298,9 +296,9 @@ func isSliceEqual(expected, actual interface{}, dateLayout string) bool {
 
 		return false
 	}
-	for i:= range expectedSlice {
+	for i := range expectedSlice {
 		isEqual := isEqual(expectedSlice[i], actualSlice[i], dateLayout)
-		if ! isEqual {
+		if !isEqual {
 			return false
 		}
 	}
@@ -349,12 +347,11 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 		}
 	case string:
 
-
 		if toolbox.IsFloat(actual) {
 			return isFloatEqual(actual, expected)
-		} else if (toolbox.IsTime(actual)) {
+		} else if toolbox.IsTime(actual) {
 			return isTimeEqual(actual, expected)
-		} else if (toolbox.IsString(actual)) {
+		} else if toolbox.IsString(actual) {
 
 			if expectedValue == actual {
 				return true
@@ -383,8 +380,6 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 			}
 		}
 	}
-
-
 
 	if expectedType.Kind() == reflect.Ptr {
 		expectedType = expectedType.Elem()

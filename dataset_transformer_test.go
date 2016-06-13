@@ -20,94 +20,93 @@ package dsunit_test
 
 import (
 	"testing"
-	"github.com/viant/dsc"
+
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 )
 
-
 func TestTransform(t *testing.T) {
-	transformer :=dsunit.DatasetTransformer{}
+	transformer := dsunit.DatasetTransformer{}
 
-	mapping :=&dsunit.DatasetMapping{
-		Table:    "order_line",
-		Columns:    []dsunit.DatasetColumn{
+	mapping := &dsunit.DatasetMapping{
+		Table: "order_line",
+		Columns: []dsunit.DatasetColumn{
 			dsunit.DatasetColumn{
-				Name:"id",
-				DefaultValue:"<ds:seq[\"order_line\"]>",
-				Required:true,
+				Name:         "id",
+				DefaultValue: "<ds:seq[\"order_line\"]>",
+				Required:     true,
 			},
 			dsunit.DatasetColumn{
-				Name:"seq",
+				Name: "seq",
 			},
 			dsunit.DatasetColumn{
-				Name:"quantity",
+				Name: "quantity",
 			},
 			dsunit.DatasetColumn{
-				Name:"create_time",
-				DefaultValue:"<ds:current_timestamp>",
+				Name:         "create_time",
+				DefaultValue: "<ds:current_timestamp>",
 			},
 			dsunit.DatasetColumn{
-				Name:"product_price",
+				Name: "product_price",
 			},
 			dsunit.DatasetColumn{
-				Name:"product_id",
+				Name: "product_id",
 			},
 		},
-		Associations: []dsunit.DatasetMapping {
+		Associations: []dsunit.DatasetMapping{
 			{
-				Table:    "products",
-				Columns:    []dsunit.DatasetColumn{
+				Table: "products",
+				Columns: []dsunit.DatasetColumn{
 					dsunit.DatasetColumn{
-						Name:"id",
-						Required:true,
-						FromColumn:"product_id",
+						Name:       "id",
+						Required:   true,
+						FromColumn: "product_id",
 					},
 					dsunit.DatasetColumn{
-						Name:"name",
-						FromColumn:"product_name",
+						Name:       "name",
+						FromColumn: "product_name",
 					},
 					dsunit.DatasetColumn{
-						Name:"price",
-						FromColumn:"product_price",
+						Name:       "price",
+						FromColumn: "product_price",
 					},
 				},
 			},
 		},
-
 	}
 
-	registry:= dsc.NewTableDescriptorRegistry()
-	registry.Register(&dsc.TableDescriptor{Table:"order_line", Autoincrement:true, PkColumns:[]string{"id"}})
-	registry.Register(&dsc.TableDescriptor{Table:"products",  PkColumns:[]string{"id"}})
+	registry := dsc.NewTableDescriptorRegistry()
+	registry.Register(&dsc.TableDescriptor{Table: "order_line", Autoincrement: true, PkColumns: []string{"id"}})
+	registry.Register(&dsc.TableDescriptor{Table: "products", PkColumns: []string{"id"}})
 
 	sourceDataset := &dsunit.Dataset{
 		TableDescriptor: *registry.Get("order_line"),
 		Rows: []dsunit.Row{
 			dsunit.Row{
-				Values:map[string]interface{}{
-					"seq":1,
-					"quantity":3,
-					"product_id":10,
-					"product_price":12.3,
-					"product_name":"abc",
+				Values: map[string]interface{}{
+					"seq":           1,
+					"quantity":      3,
+					"product_id":    10,
+					"product_price": 12.3,
+					"product_name":  "abc",
 				},
 			},
 			dsunit.Row{
-				Values:map[string]interface{}{
-					"seq":2,
-					"quantity":5,
-					"product_id":11,
-					"product_price":42.3,
-					"product_name":"xyz",
+				Values: map[string]interface{}{
+					"seq":           2,
+					"quantity":      5,
+					"product_id":    11,
+					"product_price": 42.3,
+					"product_name":  "xyz",
 				},
 			},
 			dsunit.Row{
-				Values:map[string]interface{}{
-					"seq":2,
-					"quantity":5,
-					"product_price":42.3,
-					"product_name":"xyz",
+				Values: map[string]interface{}{
+					"seq":           2,
+					"quantity":      5,
+					"product_price": 42.3,
+					"product_name":  "xyz",
 				},
 			},
 		},
@@ -134,4 +133,3 @@ func TestTransform(t *testing.T) {
 	}
 
 }
-

@@ -19,10 +19,11 @@
 package dsunit
 
 import (
-	"strings"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"strings"
+
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 )
@@ -45,7 +46,6 @@ func (s *serviceLocal) expandTestSchemaIfNeeded(candidate string) string {
 	return candidate
 }
 
-
 func (s *serviceLocal) expandTestSchemaURLIfNeeded(candidate string) string {
 	if strings.HasPrefix(candidate, TestSchema) {
 		return toolbox.FileSchema + s.testDirectory + candidate[len(TestSchema):len(candidate)]
@@ -53,7 +53,7 @@ func (s *serviceLocal) expandTestSchemaURLIfNeeded(candidate string) string {
 	return candidate
 }
 
-func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, manager  dsc.Manager) string {
+func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, manager dsc.Manager) string {
 	result := ""
 	if dataStoreConfig.Descriptors != nil {
 		for i, tableDescriptor := range dataStoreConfig.Descriptors {
@@ -65,9 +65,7 @@ func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, man
 	return result
 }
 
-
-
-func (s *serviceLocal) registerMapping(dataStoreConfig *DatastoreConfig, manager  dsc.Manager) string {
+func (s *serviceLocal) registerMapping(dataStoreConfig *DatastoreConfig, manager dsc.Manager) string {
 	result := ""
 	if dataStoreConfig.DatasetMapping != nil {
 		for name := range dataStoreConfig.DatasetMapping {
@@ -76,34 +74,30 @@ func (s *serviceLocal) registerMapping(dataStoreConfig *DatastoreConfig, manager
 			result = result + "\t\tRegistered mapping: " + name + "\n"
 			//register mapping table descriptor
 			mappingTableDescriptor := manager.TableDescriptorRegistry().Get(datasetMapping.Table)
-			mappingDescriptor := dsc.TableDescriptor{Table:name, PkColumns:mappingTableDescriptor.PkColumns, Autoincrement:mappingTableDescriptor.Autoincrement}
+			mappingDescriptor := dsc.TableDescriptor{Table: name, PkColumns: mappingTableDescriptor.PkColumns, Autoincrement: mappingTableDescriptor.Autoincrement}
 			manager.TableDescriptorRegistry().Register(&mappingDescriptor)
 		}
 	}
 	return result
 }
 
-
-
 func (s *serviceLocal) loadConfigIfNeeded(datastoreConfig *DatastoreConfig) error {
 	if datastoreConfig.ConfigURL != "" {
 		datastoreConfig.ConfigURL = s.expandTestSchemaURLIfNeeded(datastoreConfig.ConfigURL)
 		reader, _, err := toolbox.OpenReaderFromURL(datastoreConfig.ConfigURL)
 		if err != nil {
-			return  fmt.Errorf("Failed to InitConfig - unable to open url %v due to %v", datastoreConfig.ConfigURL, err)
+			return fmt.Errorf("Failed to InitConfig - unable to open url %v due to %v", datastoreConfig.ConfigURL, err)
 
 		}
 		defer reader.Close()
 		err = json.NewDecoder(reader).Decode(&datastoreConfig.Config)
 		if err != nil {
-			return  fmt.Errorf("Failed to InitConfig - unable to decode url %v due to %v ", datastoreConfig.ConfigURL, err)
+			return fmt.Errorf("Failed to InitConfig - unable to decode url %v due to %v ", datastoreConfig.ConfigURL, err)
 		}
 	}
 	datastoreConfig.Config.Init()
 	return nil
 }
-
-
 
 func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) (string, error) {
 	result := "Registered datastore: " + datastoreConfig.Datastore + "\n"
@@ -133,15 +127,14 @@ func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) 
 	return result, nil
 }
 
-
-func (s *serviceLocal)  Init(request *InitDatastoreRequest) *Response {
+func (s *serviceLocal) Init(request *InitDatastoreRequest) *Response {
 	message := ""
 	for i := range request.DatastoreConfigs {
 		initMessage, err := s.initDatastorFromConfig(&request.DatastoreConfigs[i])
 		if err != nil {
 			return newErrorResponse(err)
 		}
-		message+=initMessage
+		message += initMessage
 	}
 
 	for _, dataStoreConfig := range request.DatastoreConfigs {
@@ -159,7 +152,7 @@ func (s *serviceLocal)  Init(request *InitDatastoreRequest) *Response {
 	return newOkResponse(message)
 }
 
-func (s *serviceLocal)  InitFromURL(url string) *Response {
+func (s *serviceLocal) InitFromURL(url string) *Response {
 	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaURLIfNeeded(url))
 	if err != nil {
 		return newErrorResponse(err)
@@ -173,7 +166,7 @@ func (s *serviceLocal)  InitFromURL(url string) *Response {
 	return s.service.Init(request)
 }
 
-func (s *serviceLocal)  ExecuteScripts(request *ExecuteScriptRequest) *Response {
+func (s *serviceLocal) ExecuteScripts(request *ExecuteScriptRequest) *Response {
 	var message = ""
 	if request.Scripts != nil {
 		for _, script := range request.Scripts {
@@ -208,11 +201,11 @@ func (s *serviceLocal) ExecuteScriptsFromURL(url string) *Response {
 		return newErrorResponse(dsUnitError{"Failed to execute scripts, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
 	}
 	for i, script := range request.Scripts {
-		if len(script.URL) > 0  && len(script.Body) == 0 {
+		if len(script.URL) > 0 && len(script.Body) == 0 {
 			url := s.expandTestSchemaURLIfNeeded(script.URL)
 			request.Scripts[i].URL = url
 
-			if (strings.HasPrefix(url, "file://")) {
+			if strings.HasPrefix(url, "file://") {
 				file := url[len(toolbox.FileSchema):len(url)]
 				bytes, err := ioutil.ReadFile(file)
 				if err != nil {
@@ -226,7 +219,7 @@ func (s *serviceLocal) ExecuteScriptsFromURL(url string) *Response {
 	return s.service.ExecuteScripts(request)
 }
 
-func (s *serviceLocal)  PrepareDatastore(request *PrepareDatastoreRequest) *Response {
+func (s *serviceLocal) PrepareDatastore(request *PrepareDatastoreRequest) *Response {
 	var totalInserted, totalUpdated, totalDeleted int
 	var run = false
 	message := ""
@@ -238,8 +231,10 @@ func (s *serviceLocal)  PrepareDatastore(request *PrepareDatastoreRequest) *Resp
 		if err != nil {
 			return newErrorResponse(dsUnitError{"Failed to prepare datastore due to:\n\t" + err.Error()})
 		}
-		totalInserted += inserted; totalUpdated += updated; totalDeleted += deleted
-		for _, dataset:=range datasets.Datasets {
+		totalInserted += inserted
+		totalUpdated += updated
+		totalDeleted += deleted
+		for _, dataset := range datasets.Datasets {
 			message += fmt.Sprintf("%v(%v), ", dataset.Table, len(dataset.Rows))
 		}
 		message += "\n\t"
@@ -250,7 +245,7 @@ func (s *serviceLocal)  PrepareDatastore(request *PrepareDatastoreRequest) *Resp
 	return newErrorResponse(dsUnitError{fmt.Sprintf("Failed to prepare datastore, invalid request:%v", request)})
 }
 
-func (s *serviceLocal)  PrepareDatastoreFromURL(url string) *Response {
+func (s *serviceLocal) PrepareDatastoreFromURL(url string) *Response {
 	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaIfNeeded(url))
 	if err != nil {
 		return newErrorResponse(err)
@@ -285,7 +280,7 @@ func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *Response {
 		if err != nil {
 			return newErrorResponse(dsUnitError{"Failed to verify expected datasets due to:\n\t" + err.Error()})
 		}
-		for _, dataset:=range datasets.Datasets {
+		for _, dataset := range datasets.Datasets {
 			message += fmt.Sprintf("%v(%v), ", dataset.Table, len(dataset.Rows))
 		}
 		message += "\n\t"
@@ -304,7 +299,7 @@ func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *Response {
 	return newErrorResponse(dsUnitError{fmt.Sprintf("Failed to verify expected datasets, invalid request:%v", request)})
 }
 
-func (s *serviceLocal)  ExpectDatasetsFromURL(url string) *Response {
+func (s *serviceLocal) ExpectDatasetsFromURL(url string) *Response {
 	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaIfNeeded(url))
 	if err != nil {
 		return newErrorResponse(err)
@@ -324,19 +319,19 @@ func (s *serviceLocal) ExpectDatasetsFor(datastore string, baseDir string, metho
 		return newErrorResponse(err)
 	}
 	request := &ExpectDatasetRequest{
-		Datasets: []Datasets{*datasets},
-		CheckPolicy:checkPolicy,
+		Datasets:    []Datasets{*datasets},
+		CheckPolicy: checkPolicy,
 	}
 	return s.service.ExpectDatasets(request)
 }
 
-func (s *serviceLocal)  GetTables(datastore string) []string {
+func (s *serviceLocal) GetTables(datastore string) []string {
 	tables := s.testManager.RegisteredTables(datastore)
-	for i := 0; i + 1 < len(tables); i++ {
-		for j:=i + 1; j<len(tables);j++ {
+	for i := 0; i+1 < len(tables); i++ {
+		for j := i + 1; j < len(tables); j++ {
 			if len(tables[i]) < len(tables[j]) {
 				temp := tables[i]
-				tables[i] =tables[j]
+				tables[i] = tables[j]
 				tables[j] = temp
 			}
 		}
@@ -347,14 +342,14 @@ func (s *serviceLocal)  GetTables(datastore string) []string {
 func (s *serviceLocal) getTableForURL(datastore, url string) string {
 	tables := s.GetTables(datastore)
 	for _, table := range tables {
-		if strings.Contains(url, "_" + table + ".") {
+		if strings.Contains(url, "_"+table+".") {
 			return table
 		}
 	}
 	panic("Failed to match table in url")
 }
 
-func (s *serviceLocal)  buildDatasets(datastore string, fragment string, baseDirectory string, method string) (*Datasets, error) {
+func (s *serviceLocal) buildDatasets(datastore string, fragment string, baseDirectory string, method string) (*Datasets, error) {
 	datasetFactory := s.testManager.DatasetFactory()
 	tables := s.GetTables(datastore)
 	if len(tables) == 0 {
@@ -368,10 +363,9 @@ func (s *serviceLocal)  buildDatasets(datastore string, fragment string, baseDir
 	}
 	var datasets = make([]Dataset, 0)
 
-
 	for _, file := range files {
 		table := s.getTableForURL(datastore, file)
-		datasetPoiner, err := datasetFactory.CreateFromURL(datastore, table, toolbox.FileSchema + file)
+		datasetPoiner, err := datasetFactory.CreateFromURL(datastore, table, toolbox.FileSchema+file)
 		if err != nil {
 			return nil, err
 		}
@@ -379,24 +373,16 @@ func (s *serviceLocal)  buildDatasets(datastore string, fragment string, baseDir
 		datasets = append(datasets, dataset)
 	}
 	return &Datasets{
-		Datastore:datastore,
-		Datasets:datasets,
+		Datastore: datastore,
+		Datasets:  datasets,
 	}, nil
 }
 
 //NewServiceLocal returns new local dsunit service, it takes test directory as argument.
 func NewServiceLocal(testDirectory string) Service {
 	datasetTestManager := NewDatasetTestManager()
-	var localService = &serviceLocal{testManager:datasetTestManager, testDirectory:testDirectory}
+	var localService = &serviceLocal{testManager: datasetTestManager, testDirectory: testDirectory}
 	var result Service = localService
 	localService.service = result
 	return result
 }
-
-
-
-
-
-
-
-

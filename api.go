@@ -36,14 +36,13 @@ Usage
     dsunit.ExpectDatasets(t, "mytestdb", dsunit.SnapshotDatasetCheckPolicy)
 
 
- */
+*/
 package dsunit
 
 import (
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 )
-
 
 const (
 	//FullTableDatasetCheckPolicy policy will drive comparison of all actual datastore data
@@ -78,12 +77,11 @@ type Script struct {
 	Body      string
 }
 
-
 //DatasetTestManager supervises datastore initialization, test dataset preparation, and final datastore dataset verification
 type DatasetTestManager interface {
 
 	//ClearDatastore clears datastore, it takes adminDatastore and targetDatastore names.
-	ClearDatastore(adminDatastore string, targetDatastore string) (error)
+	ClearDatastore(adminDatastore string, targetDatastore string) error
 
 	//Execute executes passed in script, script defines what database it run on.
 	Execute(script *Script) (int, error)
@@ -99,7 +97,7 @@ type DatasetTestManager interface {
 	ExpectDatasets(checkPolicy int, expected *Datasets) (AssertViolations, error)
 
 	//ManagerRegistry returns ManagerRegistry.
-	ManagerRegistry()  dsc.ManagerRegistry
+	ManagerRegistry() dsc.ManagerRegistry
 
 	//ValueProviderRegistry returns macro value provider registry.
 	ValueProviderRegistry() toolbox.ValueProviderRegistry
@@ -122,7 +120,6 @@ type DatasetTestManager interface {
 
 	//RegisteredMapping returns all registered dataset mapping
 	RegisteredMapping() []string
-
 }
 
 //DatasetFactory represents a dataset factory.
@@ -136,10 +133,7 @@ type DatasetFactory interface {
 
 	//CreateFromMap crate a dataset from a map for passed in datastore and table
 	CreateFromURL(datastore string, table string, url string) (*Dataset, error)
-
-
 }
-
 
 //DatasetColumn represents dataset mapping column.
 type DatasetColumn struct {
@@ -149,15 +143,12 @@ type DatasetColumn struct {
 	Required     bool
 }
 
-
 //DatasetMapping represents a dataset mapping, mapping allow to route data defined in only one dataset to many datasets.
 type DatasetMapping struct {
 	Table        string
 	Columns      []DatasetColumn
 	Associations []DatasetMapping
 }
-
-
 
 //AssertViolation represents test violation.
 type AssertViolation struct {
@@ -170,10 +161,8 @@ type AssertViolation struct {
 	Source    string
 }
 
-
 //AssertViolations represents a test violations.
 type AssertViolations interface {
-
 	Violations() []AssertViolation
 
 	HasViolations() bool
@@ -181,18 +170,16 @@ type AssertViolations interface {
 	String() string
 }
 
-
 //DatastoreConfig represets DatastoreConfig dsunit config
 type DatastoreConfig struct {
-	Datastore      string                    //name of datastore registered in manager registry
-	Config         dsc.Config                // datastore manager config
-	ConfigURL      string                    //url with Config JSON.
-	AdminDbName    string                    //optional admin datastore name, needed for sql datastore to drop/create database
-	ClearDatastore bool                      //flag to reset datastore (depending on dialablable it could be either drop/create datastore for CanDrop/CanCreate dialects, or drop/create tables
+	Datastore      string     //name of datastore registered in manager registry
+	Config         dsc.Config // datastore manager config
+	ConfigURL      string     //url with Config JSON.
+	AdminDbName    string     //optional admin datastore name, needed for sql datastore to drop/create database
+	ClearDatastore bool       //flag to reset datastore (depending on dialablable it could be either drop/create datastore for CanDrop/CanCreate dialects, or drop/create tables
 	Descriptors    []dsc.TableDescriptor
 	DatasetMapping map[string]DatasetMapping //key represent name of dataset to be mapped
 }
-
 
 //Service represents test service
 type Service interface {
@@ -234,7 +221,7 @@ type Response struct {
 	Message string
 }
 
-//InitDatastoreRequest represent initalization in dsunit service datastore request.
+//InitDatastoreRequest represent initialization in dsunit service datastore request.
 type InitDatastoreRequest struct {
 	DatastoreConfigs []DatastoreConfig
 }
@@ -254,6 +241,3 @@ type ExpectDatasetRequest struct {
 	Datasets    []Datasets
 	CheckPolicy int
 }
-
-
-
