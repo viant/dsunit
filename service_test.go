@@ -29,10 +29,6 @@ func init() {
 }
 
 func TestSetup(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
-
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 	dsunit.PrepareDatastore(t, "bar_test")
@@ -41,9 +37,6 @@ func TestSetup(t *testing.T) {
 }
 
 func TestTest1p(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 
@@ -53,9 +46,6 @@ func TestTest1p(t *testing.T) {
 }
 
 func TestDatasetMapping(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "mapping")
