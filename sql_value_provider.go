@@ -47,9 +47,9 @@ func (p *sequenceValueProvider) countInsertable(dataset *Dataset) int64 {
 }
 
 func (p *sequenceValueProvider) fetchSequence(context toolbox.Context, sequenceName string) (int64, error) {
-	manager := *context.GetRequired((*dsc.Manager)(nil)).(*dsc.Manager)
-	dataset := context.GetRequired((*Dataset)(nil)).(*Dataset)
-	sqlDialectable := *context.GetRequired((*dsc.DatastoreDialect)(nil)).(*dsc.DatastoreDialect)
+	manager := *context.GetOptional((*dsc.Manager)(nil)).(*dsc.Manager)
+	dataset := context.GetOptional((*Dataset)(nil)).(*Dataset)
+	sqlDialectable := *context.GetOptional((*dsc.DatastoreDialect)(nil)).(*dsc.DatastoreDialect)
 	seq, err := sqlDialectable.GetSequence(manager, sequenceName)
 	if err != nil {
 		return 0, err
@@ -70,7 +70,7 @@ func (p *sequenceValueProvider) Get(context toolbox.Context, arguments ...interf
 		sequenceValue.seq[sequenceName] = seq
 		context.Put((*sequence)(nil), &sequenceValue)
 	}
-	var sequence = context.GetRequired((*sequence)(nil)).(*sequence)
+	var sequence = context.GetOptional((*sequence)(nil)).(*sequence)
 	result := sequence.seq[sequenceName]
 	sequence.seq[sequenceName]++
 	return result, nil
@@ -84,7 +84,7 @@ func newSequenceValueProvider() toolbox.ValueProvider {
 type queryValueProvider struct{}
 
 func (p *queryValueProvider) Get(context toolbox.Context, arguments ...interface{}) (interface{}, error) {
-	manager := *context.GetRequired((*dsc.Manager)(nil)).(*dsc.Manager)
+	manager := *context.GetOptional((*dsc.Manager)(nil)).(*dsc.Manager)
 	sql := toolbox.AsString(arguments[0])
 	var row = make([]interface{}, 0)
 	success, err := manager.ReadSingle(&row, sql, nil, nil)
