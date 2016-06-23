@@ -20,8 +20,7 @@ package dsunit_test
 
 import (
 	"testing"
-
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/viant/dsunit"
 )
 

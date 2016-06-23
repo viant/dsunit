@@ -7,7 +7,7 @@
     {
       "Datastore": "bar_test",
       "Sqls": [
-        "INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments', NOW());"
+        "INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments', CURRENT_TIMESTAMP);"
       ]
     }
   ]

@@ -2,17 +2,13 @@
   "DatastoreConfigs": [
     {
       "Datastore": "bar_test",
-      "AdminDbName": "mysql",
-      "ClearDatastore": true,
+      "AdminDbName": "bar_test",
+      "ClearDatastore": false,
       "Config": {
-        "DriverName": "mysql",
-        "UserName": "root",
-        "Password": "dev",
-        "Descriptor": "[user]:[password]@[url]",
+        "DriverName": "sqlite3",
+        "Descriptor": "[url]",
         "Parameters": {
-          "user": "root",
-          "password": "dev",
-          "url": "tcp(127.0.0.1:3306)/bar_test?parseTime=true"
+          "url": "test/test.db"
         }
       },
       "Descriptors": [
@@ -86,20 +82,6 @@
               ]
             }
           ]
-        }
-      }
-    },
-    {
-      "Datastore": "mysql",
-      "Config": {
-        "DriverName": "mysql",
-        "UserName": "root",
-        "Password": "dev",
-        "Descriptor": "[user]:[password]@[url]",
-        "Parameters": {
-          "user": "root",
-          "password": "dev",
-          "url": "tcp(127.0.0.1:3306)/mysql?parseTime=true"
         }
       }
     }

@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
-	"github.com/viant/toolbox"
+
 )
 
 func Init(t *testing.T) dsunit.DatasetTestManager {
@@ -37,16 +37,15 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 	{
 		//admin connection
 
-		encodedParameters, _ := toolbox.ExpandValue(datasetTestManager.MacroEvaluator(), "user:root,password:dev,url:tcp(127.0.0.1:3306)/mysql?parseTime=true")
-		config := dsc.NewConfig("mysql", "[user]:[password]@[url]", encodedParameters)
+
+		config := dsc.NewConfig("sqlite3", "[url]", "url:./test/master.db")
 		manager, _ := managerFactory.Create(config)
 		managerRegistry.Register("mysql", manager)
 	}
 	{
 
 		//test connection
-		encodedParameters, _ := toolbox.ExpandValue(datasetTestManager.MacroEvaluator(), "user:<ds:env [\"DB_TEST_USER\"]>,password:<ds:env [\"DB_TEST_PASSWORD\"]>,url:tcp(127.0.0.1:3306)/bar_test?parseTime=true")
-		config := dsc.NewConfig("mysql", "[user]:[password]@[url]", encodedParameters)
+		config := dsc.NewConfig("sqlite3", "[url]", "url:./test/test.db")
 		manager, _ := managerFactory.Create(config)
 		managerRegistry.Register("bar_test", manager)
 	}
@@ -58,8 +57,9 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 	_, err = datasetTestManager.Execute(&dsunit.Script{
 		Datastore: "bar_test",
 		SQLs: []string{
-			"CREATE TABLE `users` (`id` int(11) NOT NULL AUTO_INCREMENT,`username` varchar(255) DEFAULT NULL,`active` tinyint(1) DEFAULT '1',`salary` decimal(7,2) DEFAULT NULL,`comments` text,`last_access_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,PRIMARY KEY (`id`)) ENGINE=InnoDB",
-			"INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments', NOW());",
+			"DROP TABLE IF EXISTS users",
+			"CREATE TABLE `users` (`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,`username` varchar(255) DEFAULT NULL,`active` tinyint(1) DEFAULT '1',`salary` decimal(7,2) DEFAULT NULL,`comments` text,`last_access_time` timestamp DEFAULT CURRENT_TIMESTAMP)",
+			"INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments',CURRENT_TIMESTAMP);",
 		},
 	})
 
@@ -71,11 +71,7 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 }
 
 func TestResetDatastore(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	datasetTestManager := Init(t)
-
 	manager := datasetTestManager.ManagerRegistry().Get("bar_test")
 	var count = make([]interface{}, 0)
 	_, err := manager.ReadSingle(&count, "SELECT COUNT(1) FROM users", nil, nil)
@@ -84,9 +80,6 @@ func TestResetDatastore(t *testing.T) {
 }
 
 func TestPopulateDatastore(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	datasetTestManager := Init(t)
 	datasetFactory := datasetTestManager.DatasetFactory()
 	dataset := *datasetFactory.CreateFromMap("bar_test", "users",
@@ -124,9 +117,6 @@ func TestPopulateDatastore(t *testing.T) {
 }
 
 func TestExpectsDatastoreBaisc(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	datasetTestManager := Init(t)
 	datasetFactory := datasetTestManager.DatasetFactory()
 
@@ -153,6 +143,9 @@ func TestExpectsDatastoreBaisc(t *testing.T) {
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations))
 
 	}
+
+
+
 
 	{ //updated the first user and add two more user, check all expected user as so.
 
@@ -196,15 +189,14 @@ func TestExpectsDatastoreBaisc(t *testing.T) {
 	}
 }
 
+
+
 func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
-	if dsunit.SkipTestIfNeeded(t) {
-		return
-	}
 	datasetTestManager := Init(t)
 	datasetFactory := datasetTestManager.DatasetFactory()
 
 	{
-		//updated the first user and add two more user, check all expected user as so.
+		//add three more user, check all expected user as so.
 
 		initDataset := *datasetFactory.CreateFromMap("bar_test", "users",
 			map[string]interface{}{
@@ -220,17 +212,23 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 				"username": "Logi",
 				"salary":   11302,
 				"active":   true,
-				"comments": "<ds:sql [\"SELECT CURRENT_DATE()\"]>",
+				"comments": "<ds:sql [\"SELECT CURRENT_DATE\"]>",
 			},
 		)
 
-		_, _, _, err := datasetTestManager.PrepareDatastore(&dsunit.Datasets{
+		inserted, updated, _, err := datasetTestManager.PrepareDatastore(&dsunit.Datasets{
 			Datastore: "bar_test",
 			Datasets: []dsunit.Dataset{
 				initDataset,
 			},
 		})
 		assert.Nil(t, err)
+		assert.Equal(t, 3, inserted)
+		assert.Equal(t, 0, updated)
+
+
+
+
 
 		expectedDataset := *datasetFactory.CreateFromMap("bar_test", "users",
 			map[string]interface{}{
@@ -255,7 +253,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 				"username": "Logi",
 				"active":   true,
 				"salary":   "<ds:between [11301, 11303]>",
-				"comments": "<ds:sql [\"SELECT CURRENT_DATE()\"]>",
+				"comments": "<ds:sql [\"SELECT CURRENT_DATE\"]>",
 			},
 		)
 		violations, err := datasetTestManager.ExpectDatasets(dsunit.FullTableDatasetCheckPolicy, &dsunit.Datasets{
@@ -269,6 +267,8 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 		}
 
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations.String()))
+
+
 
 	}
 
@@ -298,7 +298,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 				"username": "Logi",
 				"salary":   &predicate,
 				"active":   true,
-				"comments": "<ds:sql [\"SELECT CURRENT_DATE()\"]>",
+				"comments": "<ds:sql [\"SELECT CURRENT_TIMESTAMP\"]>",
 			},
 		)
 

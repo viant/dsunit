@@ -55,7 +55,8 @@ func (p *sequenceValueProvider) fetchSequence(context toolbox.Context, sequenceN
 		return 0, err
 	}
 	insertableCount := p.countInsertable(dataset)
-	return seq - insertableCount, nil
+	result := seq - insertableCount
+	return result, nil
 }
 
 func (p *sequenceValueProvider) Get(context toolbox.Context, arguments ...interface{}) (interface{}, error) {

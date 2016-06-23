@@ -200,6 +200,7 @@ func (tm *datasetTestManager) persistDataset(connection dsc.Connection, manager 
 		if key == nextKey {
 			continue
 		}
+
 		added, changed, err := manager.PersistAllOnConnection(connection, &rows, dataset.Table, getSQLProvider(dataset, &row))
 		if err != nil {
 			return 0, 0, err
