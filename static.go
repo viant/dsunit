@@ -148,11 +148,21 @@ func ExecuteScriptFromURL(t *testing.T, url string) {
 	handleResponse(t, response)
 }
 
-//ExpandTestProtocolIfNeeded extends input if it start with test:// fragment to currently test file directory
-func ExpandTestProtocolIfNeeded(input string) string {
+//ExpandTestProtocolAsUrlIfNeeded extends input if it start with test:// fragment to currently test file directory as file protocol
+func ExpandTestProtocolAsUrlIfNeeded(input string) string {
 	GetService()
 	if strings.HasPrefix(input, TestSchema) {
 		return toolbox.FileSchema + baseDirectory + input[len(TestSchema):]
+	}
+	return input
+}
+
+
+//ExpandTestProtocolAsPathIfNeeded extends input if it start with test:// fragment to currently test file directory
+func ExpandTestProtocolAsPathIfNeeded(input string) string {
+	GetService()
+	if strings.HasPrefix(input, TestSchema) {
+		return baseDirectory + input[len(TestSchema):]
 	}
 	return input
 }
