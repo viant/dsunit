@@ -16,6 +16,8 @@
  *  the License.
  *
  */
+
+// Package dsunit -
 package dsunit
 
 var errorStatus = "error"

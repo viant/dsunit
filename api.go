@@ -16,18 +16,17 @@
  *  the License.
  *
  */
+
+// Package dsunit - Datastore testibility library.
+package dsunit
+
 /*
 
-Datastore testibility library.
 
-
-
-
-Usage
-
+Usage:
 
     dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
-    dsunit.ExecuteScriptFromUrl(t, "test://test/script_request.json")
+    dsunit.ExecuteScriptFromUrl(t, "svn://test/script_request.json")
     dsunit.PrepareDatastore(t, "mytestdb")
 
 
@@ -37,7 +36,6 @@ Usage
 
 
 */
-package dsunit
 
 import (
 	"github.com/viant/dsc"
