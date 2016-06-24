@@ -108,6 +108,9 @@ func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) 
 		return "", err
 	}
 	err = toolbox.ExpandParameters(s.testManager.MacroEvaluator(), datastoreConfig.Config.Parameters)
+	for k, v := range datastoreConfig.Config.Parameters {
+		datastoreConfig.Config.Parameters[k] = s.expandTestSchemaIfNeeded(v)
+	}
 	if err != nil {
 		return "", fmt.Errorf("Failed to InitConfig - unable to expand config %v due to %v ", datastoreConfig.Config, err)
 	}
