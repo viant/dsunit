@@ -77,7 +77,7 @@ func getCallerInfo(callerIndex int) (string, string, int) {
 	file, line := callerInfo.FileLine(callerPointer[0])
 	callerName := callerInfo.Name()
 	dotPosition := strings.LastIndex(callerName, ".")
-	return file, callerName[dotPosition+1 : len(callerName)], line
+	return file, callerName[dotPosition+1:], line
 }
 
 //PrepareDatastore matches all dataset files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name.
@@ -152,7 +152,7 @@ func ExecuteScriptFromURL(t *testing.T, url string) {
 func ExpandTestProtocolIfNeeded(input string) string {
 	GetService()
 	if strings.HasPrefix(input, TestSchema) {
-		return toolbox.FileSchema + baseDirectory + input[len(TestSchema):len(input)]
+		return toolbox.FileSchema + baseDirectory + input[len(TestSchema):]
 	}
 	return input
 }

@@ -43,14 +43,14 @@ func (s *serviceLocal) TestManager() DatasetTestManager {
 
 func (s *serviceLocal) expandTestSchemaIfNeeded(candidate string) string {
 	if strings.HasPrefix(candidate, TestSchema) {
-		return s.testDirectory + candidate[len(TestSchema):len(candidate)]
+		return s.testDirectory + candidate[len(TestSchema):]
 	}
 	return candidate
 }
 
 func (s *serviceLocal) expandTestSchemaURLIfNeeded(candidate string) string {
 	if strings.HasPrefix(candidate, TestSchema) {
-		return toolbox.FileSchema + s.testDirectory + candidate[len(TestSchema):len(candidate)]
+		return toolbox.FileSchema + s.testDirectory + candidate[len(TestSchema):]
 	}
 	return candidate
 }
@@ -208,7 +208,7 @@ func (s *serviceLocal) ExecuteScriptsFromURL(url string) *Response {
 			request.Scripts[i].URL = url
 
 			if strings.HasPrefix(url, "file://") {
-				file := url[len(toolbox.FileSchema):len(url)]
+				file := url[len(toolbox.FileSchema):]
 				bytes, err := ioutil.ReadFile(file)
 				if err != nil {
 					return newErrorResponse(dsUnitError{"Failed to execute script, unable to read file:" + file + " " + err.Error()})

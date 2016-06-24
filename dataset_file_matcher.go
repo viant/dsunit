@@ -54,7 +54,7 @@ func getFiles(candidates []string) ([]string, error) {
 func matchFiles(baseDirectory string, method string, fragment string, postfixes []string) ([]string, error) {
 	matchableMethod := method
 	if strings.HasPrefix(matchableMethod, "Test") {
-		matchableMethod = matchableMethod[4:len(matchableMethod)]
+		matchableMethod = matchableMethod[4:]
 	}
 
 	matchableMethod = convertToLowerUnderscore(matchableMethod)

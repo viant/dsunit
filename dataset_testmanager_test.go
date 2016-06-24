@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
-
 )
 
 func Init(t *testing.T) dsunit.DatasetTestManager {
@@ -36,7 +35,6 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 
 	{
 		//admin connection
-
 
 		config := dsc.NewConfig("sqlite3", "[url]", "url:./test/master.db")
 		manager, _ := managerFactory.Create(config)
@@ -144,9 +142,6 @@ func TestExpectsDatastoreBaisc(t *testing.T) {
 
 	}
 
-
-
-
 	{ //updated the first user and add two more user, check all expected user as so.
 
 		dataset := *datasetFactory.CreateFromMap("bar_test", "users",
@@ -189,8 +184,6 @@ func TestExpectsDatastoreBaisc(t *testing.T) {
 	}
 }
 
-
-
 func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 	datasetTestManager := Init(t)
 	datasetFactory := datasetTestManager.DatasetFactory()
@@ -225,10 +218,6 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, 3, inserted)
 		assert.Equal(t, 0, updated)
-
-
-
-
 
 		expectedDataset := *datasetFactory.CreateFromMap("bar_test", "users",
 			map[string]interface{}{
@@ -267,8 +256,6 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 		}
 
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations.String()))
-
-
 
 	}
 

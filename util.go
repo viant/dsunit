@@ -45,7 +45,7 @@ func parseSQLScript(reader io.Reader) []string {
 		var inInSingleQuote, isInDoubleQuote bool = false, false
 		positionOfDelimiter := strings.Index(strings.ToLower(line), delimiterKeyword)
 		if positionOfDelimiter != -1 {
-			delimiter = strings.Trim(line[positionOfDelimiter+len(delimiterKeyword):len(line)], " \t")
+			delimiter = strings.Trim(line[positionOfDelimiter+len(delimiterKeyword):], " \t")
 			continue
 		}
 		for i := 0; i < len(line); i++ {

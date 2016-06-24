@@ -19,9 +19,9 @@
 package dsunit_test
 
 import (
-	"testing"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/viant/dsunit"
+	"testing"
 )
 
 func init() {

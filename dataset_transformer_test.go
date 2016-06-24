@@ -32,25 +32,25 @@ func TestTransform(t *testing.T) {
 	mapping := &dsunit.DatasetMapping{
 		Table: "order_line",
 		Columns: []dsunit.DatasetColumn{
-			dsunit.DatasetColumn{
+			{
 				Name:         "id",
 				DefaultValue: "<ds:seq[\"order_line\"]>",
 				Required:     true,
 			},
-			dsunit.DatasetColumn{
+			{
 				Name: "seq",
 			},
-			dsunit.DatasetColumn{
+			{
 				Name: "quantity",
 			},
-			dsunit.DatasetColumn{
+			{
 				Name:         "create_time",
 				DefaultValue: "<ds:current_timestamp>",
 			},
-			dsunit.DatasetColumn{
+			{
 				Name: "product_price",
 			},
-			dsunit.DatasetColumn{
+			{
 				Name: "product_id",
 			},
 		},
@@ -58,16 +58,16 @@ func TestTransform(t *testing.T) {
 			{
 				Table: "products",
 				Columns: []dsunit.DatasetColumn{
-					dsunit.DatasetColumn{
+					{
 						Name:       "id",
 						Required:   true,
 						FromColumn: "product_id",
 					},
-					dsunit.DatasetColumn{
+					{
 						Name:       "name",
 						FromColumn: "product_name",
 					},
-					dsunit.DatasetColumn{
+					{
 						Name:       "price",
 						FromColumn: "product_price",
 					},
@@ -83,7 +83,7 @@ func TestTransform(t *testing.T) {
 	sourceDataset := &dsunit.Dataset{
 		TableDescriptor: *registry.Get("order_line"),
 		Rows: []dsunit.Row{
-			dsunit.Row{
+			{
 				Values: map[string]interface{}{
 					"seq":           1,
 					"quantity":      3,
@@ -92,7 +92,7 @@ func TestTransform(t *testing.T) {
 					"product_name":  "abc",
 				},
 			},
-			dsunit.Row{
+			{
 				Values: map[string]interface{}{
 					"seq":           2,
 					"quantity":      5,
@@ -101,7 +101,7 @@ func TestTransform(t *testing.T) {
 					"product_name":  "xyz",
 				},
 			},
-			dsunit.Row{
+			{
 				Values: map[string]interface{}{
 					"seq":           2,
 					"quantity":      5,
