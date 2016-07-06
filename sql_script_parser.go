@@ -1,11 +1,10 @@
 package dsunit
 
 import (
-	"io"
 	"bufio"
+	"io"
 	"strings"
 )
-
 
 //parseSQLScript parses sql script and breaks it down to submittable sql statements
 func parseSQLScript(reader io.Reader) []string {

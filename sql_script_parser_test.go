@@ -1,11 +1,10 @@
 package dsunit
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"strings"
+	"testing"
 )
-
 
 //parseSQLScript parses sql script and breaks it down to submittable sql statements
 func TestParseSQLScript(t *testing.T) {
@@ -15,7 +14,6 @@ func TestParseSQLScript(t *testing.T) {
 		sqls := parseSQLScript(strings.NewReader(sqlScript))
 		assert.Equal(t, 2, len(sqls))
 	}
-
 
 	{
 		sqlScript := "SELECT 1;\nDELIMITER;;\nBEGIN\nSELECT 1;\nEND;;\nDELIMITER;\nSELECT 2;"
