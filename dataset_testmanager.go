@@ -23,7 +23,7 @@ type datasetTestManager struct {
 func (tm *datasetTestManager) GetDialectable(datastore string) dsc.DatastoreDialect {
 	manager := tm.managerRegistry.Get(datastore)
 	dbConfig := manager.Config()
-	return dsc.GetDatastoreDialectable(dbConfig.DriverName)
+	return dsc.GetDatastoreDialect(dbConfig.DriverName)
 }
 
 func (tm *datasetTestManager) dropDatastoreIfNeeded(adminDatastore string, targetDatastore string) error {
@@ -55,7 +55,6 @@ func (tm *datasetTestManager) recreateTables(adminDatastore string, targetDatast
 	if err != nil {
 		return err
 	}
-
 	var existingTables = make(map[string]bool)
 	toolbox.SliceToMap(tables, existingTables, toolbox.CopyStringValueProvider, toolbox.TrueValueProvider)
 	targetManager := tm.managerRegistry.Get(targetDatastore)
