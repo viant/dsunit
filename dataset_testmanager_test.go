@@ -62,37 +62,58 @@ func TestResetDatastore(t *testing.T) {
 func TestPopulateDatastore(t *testing.T) {
 	datasetTestManager := Init(t)
 	datasetFactory := datasetTestManager.DatasetFactory()
-	dataset := *datasetFactory.CreateFromMap("bar_test", "users",
-		map[string]interface{}{
-			"id":       1,
-			"username": "Dudi",
-			"active":   true,
-			"comments": "abc",
-		},
-		map[string]interface{}{
-			"id":       2,
-			"username": "Bogi",
-			"active":   false,
-		},
-		map[string]interface{}{
-			"id":       3,
-			"username": "Logi",
-			"active":   true,
-		},
-	)
+	{
+		dataset := *datasetFactory.CreateFromMap("bar_test", "users",
+			map[string]interface{}{
+				"id":       1,
+				"username": "Dudi",
+				"active":   true,
+				"comments": "abc",
+			},
+			map[string]interface{}{
+				"id":       2,
+				"username": "Bogi",
+				"active":   false,
+			},
+			map[string]interface{}{
+				"id":       3,
+				"username": "Logi",
+				"active":   true,
+			},
+		)
 
-	inserted, updated, deleted, err := datasetTestManager.PrepareDatastore(&dsunit.Datasets{
-		Datastore: "bar_test",
-		Datasets: []dsunit.Dataset{
-			dataset,
-		},
-	})
-	if err != nil {
-		t.Fatalf("Failed to populate db: %v\n", err)
+		inserted, updated, deleted, err := datasetTestManager.PrepareDatastore(&dsunit.Datasets{
+			Datastore: "bar_test",
+			Datasets: []dsunit.Dataset{
+				dataset,
+			},
+		})
+		if err != nil {
+			t.Fatalf("Failed to populate db: %v\n", err)
+		}
+		assert.Equal(t, 2, inserted, "Should have 2 rows added")
+		assert.Equal(t, 1, updated, "Should have 1 row updated")
+		assert.Equal(t, 0, deleted, "Should have no deletes")
+
 	}
-	assert.Equal(t, 2, inserted, "Should have 2 rows added")
-	assert.Equal(t, 1, updated, "Should have 1 row updated")
-	assert.Equal(t, 0, deleted, "Should have no deletes")
+	{ //unknown column errror
+
+		dataset := *datasetFactory.CreateFromMap("bar_test", "users",
+			map[string]interface{}{
+				"id":         1,
+				"username34": "Dudi",
+				"active":     true,
+				"comments":   "abc",
+			})
+
+		_, _, _, err := datasetTestManager.PrepareDatastore(&dsunit.Datasets{
+			Datastore: "bar_test",
+			Datasets: []dsunit.Dataset{
+				dataset,
+			},
+		})
+		assert.NotNil(t, err)
+	}
 
 }
 
@@ -283,4 +304,30 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations))
 	}
 
+}
+
+func TestRegisteredMapping(t *testing.T) {
+	datasetTestManager := Init(t)
+	mappings := datasetTestManager.RegisteredMapping()
+	assert.Equal(t, []string{}, mappings)
+}
+
+func TestValueProviderRegistry(t *testing.T) {
+	datasetTestManager := Init(t)
+	valueProvider := datasetTestManager.ValueProviderRegistry()
+	assert.Equal(t, 8, len(valueProvider.Names()))
+}
+
+func TestExecuteFromURL(t *testing.T) {
+	datasetTestManager := Init(t)
+	{
+		url := dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/database.sql")
+		_, err := datasetTestManager.ExecuteFromURL("bar_test", url)
+		assert.Nil(t, err)
+	}
+	{
+		url := dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/non-existing.sql")
+		_, err := datasetTestManager.ExecuteFromURL("bar_test", url)
+		assert.NotNil(t, err)
+	}
 }

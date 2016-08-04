@@ -40,10 +40,13 @@ func (c *serviceClient) PrepareDatastore(request *PrepareDatastoreRequest) *Resp
 	return getResponseOrErrorResponse(response, err)
 }
 
-func (c *serviceClient) ExpectDatasets(request *ExpectDatasetRequest) *Response {
-	response := &Response{}
+func (c *serviceClient) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResponse {
+	response := &ExpectResponse{}
 	err := toolbox.RouteToService("post", c.serverURL+expectURI, request, response)
-	return getResponseOrErrorResponse(response, err)
+	if err != nil {
+		return &ExpectResponse{Response: getResponseOrErrorResponse(response.Response, err), Violations: response.Violations}
+	}
+	return response
 }
 
 //NewServiceClient returns a new dsunit service client

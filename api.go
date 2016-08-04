@@ -167,19 +167,25 @@ type Service interface {
 	PrepareDatastoreFor(datastore string, baseDir string, method string) *Response
 
 	//ExpectDatasets verifies dataset data in datastore for passed in request, see DatasetTestManager#ExpectDataset
-	ExpectDatasets(request *ExpectDatasetRequest) *Response
+	ExpectDatasets(request *ExpectDatasetRequest) *ExpectResponse
 
 	//ExpectDatasets loads ExpectDatasetRequest json from url to verify dataset, see DatasetTestManager#ExpectDataset
-	ExpectDatasetsFromURL(url string) *Response
+	ExpectDatasetsFromURL(url string) *ExpectResponse
 
 	//ExpectDatasetsFor verifies datastore for passed in datastore, it loads matching dataset files from based directory and method.
-	ExpectDatasetsFor(datastore string, baseDir string, method string, checkPolicy int) *Response
+	ExpectDatasetsFor(datastore string, baseDir string, method string, checkPolicy int) *ExpectResponse
 }
 
 //Response represetns a response.
 type Response struct {
 	Status  string
 	Message string
+}
+
+//ExpectResponse represetns a dataset verification response.
+type ExpectResponse struct {
+	*Response
+	Violations []AssertViolation
 }
 
 //InitDatastoreRequest represent initialization in dsunit service datastore request.
@@ -194,11 +200,11 @@ type ExecuteScriptRequest struct {
 
 //PrepareDatastoreRequest represent datastore prepare request.
 type PrepareDatastoreRequest struct {
-	Datasets []Datasets
+	Prepare []Datasets
 }
 
 //ExpectDatasetRequest represent datastore verification request.
 type ExpectDatasetRequest struct {
-	Datasets    []Datasets
+	Expect      []Datasets
 	CheckPolicy int
 }

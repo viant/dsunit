@@ -93,7 +93,7 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) {
 	pathPrefix := removeFileExtension(file)
 	service := GetService()
 	response := service.ExpectDatasetsFor(datastore, pathPrefix+"_", method, checkPolicy)
-	handleResponse(t, response)
+	handleResponse(t, response.Response)
 }
 
 //ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name and
@@ -110,7 +110,7 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) {
 func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) {
 	service := GetService()
 	response := service.ExpectDatasetsFor(datastore, baseDirectory, method, checkPolicy)
-	handleResponse(t, response)
+	handleResponse(t, response.Response)
 }
 
 //InitDatastoreFromURL initialises datastore from URL, URL needs to point to  InitDatastoreRequest JSON

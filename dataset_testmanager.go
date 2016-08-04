@@ -60,20 +60,21 @@ func (tm *datasetTestManager) recreateTables(adminDatastore string, targetDatast
 	targetManager := tm.managerRegistry.Get(targetDatastore)
 	tableRegistry := targetManager.TableDescriptorRegistry()
 	for _, table := range tableRegistry.Tables() {
-		descriptor := tableRegistry.Get(table)
 		if _, found := existingTables[table]; found {
+
 			err := dialect.DropTable(adminManager, targetDatastore, table)
 			if err != nil {
 				return err
 			}
+
 		}
+		descriptor := tableRegistry.Get(table)
 		if descriptor.HasSchema() {
 			err := dialect.CreateTable(targetManager, targetDatastore, table, "")
 			if err != nil {
 				return err
 			}
 		}
-
 	}
 	return nil
 }
@@ -213,6 +214,8 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]Data
 	var insertedTotal, updatedTotal, deletedTotal int
 	dialect := tm.GetDialectable(datastore)
 	for _, dataset := range *datasets {
+		updateDatasetDescriptorIfNeeded(manager, &dataset)
+
 		err := tm.expandMacros(context, datastore, manager, &dataset)
 		if err != nil {
 			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to expand macros %v", datastore, err)
@@ -341,7 +344,6 @@ func (tm *datasetTestManager) expectSnapshotDatasets(manager dsc.Manager, datast
 		queryHint = config.Get("queryHint")
 	}
 	sqlBuilder := dsc.NewQueryBuilder(&expected.TableDescriptor, queryHint)
-
 	for _, sqlWithArguments := range sqlBuilder.BuildBatchedQueryOnPk(expected.Columns, pkValues, batchSize) {
 		var batched = make([]Row, 0)
 		err := manager.ReadAll(&batched, sqlWithArguments.SQL, sqlWithArguments.Values, mapper)
@@ -387,27 +389,49 @@ func (tm *datasetTestManager) expandMacros(context toolbox.Context, datastore st
 	return nil
 }
 
+func buildColumnsForDataset(dataset *Dataset) []string {
+	var columns = make(map[string]interface{})
+	for _, row := range dataset.Rows {
+		for k := range row.Values {
+			columns[k] = true
+		}
+	}
+	return toolbox.MapKeysToStringSlice(columns)
+
+}
+
+func updateDatasetDescriptorIfNeeded(manager dsc.Manager, dataset *Dataset) {
+	if len(dataset.PkColumns) == 0 {
+		dataset.Columns = buildColumnsForDataset(dataset)
+		tableDescriptor := manager.TableDescriptorRegistry().Get(dataset.Table)
+		dataset.Autoincrement = tableDescriptor.Autoincrement
+		dataset.PkColumns = tableDescriptor.PkColumns
+	}
+}
+
 //ExpectDatasets verifies that passed in expected dataset data values are present in the datastore, this methods reports any violations.
 func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets) (AssertViolations, error) {
 	context := toolbox.NewContext()
 	manager := tm.managerRegistry.Get(datasets.Datastore)
 	var result = make([]AssertViolation, 0)
-	for _, dataset := range datasets.Datasets {
-		mapper := newDatasetRowMapper(dataset.Columns, nil)
-		err := tm.expandMacros(context, datasets.Datastore, manager, &dataset)
+
+	for i := range datasets.Datasets {
+		updateDatasetDescriptorIfNeeded(manager, &datasets.Datasets[i])
+		mapper := newDatasetRowMapper(datasets.Datasets[i].Columns, nil)
+		err := tm.expandMacros(context, datasets.Datastore, manager, &datasets.Datasets[i])
 		if err != nil {
 			return nil, err
 		}
 		switch checkPolicy {
 		case FullTableDatasetCheckPolicy:
-			voliation, err := tm.expectFullDatasets(manager, datasets.Datastore, &dataset, mapper)
+			voliation, err := tm.expectFullDatasets(manager, datasets.Datastore, &datasets.Datasets[i], mapper)
 			if err != nil {
 				return nil, err
 			}
 			result = append(result, voliation...)
 			continue
 		case SnapshotDatasetCheckPolicy:
-			voliation, err := tm.expectSnapshotDatasets(manager, datasets.Datastore, &dataset, mapper)
+			voliation, err := tm.expectSnapshotDatasets(manager, datasets.Datastore, &datasets.Datasets[i], mapper)
 			if err != nil {
 				return nil, err
 			}
@@ -418,7 +442,7 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 		}
 	}
 
-	return newAssertViolations(result), nil
+	return NewAssertViolations(result), nil
 
 }
 

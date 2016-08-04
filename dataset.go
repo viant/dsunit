@@ -87,10 +87,6 @@ type datasetDmlProvider struct {
 	dmlBuilder *dsc.DmlBuilder
 }
 
-func (p *datasetDmlProvider) PkColumns() []string {
-	return p.dmlBuilder.TableDescriptor.PkColumns
-}
-
 func (p *datasetDmlProvider) Key(instance interface{}) []interface{} {
 	result := readValues(instance, p.dmlBuilder.TableDescriptor.PkColumns)
 	return result

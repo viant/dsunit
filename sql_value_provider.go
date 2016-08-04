@@ -1,10 +1,9 @@
 package dsunit
 
 import (
-	"strings"
-
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
+	"strings"
 )
 
 type sequence struct {
@@ -37,6 +36,7 @@ func (p *sequenceValueProvider) fetchSequence(context toolbox.Context, sequenceN
 		return 0, err
 	}
 	insertableCount := p.countInsertable(dataset)
+
 	result := seq - insertableCount
 	return result, nil
 }

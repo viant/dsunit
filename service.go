@@ -91,6 +91,7 @@ func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) 
 	for k, v := range datastoreConfig.Config.Parameters {
 		datastoreConfig.Config.Parameters[k] = s.expandTestSchemaIfNeeded(v)
 	}
+
 	if err != nil {
 		return "", fmt.Errorf("Failed to InitConfig - unable to expand config %v due to %v ", datastoreConfig.Config, err)
 	}
@@ -209,7 +210,7 @@ func (s *serviceLocal) PrepareDatastore(request *PrepareDatastoreRequest) *Respo
 	var run = false
 	message := ""
 
-	for _, datasets := range request.Datasets {
+	for _, datasets := range request.Prepare {
 		message += fmt.Sprintf("Prepared datastore %v with datasets:", datasets.Datastore)
 		run = true
 		inserted, updated, deleted, err := s.testManager.PrepareDatastore(&datasets)
@@ -249,21 +250,22 @@ func (s *serviceLocal) PrepareDatastoreFor(datastore string, baseDir string, met
 	if err != nil {
 		return newErrorResponse(err)
 	}
-	request := &PrepareDatastoreRequest{Datasets: []Datasets{*datasets}}
+	request := &PrepareDatastoreRequest{Prepare: []Datasets{*datasets}}
 	return s.service.PrepareDatastore(request)
 }
 
-func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *Response {
+func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResponse {
 	message := ""
 	var hasViolations = false
 	var run = false
-
-	for _, datasets := range request.Datasets {
+	var violations AssertViolations
+	var err error
+	for _, datasets := range request.Expect {
 		message += fmt.Sprintf("\n\tVerified datastore %v with datasets:", datasets.Datastore)
 		run = true
-		violations, err := s.testManager.ExpectDatasets(request.CheckPolicy, &datasets)
+		violations, err = s.testManager.ExpectDatasets(request.CheckPolicy, &datasets)
 		if err != nil {
-			return newErrorResponse(dsUnitError{"Failed to verify expected datasets due to:\n\t" + err.Error()})
+			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"Failed to verify expected datasets due to:\n\t" + err.Error()})}
 		}
 		for _, dataset := range datasets.Datasets {
 			message += fmt.Sprintf("%v(%v), ", dataset.Table, len(dataset.Rows))
@@ -275,36 +277,36 @@ func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *Response {
 		}
 	}
 	if hasViolations {
-		return newErrorResponse(dsUnitError{message})
+		return &ExpectResponse{Response: newErrorResponse(dsUnitError{message}), Violations: violations.Violations()}
 	}
 
 	if run {
-		return newOkResponse(fmt.Sprintf("%vPassed", message))
+		return &ExpectResponse{Response: newOkResponse(fmt.Sprintf("%vPassed", message))}
 	}
-	return newErrorResponse(dsUnitError{fmt.Sprintf("Failed to verify expected datasets, invalid request:%v", request)})
+	return &ExpectResponse{Response: newErrorResponse(dsUnitError{fmt.Sprintf("Failed to verify expected datasets, invalid request:%v", request)})}
 }
 
-func (s *serviceLocal) ExpectDatasetsFromURL(url string) *Response {
+func (s *serviceLocal) ExpectDatasetsFromURL(url string) *ExpectResponse {
 	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaIfNeeded(url))
 	if err != nil {
-		return newErrorResponse(err)
+		return &ExpectResponse{Response: newErrorResponse(err)}
 	}
 	defer reader.Close()
 	request := &ExpectDatasetRequest{}
 	err = json.NewDecoder(reader).Decode(&request)
 	if err != nil {
-		return newErrorResponse(dsUnitError{"Failed to prepare datastore, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
+		return &ExpectResponse{Response: newErrorResponse(dsUnitError{"Failed to verify expected datasets, unable to decode payload from " + url + " due to:\n\t" + err.Error()})}
 	}
 	return s.service.ExpectDatasets(request)
 }
 
-func (s *serviceLocal) ExpectDatasetsFor(datastore string, baseDir string, method string, checkPolicy int) *Response {
+func (s *serviceLocal) ExpectDatasetsFor(datastore string, baseDir string, method string, checkPolicy int) *ExpectResponse {
 	datasets, err := s.buildDatasets(datastore, "expect", baseDir, method)
 	if err != nil {
-		return newErrorResponse(err)
+		return &ExpectResponse{Response: newErrorResponse(err)}
 	}
 	request := &ExpectDatasetRequest{
-		Datasets:    []Datasets{*datasets},
+		Expect:      []Datasets{*datasets},
 		CheckPolicy: checkPolicy,
 	}
 	return s.service.ExpectDatasets(request)

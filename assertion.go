@@ -19,18 +19,22 @@ const (
 	ViolationTypeRowNotEqual = "AssertionRowNotEqual"
 )
 
+//AssertViolations represents collection of test failures
 type assertViolations struct {
 	violations []AssertViolation
 }
 
+//Violations returns slice of AssertViolation
 func (v *assertViolations) Violations() []AssertViolation {
 	return v.violations
 }
 
+//HasViolations returns true if there is at least one test failure
 func (v *assertViolations) HasViolations() bool {
 	return len(v.violations) > 0
 }
 
+//String produces aggregated by key test failure report
 func (v *assertViolations) String() string {
 	result := ""
 	var aggregate = make(map[string](*[]AssertViolation))
@@ -72,7 +76,7 @@ func (v *assertViolations) String() string {
 					result = result + "\n\tThe following rows were different:\n\t\t"
 					previousViolationType = violation.Type
 				}
-				result = result + fmt.Sprintf("%v :fmt: %v !=  actual: %v \n\t\t", violation.Key, violation.Expected, violation.Actual)
+				result = result + fmt.Sprintf("%v:  %v !=  actual: %v \n\t\t", violation.Key, violation.Expected, violation.Actual)
 			}
 		}
 
@@ -80,7 +84,8 @@ func (v *assertViolations) String() string {
 	return result
 }
 
-func newAssertViolations(violations []AssertViolation) AssertViolations {
+//NewAssertViolations creates a new instance of AssertViolations
+func NewAssertViolations(violations []AssertViolation) AssertViolations {
 	return &assertViolations{violations: violations}
 }
 
@@ -164,13 +169,16 @@ func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset
 		if expectedValue == nil && actualValue == nil {
 			continue
 		}
-		quote := ""
-		if reflect.TypeOf(expectedValue).Kind() == reflect.Ptr {
-			expectedValue = reflect.ValueOf(expectedValue).Elem().Interface()
-		}
 
-		if reflect.ValueOf(expectedValue).Kind() == reflect.String {
-			quote = "\""
+		quote := ""
+		if expectedValue != nil {
+			if reflect.TypeOf(expectedValue).Kind() == reflect.Ptr {
+				expectedValue = reflect.ValueOf(expectedValue).Elem().Interface()
+			}
+
+			if reflect.ValueOf(expectedValue).Kind() == reflect.String {
+				quote = "\""
+			}
 		}
 
 		if !isEqual(expectedValue, actualValue, t.dateLayout) {
@@ -181,6 +189,7 @@ func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset
 			expectedDiff = fmt.Sprintf("%v%v:%v%v%v", expectedDiff, column, quote, expectedValue, quote)
 			actualDiff = fmt.Sprintf("%v%v:%v%v%v", actualDiff, column, quote, actualValue, quote)
 		}
+
 	}
 	if len(expectedDiff) > 0 {
 		result = append(result, AssertViolation{
@@ -229,9 +238,8 @@ func isTimeEqual(timeValue interface{}, value interface{}) bool {
 			return true
 		}
 		if toolbox.CanConvertToFloat(value) {
-			unixTimestamp := int(toolbox.AsFloat(value))
-			actualTime := time.Unix(int64(unixTimestamp), 0)
-			return actualTime.Equal(timeValueAsTime)
+			unixTimestamp := int64(toolbox.AsFloat(value))
+			return timeValueAsTime.Unix() == unixTimestamp
 
 		}
 
@@ -316,7 +324,6 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 		if toolbox.IsBool(actual) {
 			return isBooleanEqual(actual, expected)
 		} else if toolbox.IsFloat(actual) {
-
 			return isFloatEqual(actual, expected)
 		} else if toolbox.IsString(actual) {
 			actualFloatValue, _ := strconv.ParseFloat(toolbox.AsString(actual), 64)
@@ -354,13 +361,6 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 	case *toolbox.Predicate:
 		return (*value).Apply(actual)
 
-	case reflect.Value:
-		expectedValue, converted := expected.(reflect.Value)
-		if converted {
-			if value.Interface() == expectedValue.Interface() {
-				return true
-			}
-		}
 	}
 
 	if expectedType.Kind() == reflect.Ptr {
