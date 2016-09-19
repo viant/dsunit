@@ -39,7 +39,7 @@ func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, man
 	result := ""
 	if dataStoreConfig.Descriptors != nil {
 		for i, tableDescriptor := range dataStoreConfig.Descriptors {
-			dataStoreConfig.Descriptors[i].SchemaURL = s.expandTestSchemaURLIfNeeded(tableDescriptor.SchemaURL)
+			dataStoreConfig.Descriptors[i].SchemaUrl = s.expandTestSchemaURLIfNeeded(tableDescriptor.SchemaUrl)
 			manager.TableDescriptorRegistry().Register(&dataStoreConfig.Descriptors[i])
 			result = result + "\t\tRegistered table: " + tableDescriptor.Table + "\n"
 		}
