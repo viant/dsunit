@@ -36,7 +36,7 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 
 	_, err = datasetTestManager.Execute(&dsunit.Script{
 		Datastore: "bar_test",
-		SQLs: []string{
+		Sqls: []string{
 			"DROP TABLE IF EXISTS users",
 			"CREATE TABLE `users` (`id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,`username` varchar(255) DEFAULT NULL,`active` tinyint(1) DEFAULT '1',`salary` decimal(7,2) DEFAULT NULL,`comments` text,`last_access_time` timestamp DEFAULT CURRENT_TIMESTAMP)",
 			"INSERT INTO users(username, active, salary, comments, last_access_time) VALUES('Edi', 1, 43000, 'no comments',CURRENT_TIMESTAMP);",

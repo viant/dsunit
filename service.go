@@ -157,15 +157,15 @@ func (s *serviceLocal) ExecuteScripts(request *ExecuteScriptRequest) *Response {
 	if request.Scripts != nil {
 		for _, script := range request.Scripts {
 			var err error
-			if len(script.SQLs) > 0 || len(script.Body) > 0 {
+			if len(script.Sqls) > 0 || len(script.Body) > 0 {
 				_, err = s.testManager.Execute(&script)
 			} else {
-				_, err = s.testManager.ExecuteFromURL(script.Datastore, s.expandTestSchemaURLIfNeeded(script.URL))
+				_, err = s.testManager.ExecuteFromURL(script.Datastore, s.expandTestSchemaURLIfNeeded(script.Url))
 			}
 			if err != nil {
 				return newErrorResponse(dsUnitError{"Failed to execut script on " + script.Datastore + " due to:\n\t" + err.Error()})
 			}
-			message = message + "Executed script " + script.URL + " on " + script.Datastore + "\n"
+			message = message + "Executed script " + script.Url + " on " + script.Datastore + "\n"
 		}
 
 	}
@@ -187,9 +187,9 @@ func (s *serviceLocal) ExecuteScriptsFromURL(url string) *Response {
 		return newErrorResponse(dsUnitError{"Failed to execute scripts, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
 	}
 	for i, script := range request.Scripts {
-		if len(script.URL) > 0 && len(script.Body) == 0 {
-			url := s.expandTestSchemaURLIfNeeded(script.URL)
-			request.Scripts[i].URL = url
+		if len(script.Url) > 0 && len(script.Body) == 0 {
+			url := s.expandTestSchemaURLIfNeeded(script.Url)
+			request.Scripts[i].Url = url
 
 			if strings.HasPrefix(url, "file://") {
 				file := url[len(toolbox.FileSchema):]

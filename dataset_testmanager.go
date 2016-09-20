@@ -122,12 +122,12 @@ func (tm *datasetTestManager) dropDatastore(adminDatastore string, targetDatasto
 func (tm *datasetTestManager) Execute(script *Script) (int, error) {
 	scriptManager := tm.managerRegistry.Get(script.Datastore)
 
-	if len(script.Body) > 0 && len(script.SQLs) == 0 {
+	if len(script.Body) > 0 && len(script.Sqls) == 0 {
 		reader := strings.NewReader(script.Body)
 		result := parseSQLScript(reader)
-		script.SQLs = result
+		script.Sqls = result
 	}
-	results, err := scriptManager.ExecuteAll(script.SQLs)
+	results, err := scriptManager.ExecuteAll(script.Sqls)
 	if err != nil {
 		return 0, err
 	}
@@ -153,7 +153,7 @@ func (tm *datasetTestManager) ExecuteFromURL(datastore string, url string) (int,
 	result := parseSQLScript(reader)
 	script := Script{
 		Datastore: datastore,
-		SQLs:      result,
+		Sqls:      result,
 	}
 	return tm.Execute(&script)
 }

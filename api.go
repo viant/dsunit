@@ -33,8 +33,8 @@ type Datasets struct {
 //Script represents a datastore  script
 type Script struct {
 	Datastore string
-	URL       string
-	SQLs      []string
+	Url       string
+	Sqls      []string
 	Body      string
 }
 
