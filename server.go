@@ -14,9 +14,6 @@ var prepareURI = version + "prepare"
 var expectURI = version + "expect"
 
 var errorHandler = func(router *toolbox.ServiceRouter, responseWriter http.ResponseWriter, httpRequest *http.Request, message string) {
-
-	responseWriter.WriteHeader(http.StatusInternalServerError)
-	responseWriter.Header().Set("Error", message)
 	err := router.WriteResponse(toolbox.NewJSONEncoderFactory(), &Response{Status: "error", Message: message}, httpRequest, responseWriter)
 	if err != nil {
 		log.Fatalf("Failed to write response :%v", err)
