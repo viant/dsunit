@@ -406,6 +406,7 @@ func updateDatasetDescriptorIfNeeded(manager dsc.Manager, dataset *Dataset) {
 		tableDescriptor := manager.TableDescriptorRegistry().Get(dataset.Table)
 		dataset.Autoincrement = tableDescriptor.Autoincrement
 		dataset.PkColumns = tableDescriptor.PkColumns
+		dataset.FromQuery = tableDescriptor.FromQuery
 	}
 }
 
@@ -491,11 +492,13 @@ func (tm *datasetTestManager) RegisteredMapping() []string {
 
 func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("seq", newSequenceValueProvider())
+	registry.Register("pos", newPositionValueProvider())
 	registry.Register("sql", newQueryValueProvider())
 	registry.Register("nil", toolbox.NewNilValueProvider())
 	registry.Register("env", toolbox.NewEnvValueProvider())
 	registry.Register("cast", toolbox.NewCastedValueProvider())
 	registry.Register("current_timestamp", toolbox.NewCurrentTimeProvider())
+	registry.Register("current_date", toolbox.NewCurrentDateProvider())
 	registry.Register("between", newBetweenPredicateValueProvider())
 	registry.Register("within_sec", newWithinSecPredicateValueProvider())
 }

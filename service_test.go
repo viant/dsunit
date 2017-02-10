@@ -16,6 +16,8 @@ func init() {
 	//dsunit.UseRemoteTestServer("http://localhost:8528")
 }
 
+var macroDatastore string = "<ds:env[\"GOOGLE_SERVICE_DATASET_ID\"]>"
+
 func TestSetup(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
@@ -29,8 +31,10 @@ func TestTest1p(t *testing.T) {
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "test1")
+	dsunit.PrepareDatastoreFor(t, macroDatastore, "test://test/", "test1")
 	//business test logic comes here
 	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy, "test://test/", "test1")
+	dsunit.ExpectDatasetFor(t, macroDatastore, dsunit.SnapshotDatasetCheckPolicy, "test://test/", "test1")
 }
 
 func TestDatasetMapping(t *testing.T) {
@@ -46,6 +50,7 @@ func TestExpectDatasetsFromURL(t *testing.T) {
 	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
 
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "test1")
+	dsunit.PrepareDatastoreFor(t, macroDatastore, "test://test/", "test1")
 
 	{
 		url := dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/service_expect.json")
@@ -76,6 +81,7 @@ func TestPrepareDatastoreFromURL(t *testing.T) {
 		assert.Equal(t, "ok", response.Status)
 	}
 	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy, "test://test/", "mapping")
+	dsunit.ExpectDatasetFor(t, macroDatastore, dsunit.SnapshotDatasetCheckPolicy, "test://test/", "test1")
 
 	{
 		url := dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/nonexisting.json")

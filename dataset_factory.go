@@ -39,6 +39,7 @@ func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor,
 			PkColumns:     descriptor.PkColumns,
 			Autoincrement: descriptor.Autoincrement,
 			Columns:       columns,
+			FromQuery:     descriptor.FromQuery,
 		},
 		Rows: rows,
 	}
