@@ -7,13 +7,28 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
+	_"github.com/viant/bgc"
 	"github.com/viant/dsunit"
+	"github.com/viant/toolbox"
 )
+
+var macroDatasetId = "<ds:env[\"GOOGLE_SERVICE_DATASET_ID\"]>"
+var gbqDatasetId string
 
 func Init(t *testing.T) dsunit.DatasetTestManager {
 	datasetTestManager := dsunit.NewDatasetTestManager()
 	managerRegistry := datasetTestManager.ManagerRegistry()
 	managerFactory := dsc.NewManagerFactory()
+
+	gbqServiceAccountId, err := toolbox.ExpandValue(datasetTestManager.MacroEvaluator(), "<ds:env[\"GOOGLE_SERVICE_ACCOUNT_ID\"]>")
+	if err != nil {
+		t.Fatalf("Failed to Init %v", err)
+	}
+	expandedDatasetId, err := toolbox.ExpandValue(datasetTestManager.MacroEvaluator(), macroDatasetId)
+	if err != nil {
+		t.Fatalf("Failed to Init %v", err)
+	}
+	gbqDatasetId = expandedDatasetId
 
 	{
 		//admin connection
@@ -29,7 +44,36 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 		manager, _ := managerFactory.Create(config)
 		managerRegistry.Register("bar_test", manager)
 	}
-	err := datasetTestManager.ClearDatastore("mysql", "bar_test")
+	{
+
+		//test connection
+		config := dsc.NewConfig("bigquery", "", "serviceAccountId:" + gbqServiceAccountId + ",privateKeyPath:/etc/test_service.pem,projectId:formal-cascade-571,datasetId:" + gbqDatasetId + ",dateFormat:yyyy-MM-dd hh:mm:ss z,maxResults:500")
+		manager, _ := managerFactory.Create(config)
+		schema := []map[string]interface{} {
+			{
+				"name": "event_id",
+				"type": "integer",
+			},
+			{
+				"name": "event_name",
+				"type": "string",
+			},
+			{
+				"name": "logging_create_time",
+				"type": "timestamp",
+				"DefaultValue": "<ds:current_timestamp>",
+			},
+		}
+		fromQuery := "SELECT row_number() over (order by logging_create_time) as position, event_id, event_name, logging_create_time as loggingCreateTime FROM log_history"
+		manager.TableDescriptorRegistry().Register(&dsc.TableDescriptor{Table: "log_history", PkColumns: []string{"event_id","event_name"}, Columns: []string{"event_id","event_name"}, Schema: schema, FromQuery: fromQuery})
+		managerRegistry.Register(gbqDatasetId, manager)
+	}
+	err = datasetTestManager.ClearDatastore("mysql", "bar_test")
+	if err != nil {
+		t.Fatalf("Failed to RecreateDatastore %v", err)
+	}
+
+	err = datasetTestManager.ClearDatastore(gbqDatasetId, gbqDatasetId)
 	if err != nil {
 		t.Fatalf("Failed to RecreateDatastore %v", err)
 	}
@@ -47,6 +91,9 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 		t.Fatalf("Failed to init databsae %v", err)
 	}
 	datasetTestManager.RegisterTable("bar_test", &dsc.TableDescriptor{Table: "users", Autoincrement: true, PkColumns: []string{"id"}})
+
+	fromQuery := "SELECT row_number() over (order by logging_create_time) as position, event_id, event_name, logging_create_time as loggingCreateTime FROM log_history"
+	datasetTestManager.RegisterTable(gbqDatasetId, &dsc.TableDescriptor{Table: "log_history", PkColumns: []string{"event_id","event_name"}, Columns: []string{"event_id","event_name"}, FromQuery: fromQuery})
 	return datasetTestManager
 }
 
@@ -304,6 +351,89 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations))
 	}
 
+	{
+		initDataset := *datasetFactory.CreateFromMap(gbqDatasetId, "log_history",
+			map[string]interface{} {
+				"event_id": 60,
+				"event_name":   "measurable",
+				"logging_create_time": "<ds:sql [\"SELECT CURRENT_TIMESTAMP\"]>",
+			},
+			map[string]interface{} {
+				"event_id": 61,
+				"event_name":   "view_in_1_second",
+				"logging_create_time": "<ds:sql [\"SELECT CURRENT_TIMESTAMP\"]>",
+			},
+			map[string]interface{} {
+				"event_id": 62,
+				"event_name":   "view_in_5_seconds",
+				"logging_create_time": "<ds:sql [\"SELECT CURRENT_TIMESTAMP\"]>",
+			},
+			map[string]interface{} {
+				"event_id": 63,
+				"event_name":   "view_in_10_seconds",
+				"logging_create_time": "<ds:sql [\"SELECT CURRENT_TIMESTAMP\"]>",
+			},
+			map[string]interface{} {
+				"event_id": 64,
+				"event_name":   "view_in_15_seconds",
+				"logging_create_time": "<ds:sql [\"SELECT CURRENT_TIMESTAMP\"]>",
+			},
+
+		)
+
+		inserted, updated, _, err := datasetTestManager.PrepareDatastore(&dsunit.Datasets{
+			Datastore: gbqDatasetId,
+			Datasets: []dsunit.Dataset{
+				initDataset,
+			},
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, 5, inserted)
+		assert.Equal(t, 0, updated)
+
+
+		expectedDataset := *datasetFactory.CreateFromMap(gbqDatasetId, "log_history",
+			map[string]interface{}{
+				"position":"<ds:pos [\"log_history\"]>",
+				"event_id":60,
+				"event_name":"measurable",
+			},
+			map[string]interface{}{
+				"position":"<ds:pos [\"log_history\"]>",
+				"event_id":61,
+				"event_name":"view_in_1_second",
+			},
+			map[string]interface{}{
+				"position":"<ds:pos [\"log_history\"]>",
+				"event_id":62,
+				"event_name":"view_in_5_seconds",
+			},
+			map[string]interface{}{
+				"position":"<ds:pos [\"log_history\"]>",
+				"event_id":63,
+				"event_name":"view_in_10_seconds",
+			},
+			map[string]interface{}{
+				"position":"<ds:pos [\"log_history\"]>",
+				"event_id":64,
+				"event_name":"view_in_15_seconds",
+			},
+		)
+
+		violations, err := datasetTestManager.ExpectDatasets(dsunit.FullTableDatasetCheckPolicy, &dsunit.Datasets{
+			Datastore: gbqDatasetId,
+			Datasets: []dsunit.Dataset{
+				expectedDataset,
+			},
+		})
+		if err != nil {
+			t.Fatalf("Failed to test sequence macro due to error:\n\t%v", err)
+		}
+
+		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations.String()))
+
+	}
+
 }
 
 func TestRegisteredMapping(t *testing.T) {
@@ -315,7 +445,7 @@ func TestRegisteredMapping(t *testing.T) {
 func TestValueProviderRegistry(t *testing.T) {
 	datasetTestManager := Init(t)
 	valueProvider := datasetTestManager.ValueProviderRegistry()
-	assert.Equal(t, 8, len(valueProvider.Names()))
+	assert.Equal(t, 10, len(valueProvider.Names()))
 }
 
 func TestExecuteFromURL(t *testing.T) {

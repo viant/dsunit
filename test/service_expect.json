@@ -42,6 +42,48 @@
           ]
         }
       ]
+    },
+    {
+      "Datastore": "<ds:env[\"GOOGLE_SERVICE_DATASET_ID\"]>",
+      "Datasets": [
+        {
+          "Table": "browsing_history",
+          "Rows": [
+            {
+              "Source":"test1",
+              "Values": {
+                "position": "<ds:pos [\"browsing_history\"]>",
+                "page": "www.viant.com",
+                "visit_count": 1
+              }
+            },
+            {
+              "Source":"test2",
+              "Values": {
+                "position": "<ds:pos [\"browsing_history\"]>",
+                "page": "www.myspace.com",
+                "visit_count": 5
+              }
+            },
+            {
+              "Source":"test3",
+              "Values": {
+                "position": "<ds:pos [\"browsing_history\"]>",
+                "page": "www.vindico.com",
+                "visit_count": 4
+              }
+            },
+            {
+              "Source":"test4",
+              "Values": {
+                "position": "<ds:pos [\"browsing_history\"]>",
+                "page": "www.specificmedia.com",
+                "visit_count": 6
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "CheckPolicy": 1

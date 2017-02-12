@@ -38,8 +38,19 @@ func (s *serviceLocal) expandTestSchemaURLIfNeeded(candidate string) string {
 func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, manager dsc.Manager) string {
 	result := ""
 	if dataStoreConfig.Descriptors != nil {
+		macroEvaluator := s.testManager.MacroEvaluator()
 		for i, tableDescriptor := range dataStoreConfig.Descriptors {
 			dataStoreConfig.Descriptors[i].SchemaUrl = s.expandTestSchemaURLIfNeeded(tableDescriptor.SchemaUrl)
+			table, err := toolbox.ExpandValue(macroEvaluator, tableDescriptor.Table)
+			if (err != nil) {
+				panic(fmt.Sprintf("Failed to expand macro for table name: %v", tableDescriptor.Table))
+			}
+			dataStoreConfig.Descriptors[i].Table = table
+			fromQuery, err := toolbox.ExpandValue(macroEvaluator, tableDescriptor.FromQuery)
+			if (err != nil) {
+				panic(fmt.Sprintf("Failed to expand macro for fromQuery: %v", tableDescriptor.FromQuery))
+			}
+			dataStoreConfig.Descriptors[i].FromQuery = fromQuery
 			manager.TableDescriptorRegistry().Register(&dataStoreConfig.Descriptors[i])
 			result = result + "\t\tRegistered table: " + tableDescriptor.Table + "\n"
 		}
@@ -81,9 +92,27 @@ func (s *serviceLocal) loadConfigIfNeeded(datastoreConfig *DatastoreConfig) erro
 	return nil
 }
 
+func (s *serviceLocal) expandDatastore(datastoreConfig *DatastoreConfig) error {
+	adminDbName, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.AdminDbName)
+	if (err != nil) {
+		return fmt.Errorf("Failed to InitConfig - unable to expand macro for adminDbName %v, due to %v", datastoreConfig.AdminDbName, err)
+	}
+	targetDatastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.Datastore)
+	if (err != nil) {
+		return fmt.Errorf("Failed to InitConfig - unable to expand macro for targetDatastore %v, due to %v", datastoreConfig.Datastore, err)
+	}
+	datastoreConfig.AdminDbName = adminDbName
+	datastoreConfig.Datastore = targetDatastore
+	return nil
+}
+
 func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) (string, error) {
+	err := s.expandDatastore(datastoreConfig)
+	if err != nil {
+		return "", err
+	}
 	result := "Registered datastore: " + datastoreConfig.Datastore + "\n"
-	err := s.loadConfigIfNeeded(datastoreConfig)
+	err = s.loadConfigIfNeeded(datastoreConfig)
 	if err != nil {
 		return "", err
 	}
@@ -211,6 +240,11 @@ func (s *serviceLocal) PrepareDatastore(request *PrepareDatastoreRequest) *Respo
 	message := ""
 
 	for _, datasets := range request.Prepare {
+		datastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datasets.Datastore)
+		if err != nil {
+			return newErrorResponse(dsUnitError{"Failed to prepare datastore due to:\n\t" + err.Error()})
+		}
+		datasets.Datastore = datastore
 		message += fmt.Sprintf("Prepared datastore %v with datasets:", datasets.Datastore)
 		run = true
 		inserted, updated, deleted, err := s.testManager.PrepareDatastore(&datasets)
@@ -246,6 +280,10 @@ func (s *serviceLocal) PrepareDatastoreFromURL(url string) *Response {
 }
 
 func (s *serviceLocal) PrepareDatastoreFor(datastore string, baseDir string, method string) *Response {
+	datastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastore)
+	if err != nil {
+		return newErrorResponse(err)
+	}
 	datasets, err := s.buildDatasets(datastore, "prepare", baseDir, method)
 	if err != nil {
 		return newErrorResponse(err)
@@ -261,6 +299,12 @@ func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResp
 	var violations AssertViolations
 	var err error
 	for _, datasets := range request.Expect {
+		expandedDatastore, er := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datasets.Datastore)
+		if er != nil {
+			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"Failed to verify datastore with datasets: " + datasets.Datastore + ", " + er.Error()})}
+		}
+		datasets.Datastore = expandedDatastore
+
 		message += fmt.Sprintf("\n\tVerified datastore %v with datasets:", datasets.Datastore)
 		run = true
 		violations, err = s.testManager.ExpectDatasets(request.CheckPolicy, &datasets)
@@ -301,6 +345,10 @@ func (s *serviceLocal) ExpectDatasetsFromURL(url string) *ExpectResponse {
 }
 
 func (s *serviceLocal) ExpectDatasetsFor(datastore string, baseDir string, method string, checkPolicy int) *ExpectResponse {
+	datastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastore)
+	if err != nil {
+		return &ExpectResponse{Response: newErrorResponse(err)}
+	}
 	datasets, err := s.buildDatasets(datastore, "expect", baseDir, method)
 	if err != nil {
 		return &ExpectResponse{Response: newErrorResponse(err)}
