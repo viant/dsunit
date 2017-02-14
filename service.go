@@ -52,7 +52,7 @@ func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, man
 			}
 			dataStoreConfig.Descriptors[i].FromQuery = fromQuery
 			manager.TableDescriptorRegistry().Register(&dataStoreConfig.Descriptors[i])
-			result = result + "\t\tRegistered table: " + tableDescriptor.Table + "\n"
+			result = result + "\t\tRegistered table: " + dataStoreConfig.Descriptors[i].Table + "\n"
 		}
 	}
 	return result

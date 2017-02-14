@@ -214,9 +214,12 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]Data
 	var insertedTotal, updatedTotal, deletedTotal int
 	dialect := tm.GetDialectable(datastore)
 	for _, dataset := range *datasets {
+		err := tm.expandTable(&dataset)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to expand macro in the table %v due to %v", datastore, dataset.Table, err)
+		}
 		updateDatasetDescriptorIfNeeded(manager, &dataset)
-
-		err := tm.expandMacros(context, datastore, manager, &dataset)
+		err = tm.expandMacros(context, datastore, manager, &dataset)
 		if err != nil {
 			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to expand macros %v", datastore, err)
 		}
@@ -389,6 +392,23 @@ func (tm *datasetTestManager) expandMacros(context toolbox.Context, datastore st
 	return nil
 }
 
+func (tm *datasetTestManager) expandTable(dataset *Dataset) error {
+	table, err := toolbox.ExpandValue(tm.macroEvaluator, dataset.Table)
+	if err != nil {
+		return err
+	}
+	dataset.Table = table
+	if len(dataset.TableDescriptor.FromQuery) > 0 {
+		fromQuery, err := toolbox.ExpandValue(tm.macroEvaluator, dataset.TableDescriptor.FromQuery)
+		if err != nil {
+			return err
+		}
+		dataset.TableDescriptor.FromQuery = fromQuery
+		dataset.FromQuery = fromQuery
+	}
+	return nil
+}
+
 func buildColumnsForDataset(dataset *Dataset) []string {
 	var columns = make(map[string]interface{})
 	for _, row := range dataset.Rows {
@@ -417,9 +437,13 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 	var result = make([]AssertViolation, 0)
 
 	for i := range datasets.Datasets {
+		err := tm.expandTable(&datasets.Datasets[i])
+		if err != nil {
+			return nil, err
+		}
 		updateDatasetDescriptorIfNeeded(manager, &datasets.Datasets[i])
 		mapper := newDatasetRowMapper(datasets.Datasets[i].Columns, nil)
-		err := tm.expandMacros(context, datasets.Datastore, manager, &datasets.Datasets[i])
+		err = tm.expandMacros(context, datasets.Datastore, manager, &datasets.Datasets[i])
 		if err != nil {
 			return nil, err
 		}
