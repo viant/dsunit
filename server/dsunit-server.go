@@ -18,7 +18,7 @@
  */
 
 // Package server - Remote testing dsunit server
-package server
+package main
 
 import (
 	"flag"
@@ -26,10 +26,11 @@ import (
 	"github.com/viant/dsunit"
 	//Place all your datastore driver here
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/viant/bgc"
 )
 
 const (
-	defaultPort = "8071"
+	defaultPort = "8078"
 	usage       = "dsunit-server port"
 )
 
