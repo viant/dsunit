@@ -398,13 +398,18 @@ func (tm *datasetTestManager) expandTable(dataset *Dataset) error {
 		return err
 	}
 	dataset.Table = table
+	return nil
+}
+
+func (tm *datasetTestManager) expandFromQuery(context toolbox.Context, dataset *Dataset) error {
+	context.Replace((*Dataset)(nil), dataset)
 	if len(dataset.TableDescriptor.FromQuery) > 0 {
-		fromQuery, err := toolbox.ExpandValue(tm.macroEvaluator, dataset.TableDescriptor.FromQuery)
+		fromQuery, err := tm.macroEvaluator.Expand(context, dataset.TableDescriptor.FromQuery)
 		if err != nil {
 			return err
 		}
-		dataset.TableDescriptor.FromQuery = fromQuery
-		dataset.FromQuery = fromQuery
+		dataset.TableDescriptor.FromQuery = fromQuery.(string)
+		dataset.FromQuery = fromQuery.(string)
 	}
 	return nil
 }
@@ -440,6 +445,10 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 		err := tm.expandTable(&datasets.Datasets[i])
 		if err != nil {
 			return nil, err
+		}
+		err = tm.expandFromQuery(context, &datasets.Datasets[i])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to prepare datastore %v - unable to expand macro in the fromQuery %v due to %v", datasets.Datastore, datasets.Datasets[i].Table, err)
 		}
 		updateDatasetDescriptorIfNeeded(manager, &datasets.Datasets[i])
 		mapper := newDatasetRowMapper(datasets.Datasets[i].Columns, nil)
@@ -525,6 +534,7 @@ func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("current_date", toolbox.NewCurrentDateProvider())
 	registry.Register("between", newBetweenPredicateValueProvider())
 	registry.Register("within_sec", newWithinSecPredicateValueProvider())
+	registry.Register("fromQuery", newBgQueryProvider())
 }
 
 //NewDatasetTestManager returns a new DatasetTestManager
