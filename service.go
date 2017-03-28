@@ -46,11 +46,6 @@ func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, man
 				panic(fmt.Sprintf("Failed to expand macro for table name: %v", tableDescriptor.Table))
 			}
 			dataStoreConfig.Descriptors[i].Table = table
-			fromQuery, err := toolbox.ExpandValue(macroEvaluator, tableDescriptor.FromQuery)
-			if (err != nil) {
-				panic(fmt.Sprintf("Failed to expand macro for fromQuery: %v", tableDescriptor.FromQuery))
-			}
-			dataStoreConfig.Descriptors[i].FromQuery = fromQuery
 			manager.TableDescriptorRegistry().Register(&dataStoreConfig.Descriptors[i])
 			result = result + "\t\tRegistered table: " + tableDescriptor.Table + "\n"
 		}

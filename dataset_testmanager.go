@@ -214,9 +214,12 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]Data
 	var insertedTotal, updatedTotal, deletedTotal int
 	dialect := tm.GetDialectable(datastore)
 	for _, dataset := range *datasets {
+		err := tm.expandTable(&dataset)
+		if err != nil {
+			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to expand macro in the table %v due to %v", datastore, dataset.Table, err)
+		}
 		updateDatasetDescriptorIfNeeded(manager, &dataset)
-
-		err := tm.expandMacros(context, datastore, manager, &dataset)
+		err = tm.expandMacros(context, datastore, manager, &dataset)
 		if err != nil {
 			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to expand macros %v", datastore, err)
 		}
@@ -389,6 +392,28 @@ func (tm *datasetTestManager) expandMacros(context toolbox.Context, datastore st
 	return nil
 }
 
+func (tm *datasetTestManager) expandTable(dataset *Dataset) error {
+	table, err := toolbox.ExpandValue(tm.macroEvaluator, dataset.Table)
+	if err != nil {
+		return err
+	}
+	dataset.Table = table
+	return nil
+}
+
+func (tm *datasetTestManager) expandFromQuery(context toolbox.Context, dataset *Dataset) error {
+	context.Replace((*Dataset)(nil), dataset)
+	if len(dataset.TableDescriptor.FromQuery) > 0 {
+		fromQuery, err := tm.macroEvaluator.Expand(context, dataset.TableDescriptor.FromQuery)
+		if err != nil {
+			return err
+		}
+		dataset.TableDescriptor.FromQuery = fromQuery.(string)
+		dataset.FromQuery = fromQuery.(string)
+	}
+	return nil
+}
+
 func buildColumnsForDataset(dataset *Dataset) []string {
 	var columns = make(map[string]interface{})
 	for _, row := range dataset.Rows {
@@ -417,9 +442,17 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 	var result = make([]AssertViolation, 0)
 
 	for i := range datasets.Datasets {
+		err := tm.expandTable(&datasets.Datasets[i])
+		if err != nil {
+			return nil, err
+		}
+		err = tm.expandFromQuery(context, &datasets.Datasets[i])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to prepare datastore %v - unable to expand macro in the fromQuery %v due to %v", datasets.Datastore, datasets.Datasets[i].Table, err)
+		}
 		updateDatasetDescriptorIfNeeded(manager, &datasets.Datasets[i])
 		mapper := newDatasetRowMapper(datasets.Datasets[i].Columns, nil)
-		err := tm.expandMacros(context, datasets.Datastore, manager, &datasets.Datasets[i])
+		err = tm.expandMacros(context, datasets.Datastore, manager, &datasets.Datasets[i])
 		if err != nil {
 			return nil, err
 		}
@@ -501,6 +534,7 @@ func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("current_date", toolbox.NewCurrentDateProvider())
 	registry.Register("between", newBetweenPredicateValueProvider())
 	registry.Register("within_sec", newWithinSecPredicateValueProvider())
+	registry.Register("fromQuery", newBgQueryProvider())
 }
 
 //NewDatasetTestManager returns a new DatasetTestManager
