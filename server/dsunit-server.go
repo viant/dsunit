@@ -26,7 +26,6 @@ import (
 	"github.com/viant/dsunit"
 	//Place all your datastore driver here
 	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/viant/bgc"
 )
 
 const (
