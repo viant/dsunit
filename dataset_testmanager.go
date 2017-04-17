@@ -124,7 +124,7 @@ func (tm *datasetTestManager) Execute(script *Script) (int, error) {
 
 	if len(script.Body) > 0 && len(script.Sqls) == 0 {
 		reader := strings.NewReader(script.Body)
-		result := parseSQLScript(reader)
+		result := ParseSQLScript(reader)
 		script.Sqls = result
 	}
 	results, err := scriptManager.ExecuteAll(script.Sqls)
@@ -150,7 +150,7 @@ func (tm *datasetTestManager) ExecuteFromURL(datastore string, url string) (int,
 		return 0, err
 	}
 	defer reader.Close()
-	result := parseSQLScript(reader)
+	result := ParseSQLScript(reader)
 	script := Script{
 		Datastore: datastore,
 		Sqls:      result,

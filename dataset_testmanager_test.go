@@ -451,7 +451,7 @@ func TestValueProviderRegistry(t *testing.T) {
 func TestExecuteFromURL(t *testing.T) {
 	datasetTestManager := Init(t)
 	{
-		url := dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/database.sql")
+		url := dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/vertica_database.sql")
 		_, err := datasetTestManager.ExecuteFromURL("bar_test", url)
 		assert.Nil(t, err)
 	}

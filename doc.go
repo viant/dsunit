@@ -10,7 +10,7 @@ No mocking, but actual test against various datastores likes sql RDBMS, Aerospik
 Usage:
 
     dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
-    dsunit.ExecuteScriptFromUrl(t, "svn://test/script_request.json")
+    dsunit.ExecuteScriptFromUrl(t, "svn://test/vertica_script_request.json")
     dsunit.PrepareDatastore(t, "mytestdb")
 
 

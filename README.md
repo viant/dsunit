@@ -56,7 +56,7 @@ import (
 func TestSetup(t *testing.T) {
 
     dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromUrl(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromUrl(t, vertica_script_request.json)
 	dsunit.PrepareDatastore(t, "mytestdb")
 	
 	

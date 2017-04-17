@@ -20,7 +20,7 @@ var macroDatastore string = "<ds:env[\"GOOGLE_SERVICE_DATASET_ID\"]>"
 
 func TestSetup(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 	dsunit.PrepareDatastore(t, "bar_test")
 	//business test logic comes here
 	dsunit.ExpectDatasets(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy)
@@ -28,7 +28,7 @@ func TestSetup(t *testing.T) {
 
 func TestTest1p(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "test1")
 	dsunit.PrepareDatastoreFor(t, macroDatastore, "test://test/", "test1")
@@ -39,7 +39,7 @@ func TestTest1p(t *testing.T) {
 
 func TestDatasetMapping(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "mapping")
 	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy, "test://test/", "mapping")
 }
@@ -47,7 +47,7 @@ func TestDatasetMapping(t *testing.T) {
 func TestExpectDatasetsFromURL(t *testing.T) {
 
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "test1")
 	dsunit.PrepareDatastoreFor(t, macroDatastore, "test://test/", "test1")
@@ -73,7 +73,7 @@ func TestExpectDatasetsFromURL(t *testing.T) {
 
 func TestPrepareDatastoreFromURL(t *testing.T) {
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "mapping")
 	{
 		url := dsunit.ExpandTestProtocolAsURLIfNeeded("test://test/service_prepare.json")
@@ -97,14 +97,14 @@ func TestRemoteSetup(t *testing.T) {
 	dsunit.UseRemoteTestServer("http://localhost:8528")
 
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "test1")
 	//business test logic comes here
 	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy, "test://test/", "test1")
 
 	dsunit.InitDatastoreFromURL(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromURL(t, "test://test/script_request.json")
+	dsunit.ExecuteScriptFromURL(t, "test://test/vertica_script_request.json")
 	dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "mapping")
 	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy, "test://test/", "mapping")
 }

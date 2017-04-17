@@ -133,6 +133,7 @@ func (r *datasetTransformerRegistry) names() []string {
 	return toolbox.MapKeysToStringSlice(r.registry)
 }
 
+
 //NewDatasetTransformerRegistry returns new NewDatasetTransformerRegistry
 func newDatasetTransformerRegistry() *datasetTransformerRegistry {
 	return &datasetTransformerRegistry{

@@ -7,7 +7,7 @@ import (
 )
 
 //parseSQLScript parses sql script and breaks it down to submittable sql statements
-func parseSQLScript(reader io.Reader) []string {
+func ParseSQLScript(reader io.Reader) []string {
 	var result = make([]string, 0)
 	scanner := bufio.NewScanner(reader)
 	var command, delimiter = "", ";"
