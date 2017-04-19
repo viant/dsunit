@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"regexp"
 
 	"github.com/viant/toolbox"
 )
@@ -247,6 +248,14 @@ func isTimeEqual(timeValue interface{}, value interface{}) bool {
 	return false
 }
 
+func regularExpressionMatches(pattern string, value string) bool  {
+	result, err := regexp.MatchString(pattern, value)
+	if (err != nil) {
+		return false
+	}
+	return result
+}
+
 func isMapEqual(expected, actual interface{}, dateLayout string) bool {
 	var expectedMap = make(map[string]interface{})
 	toolbox.ProcessMap(expected, func(key, value interface{}) bool {
@@ -336,6 +345,10 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 		}
 	case string:
 
+		if (strings.HasPrefix(strings.ToLower(toolbox.AsString(expected)), "regexp")) {
+			expectedPattern := strings.Replace(strings.ToLower(toolbox.AsString(expected)), "regexp", "", -1)
+			return regularExpressionMatches(expectedPattern, toolbox.AsString(actual))
+		}
 		if toolbox.IsFloat(actual) {
 			return isFloatEqual(actual, expected)
 		} else if toolbox.IsTime(actual) {
