@@ -20,14 +20,14 @@ type Row struct {
 
 //Dataset represents test or expected dataset data values
 type Dataset struct {
-	dsc.TableDescriptor
-	Rows []Row
+	*dsc.TableDescriptor
+	Rows []*Row
 }
 
 //Datasets represents a collection of Dataset's for Datastore
 type Datasets struct {
 	Datastore string
-	Datasets  []Dataset
+	Datasets  []*Dataset
 }
 
 //Script represents a datastore  script
@@ -107,8 +107,8 @@ type DatasetColumn struct {
 //DatasetMapping represents a dataset mapping, mapping allow to route data defined in only one dataset to many datasets.
 type DatasetMapping struct {
 	Table        string
-	Columns      []DatasetColumn
-	Associations []DatasetMapping
+	Columns      []*DatasetColumn
+	Associations []*DatasetMapping
 }
 
 //AssertViolation represents test violation.
@@ -133,13 +133,13 @@ type AssertViolations interface {
 
 //DatastoreConfig represets DatastoreConfig dsunit config
 type DatastoreConfig struct {
-	Datastore      string     //name of datastore registered in manager registry
-	Config         dsc.Config // datastore manager config
-	ConfigURL      string     //url with Config JSON.
-	AdminDbName    string     //optional admin datastore name, needed for sql datastore to drop/create database
-	ClearDatastore bool       //flag to reset datastore (depending on dialablable it could be either drop/create datastore for CanDrop/CanCreate dialects, or drop/create tables
-	Descriptors    []dsc.TableDescriptor
-	DatasetMapping map[string]DatasetMapping //key represent name of dataset to be mapped
+	Datastore      string      //name of datastore registered in manager registry
+	Config         *dsc.Config // datastore manager config
+	ConfigURL      string      //url with Config JSON.
+	AdminDbName    string      //optional admin datastore name, needed for sql datastore to drop/create database
+	ClearDatastore bool        //flag to reset datastore (depending on dialablable it could be either drop/create datastore for CanDrop/CanCreate dialects, or drop/create tables
+	Descriptors    []*dsc.TableDescriptor
+	DatasetMapping map[string]*DatasetMapping //key represent name of dataset to be mapped
 }
 
 //Service represents test service

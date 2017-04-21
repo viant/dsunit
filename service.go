@@ -42,11 +42,11 @@ func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, man
 		for i, tableDescriptor := range dataStoreConfig.Descriptors {
 			dataStoreConfig.Descriptors[i].SchemaUrl = s.expandTestSchemaURLIfNeeded(tableDescriptor.SchemaUrl)
 			table, err := toolbox.ExpandValue(macroEvaluator, tableDescriptor.Table)
-			if (err != nil) {
+			if err != nil {
 				panic(fmt.Sprintf("Failed to expand macro for table name: %v", tableDescriptor.Table))
 			}
 			dataStoreConfig.Descriptors[i].Table = table
-			manager.TableDescriptorRegistry().Register(&dataStoreConfig.Descriptors[i])
+			manager.TableDescriptorRegistry().Register(dataStoreConfig.Descriptors[i])
 			result = result + "\t\tRegistered table: " + tableDescriptor.Table + "\n"
 		}
 	}
@@ -58,7 +58,7 @@ func (s *serviceLocal) registerMapping(dataStoreConfig *DatastoreConfig, manager
 	if dataStoreConfig.DatasetMapping != nil {
 		for name := range dataStoreConfig.DatasetMapping {
 			datasetMapping := dataStoreConfig.DatasetMapping[name]
-			s.testManager.RegisterDatasetMapping(name, &datasetMapping)
+			s.testManager.RegisterDatasetMapping(name, datasetMapping)
 			result = result + "\t\tRegistered mapping: " + name + "\n"
 			//register mapping table descriptor
 			mappingTableDescriptor := manager.TableDescriptorRegistry().Get(datasetMapping.Table)
@@ -89,11 +89,11 @@ func (s *serviceLocal) loadConfigIfNeeded(datastoreConfig *DatastoreConfig) erro
 
 func (s *serviceLocal) expandDatastore(datastoreConfig *DatastoreConfig) error {
 	adminDbName, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.AdminDbName)
-	if (err != nil) {
+	if err != nil {
 		return fmt.Errorf("Failed to InitConfig - unable to expand macro for adminDbName %v, due to %v", datastoreConfig.AdminDbName, err)
 	}
 	targetDatastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.Datastore)
-	if (err != nil) {
+	if err != nil {
 		return fmt.Errorf("Failed to InitConfig - unable to expand macro for targetDatastore %v, due to %v", datastoreConfig.Datastore, err)
 	}
 	datastoreConfig.AdminDbName = adminDbName
@@ -127,7 +127,7 @@ func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) 
 	if err != nil {
 		return "", err
 	}
-	manager, err := factory.Create(&datastoreConfig.Config)
+	manager, err := factory.Create(datastoreConfig.Config)
 	if err != nil {
 		return "", err
 	}
@@ -391,7 +391,7 @@ func (s *serviceLocal) buildDatasets(datastore string, fragment string, baseDire
 	if err != nil {
 		return nil, err
 	}
-	var datasets = make([]Dataset, 0)
+	var datasets = make([]*Dataset, 0)
 
 	for _, file := range files {
 		table := s.getTableForURL(datastore, file)
@@ -399,7 +399,7 @@ func (s *serviceLocal) buildDatasets(datastore string, fragment string, baseDire
 		if err != nil {
 			return nil, err
 		}
-		dataset := *datasetPoiner
+		dataset := datasetPoiner
 		datasets = append(datasets, dataset)
 	}
 	return &Datasets{

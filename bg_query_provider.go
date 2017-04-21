@@ -1,16 +1,16 @@
 package dsunit
 
 import (
+	"fmt"
 	"github.com/viant/toolbox"
 	"strings"
-	"fmt"
 )
 
 const selectSql = "select row_number() over(order by %v) as position, %v from %v"
 
 type bgQueryProvider struct{}
 
-func (p *bgQueryProvider) filterColumns(columns []string) ([]string) {
+func (p *bgQueryProvider) filterColumns(columns []string) []string {
 	var filteredCols []string
 	for _, column := range columns {
 		if column != "position" {
@@ -32,4 +32,3 @@ func newBgQueryProvider() toolbox.ValueProvider {
 	var result toolbox.ValueProvider = &bgQueryProvider{}
 	return result
 }
-

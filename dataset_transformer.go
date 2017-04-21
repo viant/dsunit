@@ -13,8 +13,8 @@ func getDataset(datasets map[string]*Dataset, table string, registry dsc.TableDe
 		return result
 	}
 	result := &Dataset{
-		TableDescriptor: *registry.Get(table),
-		Rows:            make([]Row, 0),
+		TableDescriptor: registry.Get(table),
+		Rows:            make([]*Row, 0),
 	}
 	datasets[table] = result
 	(*tables) = append((*tables), table)
@@ -62,15 +62,15 @@ func (dt *DatasetTransformer) mapRowToDatasets(row *Row, mapping *DatasetMapping
 	values := dt.mapRowToDataset(row, mapping)
 	if values != nil {
 		dataset := getDataset(datasets, mapping.Table, registry, tables)
-		mappedRow := Row{Source: row.Source, Values: values}
-		if dt.isRowDuplicated(dataset, mapping, &mappedRow, tablesPk) {
+		mappedRow := &Row{Source: row.Source, Values: values}
+		if dt.isRowDuplicated(dataset, mapping, mappedRow, tablesPk) {
 			return
 		}
 		dataset.Rows = append(dataset.Rows, mappedRow)
 	}
 	if mapping.Associations != nil {
 		for _, association := range mapping.Associations {
-			dt.mapRowToDatasets(row, &association, datasets, registry, tables, tablesPk)
+			dt.mapRowToDatasets(row, association, datasets, registry, tables, tablesPk)
 		}
 	}
 }
@@ -81,11 +81,11 @@ func (dt *DatasetTransformer) Transform(datastore string, sourceDataset *Dataset
 	var tables = make([]string, 0)
 	var tablesPk = make(map[string]bool)
 	for _, row := range sourceDataset.Rows {
-		dt.mapRowToDatasets(&row, mapping, datasets, registry, &tables, tablesPk)
+		dt.mapRowToDatasets(row, mapping, datasets, registry, &tables, tablesPk)
 	}
 	result := &Datasets{
 		Datastore: datastore,
-		Datasets:  make([]Dataset, 0),
+		Datasets:  make([]*Dataset, 0),
 	}
 
 	for _, table := range tables {
@@ -93,7 +93,7 @@ func (dt *DatasetTransformer) Transform(datastore string, sourceDataset *Dataset
 		if value == nil || (*value).Rows == nil || len((*value).Rows) == 0 {
 			continue
 		}
-		result.Datasets = append(result.Datasets, *value)
+		result.Datasets = append(result.Datasets, value)
 	}
 	return result
 }
@@ -132,7 +132,6 @@ func (r *datasetTransformerRegistry) has(name string) bool {
 func (r *datasetTransformerRegistry) names() []string {
 	return toolbox.MapKeysToStringSlice(r.registry)
 }
-
 
 //NewDatasetTransformerRegistry returns new NewDatasetTransformerRegistry
 func newDatasetTransformerRegistry() *datasetTransformerRegistry {

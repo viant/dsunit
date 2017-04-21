@@ -84,36 +84,6 @@
           ]
         }
       }
-    },
-    {
-      "Datastore": "<ds:env[\"GOOGLE_SERVICE_DATASET_ID\"]>",
-      "AdminDbName": "<ds:env[\"GOOGLE_SERVICE_DATASET_ID\"]>",
-      "ClearDatastore": true,
-      "ConfigUrl": "test://test/store.json",
-      "Descriptors": [
-        {
-          "Table": "browsing_history",
-          "Autoincrement": false,
-          "PkColumns": ["page", "visit_count"],
-          "Columns": ["page", "visit_count"],
-          "FromQuery": "SELECT row_number() over(order by time_visited) as position, page, visit_count FROM browsing_history",
-          "Schema": [
-            {
-              "name": "page",
-              "type": "string"
-            },
-            {
-              "name": "visit_count",
-              "type": "integer"
-            },
-            {
-              "name": "time_visited",
-              "type": "timestamp",
-              "DefaultValue": "<ds:current_timestamp>"
-            }
-          ]
-        }
-      ]
     }
   ]
 }

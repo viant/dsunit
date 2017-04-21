@@ -3,10 +3,10 @@ package dsunit
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"regexp"
 
 	"github.com/viant/toolbox"
 )
@@ -154,7 +154,7 @@ func (t DatasetTester) assertRows(datastore string, expected, actual *Dataset) [
 	return result
 }
 
-func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset, expected, actual Row) []AssertViolation {
+func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset, expected, actual *Row) []AssertViolation {
 	var result = make([]AssertViolation, 0)
 	expectedDiff, actualDiff := "", ""
 	var sortedColumns = toolbox.SortStrings(expected.Columns())
@@ -248,9 +248,9 @@ func isTimeEqual(timeValue interface{}, value interface{}) bool {
 	return false
 }
 
-func regularExpressionMatches(pattern string, value string) bool  {
+func regularExpressionMatches(pattern string, value string) bool {
 	result, err := regexp.MatchString(pattern, value)
-	if (err != nil) {
+	if err != nil {
 		return false
 	}
 	return result
@@ -345,7 +345,7 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 		}
 	case string:
 
-		if (strings.HasPrefix(strings.ToLower(toolbox.AsString(expected)), "regexp")) {
+		if strings.HasPrefix(strings.ToLower(toolbox.AsString(expected)), "regexp") {
 			expectedPattern := strings.Replace(strings.ToLower(toolbox.AsString(expected)), "regexp", "", -1)
 			return regularExpressionMatches(expectedPattern, toolbox.AsString(actual))
 		}
@@ -404,9 +404,9 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 
 }
 
-func indexDataset(dataset Dataset) map[string]Row {
-	var result = make(map[string]Row)
-	toolbox.IndexSlice(dataset.Rows, result, func(row Row) string {
+func indexDataset(dataset Dataset) map[string]*Row {
+	var result = make(map[string]*Row)
+	toolbox.IndexSlice(dataset.Rows, result, func(row *Row) string {
 		var pkValues = make([]string, 0)
 		toolbox.TransformSlice(dataset.PkColumns, &pkValues, func(pkColumn string) string {
 			return row.ValueAsString(pkColumn)

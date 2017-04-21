@@ -23,7 +23,7 @@ func (f datasetFactoryImpl) ensurePkValues(data map[string]interface{}, descript
 	}
 }
 
-func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor, rows []Row) *Dataset {
+func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor, rows []*Row) *Dataset {
 	var allColumns = make(map[string]interface{})
 	for i, row := range rows {
 		f.ensurePkValues(row.Values, descriptor)
@@ -34,7 +34,7 @@ func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor,
 	}
 	columns := toolbox.MapKeysToStringSlice(allColumns)
 	return &Dataset{
-		TableDescriptor: dsc.TableDescriptor{
+		TableDescriptor: &dsc.TableDescriptor{
 			Table:         descriptor.Table,
 			PkColumns:     descriptor.PkColumns,
 			Autoincrement: descriptor.Autoincrement,
@@ -51,10 +51,11 @@ func (f datasetFactoryImpl) CreateFromMap(datastore string, table string, datase
 }
 
 func (f datasetFactoryImpl) Create(descriptor *dsc.TableDescriptor, dataset ...map[string]interface{}) *Dataset {
-	var rows = make([]Row, len(dataset))
+	var rows = make([]*Row, len(dataset))
 	for i, values := range dataset {
+
 		f.ensurePkValues(values, descriptor)
-		var row = Row{
+		var row = &Row{
 			Source: fmt.Sprintf("Map, table:%v; row:%v", descriptor.Table, i),
 			Values: values,
 		}
@@ -65,13 +66,13 @@ func (f datasetFactoryImpl) Create(descriptor *dsc.TableDescriptor, dataset ...m
 }
 
 func (f datasetFactoryImpl) buildDataSetFromColumnarData(descriptor *dsc.TableDescriptor, url string, columns []string, dataset [][]interface{}) *Dataset {
-	var rows = make([]Row, len(dataset))
+	var rows = make([]*Row, len(dataset))
 	for i, data := range dataset {
 		var values = make(map[string]interface{})
 		for i, item := range data {
 			values[columns[i]] = item
 		}
-		var row = Row{
+		var row = &Row{
 			Source: fmt.Sprintf("URI:%v, table:%v, line:%v", url, descriptor.Table, i),
 			Values: values,
 		}
@@ -86,10 +87,10 @@ func (f datasetFactoryImpl) buildDatasetFromJSON(descriptor *dsc.TableDescriptor
 	if err != nil {
 		return nil, fmt.Errorf("Failed to build dataset from %v due to: %v", url, err)
 	}
-	var rows = make([]Row, len(transfer))
+	var rows = make([]*Row, len(transfer))
 	for i, values := range transfer {
 		f.ensurePkValues(values, descriptor)
-		var row = Row{
+		var row = &Row{
 			Source: fmt.Sprintf("URI:%v, table:%v, line:%v", url, descriptor.Table, i),
 			Values: values,
 		}

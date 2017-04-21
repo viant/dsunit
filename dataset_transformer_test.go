@@ -13,7 +13,7 @@ func TestTransform(t *testing.T) {
 
 	mapping := &dsunit.DatasetMapping{
 		Table: "order_line",
-		Columns: []dsunit.DatasetColumn{
+		Columns: []*dsunit.DatasetColumn{
 			{
 				Name:         "id",
 				DefaultValue: "<ds:seq[\"order_line\"]>",
@@ -36,10 +36,10 @@ func TestTransform(t *testing.T) {
 				Name: "product_id",
 			},
 		},
-		Associations: []dsunit.DatasetMapping{
+		Associations: []*dsunit.DatasetMapping{
 			{
 				Table: "products",
-				Columns: []dsunit.DatasetColumn{
+				Columns: []*dsunit.DatasetColumn{
 					{
 						Name:       "id",
 						Required:   true,
@@ -63,8 +63,8 @@ func TestTransform(t *testing.T) {
 	registry.Register(&dsc.TableDescriptor{Table: "products", PkColumns: []string{"id"}})
 
 	sourceDataset := &dsunit.Dataset{
-		TableDescriptor: *registry.Get("order_line"),
-		Rows: []dsunit.Row{
+		TableDescriptor: registry.Get("order_line"),
+		Rows: []*dsunit.Row{
 			{
 				Values: map[string]interface{}{
 					"seq":           1,
