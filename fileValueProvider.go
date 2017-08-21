@@ -3,19 +3,20 @@ package dsunit
 import (
 	"github.com/viant/toolbox"
 	"io/ioutil"
+	"bytes"
 )
-
-const filePath = "/data/logs/stream/tableIdCounter.data"
 
 type fileValueProvider struct{}
 
 func (p *fileValueProvider) Get(context toolbox.Context, arguments ...interface{}) (interface{}, error) {
+	filePath:= toolbox.AsString(arguments[0])
 
-	value , err := ioutil.ReadFile(filePath)
+	fileContent , err := ioutil.ReadFile(filePath)
 	if err != nil {
 		panic(err)
 	}
-	result := string(value)
+	content := bytes.TrimSpace(fileContent)
+	result := string(content)
 	return result,nil
 }
 
