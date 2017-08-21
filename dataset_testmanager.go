@@ -535,6 +535,7 @@ func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("between", newBetweenPredicateValueProvider())
 	registry.Register("within_sec", newWithinSecPredicateValueProvider())
 	registry.Register("fromQuery", newBgQueryProvider())
+	registry.Register("cat", newFileValueProvider())
 }
 
 //NewDatasetTestManager returns a new DatasetTestManager
