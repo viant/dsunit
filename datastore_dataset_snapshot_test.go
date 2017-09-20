@@ -13,7 +13,7 @@ func TestDatastoreDatasetSnapshotTaker_Take(t *testing.T) {
 
 	dbRegistry := dsc.NewManagerRegistry()
 	managerFactory := dsc.NewManagerFactory()
-	config := dsc.NewConfig("mysql", "[user]:[password]@[url]", "user:root,password:dev,url:tcp(127.0.0.1:3306)/test?parseTime=true")
+	config := dsc.NewConfig("mysql", "[user]:[password]@[url]", "user:root,password:***,url:tcp(127.0.0.1:3306)/test?parseTime=true")
 	dbManager, _ := managerFactory.Create(config)
 	dbRegistry.Register("test", dbManager)
 
