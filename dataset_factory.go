@@ -152,56 +152,62 @@ func (f datasetFactoryImpl) createDataset(reader io.Reader, datastore, table, mi
 	return nil, dsUnitError{"Unsupprted mime type: " + mimeType + " on " + url}
 }
 
+
 //CreateDatasets crate a datasets from passed in data resources
 func (f datasetFactoryImpl) CreateDatasets(dataResource *DatasetResource) (*Datasets, error) {
-
-	storage, err := storage.NewServiceForURL(dataResource.URL, dataResource.Credential)
-	if err != nil {
-		return nil, err
-	}
-	candidates, err := storage.List(dataResource.URL)
-	if err != nil {
-		return nil, err
-	}
-
-	var datasets = make([]*Dataset, 0)
-	for _, cadidate := range candidates {
-
-		_, name := path.Split(cadidate.URL())
-		if dataResource.Prefix != "" {
-			if !strings.HasPrefix(name, dataResource.Prefix) {
-				continue
-			}
-			name = string(name[len(dataResource.Prefix):])
+	var datasets= make([]*Dataset, 0)
+	if dataResource.TableRows != nil {
+		for _, rows := range dataResource.TableRows {
+			dataset := f.CreateFromMap(dataResource.Datastore, rows.Table, rows.Rows...)
+			datasets = append(datasets, dataset)
 		}
-		if dataResource.Postfix != "" {
-			if !strings.HasSuffix(name, dataResource.Postfix) {
-				continue
-			}
-			name = string(name[:len(name)-len(dataResource.Postfix)])
-		}
-		if strings.Index(name, ".") != -1 {
-			name = string(name[:strings.Index(name, ".")])
-		}
-		reader, err := storage.Download(cadidate)
+	} else if dataResource.URL != "" {
+		service, err := storage.NewServiceForURL(dataResource.URL, dataResource.Credential)
 		if err != nil {
 			return nil, err
 		}
-		ext := path.Ext(cadidate.URL())
-		if ext != "" {
-			ext = string(ext[1:])
-		}
-		data, err := f.createDataset(reader, dataResource.Datastore, name, "text/"+ext, cadidate.URL())
+		candidates, err := service.List(dataResource.URL)
 		if err != nil {
 			return nil, err
 		}
-		datasets = append(datasets, data)
+
+		for _, cadidate := range candidates {
+
+			_, name := path.Split(cadidate.URL())
+			if dataResource.Prefix != "" {
+				if !strings.HasPrefix(name, dataResource.Prefix) {
+					continue
+				}
+				name = string(name[len(dataResource.Prefix):])
+			}
+			if dataResource.Postfix != "" {
+				if !strings.HasSuffix(name, dataResource.Postfix) {
+					continue
+				}
+				name = string(name[:len(name)-len(dataResource.Postfix)])
+			}
+			if strings.Index(name, ".") != -1 {
+				name = string(name[:strings.Index(name, ".")])
+			}
+			reader, err := service.Download(cadidate)
+			if err != nil {
+				return nil, err
+			}
+			ext := path.Ext(cadidate.URL())
+			if ext != "" {
+				ext = string(ext[1:])
+			}
+			data, err := f.createDataset(reader, dataResource.Datastore, name, "text/"+ext, cadidate.URL())
+			if err != nil {
+				return nil, err
+			}
+			datasets = append(datasets, data)
+		}
 	}
 	return &Datasets{
 		Datastore: dataResource.Datastore,
 		Datasets:  datasets,
 	}, nil
-
 }
 
 func newDatasetFactory(managerRegistry dsc.ManagerRegistry) DatasetFactory {

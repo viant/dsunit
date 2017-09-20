@@ -92,7 +92,15 @@ type DatasetResource struct {
 	Credential string
 	Prefix     string //apply prefix
 	Postfix    string //apply suffix
+	TableRows  []*TableRows
 }
+
+//TableRows represent data records
+type TableRows struct {
+	Table string
+	Rows []map[string]interface{}
+}
+
 
 //DatasetFactory represents a dataset factory.
 type DatasetFactory interface {

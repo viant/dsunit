@@ -69,7 +69,7 @@ func (v *assertViolations) String() string {
 					result = result + "The following rows were missing:\n\t\t"
 					previousViolationType = violation.Type
 				}
-				result = result + fmt.Sprintf("%v :%v \n\t\t", violation.Key, violation.Expected)
+				result = result + fmt.Sprintf("[Key: %v]: %v \n\t\t", violation.Key, violation.Expected)
 
 			}
 			if violation.Type == ViolationTypeRowNotEqual {
@@ -77,7 +77,7 @@ func (v *assertViolations) String() string {
 					result = result + "\n\tThe following rows were different:\n\t\t"
 					previousViolationType = violation.Type
 				}
-				result = result + fmt.Sprintf("%v:  %v !=  actual: %v \n\t\t", violation.Key, violation.Expected, violation.Actual)
+				result = result + fmt.Sprintf("[Key: %v]:  %v !=  actual: %v \n\t\t", violation.Key, violation.Expected, violation.Actual)
 			}
 		}
 
