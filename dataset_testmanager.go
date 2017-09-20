@@ -12,6 +12,7 @@ var batchSize = 200
 
 //DatasetTestManager represetns manager that manages prepareation and verification a datastore with datasets.
 type datasetTestManager struct {
+	safeMode               bool
 	managerRegistry        dsc.ManagerRegistry
 	valueProviderRegistry  toolbox.ValueProviderRegistry
 	macroEvaluator         *toolbox.MacroEvaluator
@@ -27,7 +28,7 @@ func (tm *datasetTestManager) GetDialectable(datastore string) dsc.DatastoreDial
 }
 
 func (tm *datasetTestManager) dropDatastoreIfNeeded(adminDatastore string, targetDatastore string) error {
-	if !strings.Contains(targetDatastore, "test") {
+	if tm.safeMode && !strings.Contains(targetDatastore, "test") {
 		return dsUnitError{("Faild to recreate datastore: " + targetDatastore + " - Only test datastore can be recreated (databse name has to contain 'test' fragment)")}
 	}
 	adminManager := tm.managerRegistry.Get(adminDatastore)
@@ -213,6 +214,10 @@ func (tm *datasetTestManager) persistDatasetInBatch(connection dsc.Connection, m
 func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dataset, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (inserted, updated, deleted int, err error) {
 	var insertedTotal, updatedTotal, deletedTotal int
 	dialect := tm.GetDialectable(datastore)
+
+	dialect.DisableForeignKeyCheck(manager)
+	defer dialect.EnableForeignKeyCheck(manager)
+
 	for _, dataset := range *datasets {
 		err := tm.expandTable(dataset)
 		if err != nil {
@@ -336,6 +341,10 @@ func buildPkValues(dataset *Dataset) [][]interface{} {
 		pkValues = append(pkValues, pkRow)
 	}
 	return pkValues
+}
+
+func (tm *datasetTestManager) SafeMode(safeMode bool) {
+	tm.safeMode = safeMode
 }
 
 func (tm *datasetTestManager) expectSnapshotDatasets(manager dsc.Manager, datastore string, expected *Dataset, mapper dsc.RecordMapper) ([]AssertViolation, error) {
@@ -548,6 +557,7 @@ func NewDatasetTestManager() DatasetTestManager {
 		valueProviderRegistry:  valueRegistryProvider,
 		macroEvaluator:         macroEvaluator,
 		datasetMappingRegistry: newDatasetTransformerRegistry(),
+		safeMode:               true,
 	}
 	datatestManager.datasetFactory = newDatasetFactory(datatestManager.managerRegistry)
 	return datatestManager

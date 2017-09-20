@@ -1,8 +1,8 @@
 package dsunit
 
 import (
-	"github.com/viant/dsc"
 	"fmt"
+	"github.com/viant/dsc"
 	"strings"
 )
 
@@ -19,7 +19,7 @@ func (p *DatastoreDatasetProvider) Get(table string, columns ...string) (*Datase
 	err := p.Manager.ReadAllWithHandler(sql, nil, func(scanner dsc.Scanner) (toContinue bool, err error) {
 		row := &Row{
 			Values: make(map[string]interface{}),
-			Source: fmt.Sprintf("%v record: %v", sql, len(rows) + 1),
+			Source: fmt.Sprintf("%v record: %v", sql, len(rows)+1),
 		}
 		rows = append(rows, row)
 		err = scanner.Scan(&row.Values)
@@ -29,17 +29,16 @@ func (p *DatastoreDatasetProvider) Get(table string, columns ...string) (*Datase
 		return nil, err
 	}
 	var result = &Dataset{
-		TableDescriptor:&dsc.TableDescriptor{
-			Table:table,
+		TableDescriptor: &dsc.TableDescriptor{
+			Table: table,
 		},
-		Rows:rows,
+		Rows: rows,
 	}
 	return result, nil
 }
 
-
 func NewDatastoreDatasetProvider(manager dsc.Manager) *DatastoreDatasetProvider {
 	return &DatastoreDatasetProvider{
-		Manager:manager,
+		Manager: manager,
 	}
 }

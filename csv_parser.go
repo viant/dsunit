@@ -40,6 +40,7 @@ func parseColumnarData(reader io.Reader, separator string) ([]string, [][]interf
 			headers = append(headers, header)
 		}
 	}
+
 	for scanner.Scan() {
 		var isInDoubleQuote = false
 		var index = 0
@@ -51,7 +52,7 @@ func parseColumnarData(reader io.Reader, separator string) ([]string, [][]interf
 			aChar := line[i : i+1]
 
 			//escape " only if value is already inside "s
-			if isInDoubleQuote && aChar == "\\" && i+1 < len(line) {
+			if isInDoubleQuote && ((aChar == "\\" || aChar == "\"") && i+2 < len(line)) {
 				nextChar := line[i+1 : i+2]
 				if nextChar == "\"" {
 					i++

@@ -1,10 +1,10 @@
 package dsunit_test
 
 import (
-	"testing"
-	"github.com/viant/dsunit"
-	"github.com/viant/dsc"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/viant/dsc"
+	"github.com/viant/dsunit"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -51,7 +51,6 @@ func (r Row) HasColumn(column string) bool {
 	return false
 }
 
-
 //AsMapArray returns array of maps
 func (d *Dataset) AsMapArray() []map[string]interface{} {
 	var result = make([]map[string]interface{}, len(d.Rows))
@@ -60,7 +59,6 @@ func (d *Dataset) AsMapArray() []map[string]interface{} {
 	}
 	return result
 }
-
 
 //String prints row content.
 func (r Row) String() string {
