@@ -81,6 +81,17 @@ type DatasetTestManager interface {
 
 	//RegisteredMapping returns all registered dataset mapping
 	RegisteredMapping() []string
+
+	//SafeMode enable/disable safe mode (in safe mode only datastore with test name can be dropper and recreated)
+	SafeMode(enable bool)
+}
+
+type DatasetResource struct {
+	Datastore  string
+	URL        string
+	Credential string
+	Prefix     string //apply prefix
+	Postfix    string //apply suffix
 }
 
 //DatasetFactory represents a dataset factory.
@@ -92,8 +103,11 @@ type DatasetFactory interface {
 	//CreateFromMap crate a dataset from a map for passed in datastore and table
 	CreateFromMap(datastore string, table string, dataset ...map[string]interface{}) *Dataset
 
-	//CreateFromMap crate a dataset from a map for passed in datastore and table
+	//CreateFromURL crate a dataset from a map for passed in datastore and table
 	CreateFromURL(datastore string, table string, url string) (*Dataset, error)
+
+	//CreateDatasets crate a datasets from passed in data resources
+	CreateDatasets(data *DatasetResource) (*Datasets, error)
 }
 
 //DatasetColumn represents dataset mapping column.
