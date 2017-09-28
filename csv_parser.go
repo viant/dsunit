@@ -27,7 +27,7 @@ func convertValueIfNeeded(headers []string, headerTypes map[string]*reflect.Kind
 	}
 }
 
-func parseColumnarData(reader io.Reader, separator string) ([]string, [][]interface{}) {
+func ParseColumnarData(reader io.Reader, separator string) ([]string, [][]interface{}) {
 	var rows = make([][]interface{}, 0)
 	var headerTypes = make(map[string]*reflect.Kind)
 	scanner := bufio.NewScanner(reader)
