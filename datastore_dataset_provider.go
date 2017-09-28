@@ -3,6 +3,7 @@ package dsunit
 import (
 	"fmt"
 	"github.com/viant/dsc"
+	"github.com/viant/toolbox"
 	"strings"
 )
 
@@ -21,8 +22,17 @@ func (p *DatastoreDatasetProvider) Get(table string, columns ...string) (*Datase
 			Values: make(map[string]interface{}),
 			Source: fmt.Sprintf("%v record: %v", sql, len(rows)+1),
 		}
+
 		rows = append(rows, row)
 		err = scanner.Scan(&row.Values)
+
+		keys := toolbox.MapKeysToStringSlice(row.Values)
+
+		for _, key := range keys {
+			if row.Values[key] == nil {
+				delete(row.Values, key)
+			}
+		}
 		return true, err
 	})
 	if err != nil {
