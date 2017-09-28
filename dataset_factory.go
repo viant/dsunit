@@ -51,7 +51,8 @@ func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor,
 }
 
 func (f datasetFactoryImpl) CreateFromMap(datastore string, table string, dataset ...map[string]interface{}) *Dataset {
-	descriptor := f.getDescriptor(datastore, table)
+	manager := f.managerRegistry.Get(datastore)
+	descriptor := manager.TableDescriptorRegistry().Get(table)
 	return f.Create(descriptor, dataset...)
 }
 
@@ -104,23 +105,6 @@ func (f datasetFactoryImpl) buildDatasetFromJSON(descriptor *dsc.TableDescriptor
 	return f.buildDatasetForRows(descriptor, rows), nil
 }
 
-func (f datasetFactoryImpl) getDescriptor(datastore string, table string) *dsc.TableDescriptor {
-	manager := f.managerRegistry.Get(datastore)
-	registry := manager.TableDescriptorRegistry()
-	if !registry.Has(table) {
-		dbConfig := manager.Config()
-		dialect := dsc.GetDatastoreDialect(dbConfig.DriverName)
-		key := dialect.GetKeyName(manager, datastore, table)
-		descriptor := &dsc.TableDescriptor{
-			Table:     table,
-			PkColumns: strings.Split(key, ","),
-		}
-		registry.Register(descriptor)
-	}
-	descriptor := registry.Get(table)
-	return descriptor
-}
-
 func (f datasetFactoryImpl) CreateFromURL(datastore string, table string, url string) (*Dataset, error) {
 	reader, mimeType, err := toolbox.OpenReaderFromURL(url)
 	if err != nil {
@@ -131,18 +115,19 @@ func (f datasetFactoryImpl) CreateFromURL(datastore string, table string, url st
 }
 
 func (f datasetFactoryImpl) createDataset(reader io.Reader, datastore, table, mimeType, url string) (*Dataset, error) {
-	descriptor := f.getDescriptor(datastore, table)
+	manager := f.managerRegistry.Get(datastore)
+	descriptor := manager.TableDescriptorRegistry().Get(table)
 	if descriptor == nil {
 		descriptor = &dsc.TableDescriptor{
 			Table: table,
 		}
 	}
 	if mimeType == "text/csv" {
-		columns, rows := parseColumnarData(reader, ",")
+		columns, rows := ParseColumnarData(reader, ",")
 		return f.buildDataSetFromColumnarData(descriptor, url, columns, rows), nil
 	}
 	if mimeType == "text/tsv" {
-		columns, rows := parseColumnarData(reader, "\t")
+		columns, rows := ParseColumnarData(reader, "\t")
 		return f.buildDataSetFromColumnarData(descriptor, url, columns, rows), nil
 	}
 	if strings.Contains(mimeType, "text/json") {
@@ -152,10 +137,9 @@ func (f datasetFactoryImpl) createDataset(reader io.Reader, datastore, table, mi
 	return nil, dsUnitError{"Unsupprted mime type: " + mimeType + " on " + url}
 }
 
-
 //CreateDatasets crate a datasets from passed in data resources
 func (f datasetFactoryImpl) CreateDatasets(dataResource *DatasetResource) (*Datasets, error) {
-	var datasets= make([]*Dataset, 0)
+	var datasets = make([]*Dataset, 0)
 	if dataResource.TableRows != nil {
 		for _, rows := range dataResource.TableRows {
 			dataset := f.CreateFromMap(dataResource.Datastore, rows.Table, rows.Rows...)
