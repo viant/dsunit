@@ -98,9 +98,8 @@ type DatasetResource struct {
 //TableRows represent data records
 type TableRows struct {
 	Table string
-	Rows []map[string]interface{}
+	Rows  []map[string]interface{}
 }
-
 
 //DatasetFactory represents a dataset factory.
 type DatasetFactory interface {
@@ -131,6 +130,22 @@ type DatasetMapping struct {
 	Table        string
 	Columns      []*DatasetColumn
 	Associations []*DatasetMapping
+}
+
+func (m *DatasetMapping) Tables() []string {
+	var result = make([]string, 0)
+	addTables(&result, m)
+	return result
+}
+
+func addTables(tables *[]string, mapping *DatasetMapping) {
+	*tables = append(*tables, mapping.Table)
+	if len(mapping.Associations) == 0 {
+		return
+	}
+	for _, association := range mapping.Associations {
+		addTables(tables, association)
+	}
 }
 
 //AssertViolation represents test violation.
