@@ -215,8 +215,8 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 	var insertedTotal, updatedTotal, deletedTotal int
 	dialect := tm.GetDialectable(datastore)
 
-	dialect.DisableForeignKeyCheck(manager)
-	defer dialect.EnableForeignKeyCheck(manager)
+	dialect.DisableForeignKeyCheck(manager, connection)
+	defer dialect.EnableForeignKeyCheck(manager, connection)
 
 	for _, dataset := range *datasets {
 		err := tm.expandTable(dataset)
