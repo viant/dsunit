@@ -12,8 +12,9 @@ func getDataset(datasets map[string]*Dataset, table string, registry dsc.TableDe
 	if result, found := datasets[table]; found {
 		return result
 	}
+	descriptor := registry.Get(table)
 	result := &Dataset{
-		TableDescriptor: registry.Get(table),
+		TableDescriptor: descriptor,
 		Rows:            make([]*Row, 0),
 	}
 	datasets[table] = result
