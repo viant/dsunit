@@ -31,9 +31,11 @@ func (f datasetFactoryImpl) ensurePkValues(data map[string]interface{}, descript
 func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor, rows []*Row) *Dataset {
 	var allColumns = make(map[string]interface{})
 	for i, row := range rows {
-		f.ensurePkValues(row.Values, descriptor)
-		for key := range row.Values {
-			allColumns[key] = true
+		if len(row.Values) > 0 {
+			f.ensurePkValues(row.Values, descriptor)
+			for key := range row.Values {
+				allColumns[key] = true
+			}
 		}
 		rows[i] = row
 	}
