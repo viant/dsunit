@@ -62,11 +62,15 @@ func (f datasetFactoryImpl) Create(descriptor *dsc.TableDescriptor, dataset ...m
 	var rows = make([]*Row, len(dataset))
 	for i, values := range dataset {
 
-		f.ensurePkValues(values, descriptor)
+		if len(values) > 0 {
+			f.ensurePkValues(values, descriptor)
+		}
+
 		var row = &Row{
 			Source: fmt.Sprintf("Map, table:%v; row:%v", descriptor.Table, i),
 			Values: values,
 		}
+
 		rows[i] = row
 	}
 
@@ -97,7 +101,9 @@ func (f datasetFactoryImpl) buildDatasetFromJSON(descriptor *dsc.TableDescriptor
 	}
 	var rows = make([]*Row, len(transfer))
 	for i, values := range transfer {
-		f.ensurePkValues(values, descriptor)
+		if len(values) >0 {
+			f.ensurePkValues(values, descriptor)
+		}
 		var row = &Row{
 			Source: fmt.Sprintf("URI:%v, table:%v, line:%v", url, descriptor.Table, i),
 			Values: values,
