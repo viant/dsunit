@@ -98,6 +98,11 @@ type datasetDmlProvider struct {
 
 func (p *datasetDmlProvider) Key(instance interface{}) []interface{} {
 	result := readValues(instance, p.dmlBuilder.TableDescriptor.PkColumns)
+	for i, value := range result {
+		if toolbox.IsFloat(value) {
+			result[i] = toolbox.AsInt(value)
+		}
+	}
 	return result
 }
 
