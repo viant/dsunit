@@ -234,6 +234,8 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 			mapping := tm.datasetMappingRegistry.get(dataset.Table)
 			registry := manager.TableDescriptorRegistry()
 			mappedDatasets := transformer.Transform(datastore, dataset, mapping, registry)
+
+
 			inserted, updated, deleted, err = tm.prepareDatasets(datastore, &mappedDatasets.Datasets, context, manager, connection)
 			if err != nil {
 				return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to persist %v", datastore, err)
@@ -243,7 +245,7 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 			continue
 		}
 
-		if dataset.Rows == nil || len(dataset.Rows) == 0 || len(dataset.Rows[0].Values) == 0 {
+		if dataset.Rows == nil || len(dataset.Rows) == 0 || len(dataset.Rows[0].Values) == 0  {
 			result, err := manager.ExecuteOnConnection(connection, "DELETE FROM "+dataset.Table, nil)
 			if err != nil {
 				return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to delete table %v due to %v", datastore, dataset.Table, err)
@@ -539,6 +541,7 @@ func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("nil", toolbox.NewNilValueProvider())
 	registry.Register("env", toolbox.NewEnvValueProvider())
 	registry.Register("cast", toolbox.NewCastedValueProvider())
+	registry.Register("timediff", toolbox.NewTimeDiffProvider())
 	registry.Register("current_timestamp", toolbox.NewCurrentTimeProvider())
 	registry.Register("current_date", toolbox.NewCurrentDateProvider())
 	registry.Register("between", newBetweenPredicateValueProvider())
