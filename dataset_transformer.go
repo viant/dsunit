@@ -45,12 +45,24 @@ func (dt *DatasetTransformer) mapRowToDataset(row *Row, mapping *DatasetMapping)
 
 func (dt *DatasetTransformer) isRowDuplicated(dataset *Dataset, mapping *DatasetMapping, row *Row, tablesPk map[string]bool) bool {
 	if !dataset.Autoincrement {
-		pkValue := "__ " + mapping.Table + ":"
+		var required = ""
+		for _, column := range mapping.Columns {
+			if column.Required {
+				required += column.Name
+			}
+		}
+		pkValue := "__ " + mapping.Table + required + ":"
+		var hasPk = false;
 		for _, pkColumn := range dataset.PkColumns {
 			if value, ok := row.Values[pkColumn]; ok {
 				pkValue += toolbox.AsString(value) + ":"
+				hasPk = true
 			}
 		}
+		if ! hasPk {
+			return false
+		}
+
 		if _, found := tablesPk[pkValue]; found {
 			return true
 		}
@@ -64,12 +76,13 @@ func (dt *DatasetTransformer) mapRowToDatasets(row *Row, mapping *DatasetMapping
 	if values != nil {
 		dataset := getDataset(datasets, mapping.Table, registry, tables)
 		mappedRow := &Row{Source: row.Source, Values: values}
+
 		if dt.isRowDuplicated(dataset, mapping, mappedRow, tablesPk) {
 			return
 		}
 		dataset.Rows = append(dataset.Rows, mappedRow)
 	}
-	if mapping.Associations != nil {
+	if len(mapping.Associations) > 0 {
 		for _, association := range mapping.Associations {
 			dt.mapRowToDatasets(row, association, datasets, registry, tables, tablesPk)
 		}
@@ -81,6 +94,7 @@ func (dt *DatasetTransformer) Transform(datastore string, sourceDataset *Dataset
 	var datasets = make(map[string]*Dataset)
 	var tables = make([]string, 0)
 	var tablesPk = make(map[string]bool)
+
 	for _, row := range sourceDataset.Rows {
 		dt.mapRowToDatasets(row, mapping, datasets, registry, &tables, tablesPk)
 	}
