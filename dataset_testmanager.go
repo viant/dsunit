@@ -548,6 +548,8 @@ func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("within_sec", newWithinSecPredicateValueProvider())
 	registry.Register("fromQuery", newBgQueryProvider())
 	registry.Register("cat", newFileValueProvider())
+	registry.Register("weekday", toolbox.NewWeekdayProvider())
+
 }
 
 //NewDatasetTestManager returns a new DatasetTestManager
