@@ -158,13 +158,16 @@ func (f datasetFactoryImpl) CreateDatasets(dataResource *DatasetResource) (*Data
 		if err != nil {
 			return nil, err
 		}
+		defer service.Close()
 		candidates, err := service.List(dataResource.URL)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, cadidate := range candidates {
-
+			if cadidate.IsFolder() {
+				continue
+			}
 			_, name := path.Split(cadidate.URL())
 			if dataResource.Prefix != "" {
 				if !strings.HasPrefix(name, dataResource.Prefix) {
