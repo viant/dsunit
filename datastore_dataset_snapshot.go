@@ -17,7 +17,7 @@ type DatastoreDatasetSnapshotManager struct {
 func (t *DatastoreDatasetSnapshotManager) Take(datastore string, targetDirectory string) error {
 	manager := t.registry.Get(datastore)
 	if manager == nil {
-		return fmt.Errorf("Failed to lookup datastor manager: %v", datastore)
+		return fmt.Errorf("failed to lookup datastor manager: %v", datastore)
 	}
 	provider := NewDatastoreDatasetProvider(manager)
 	dbConfig := manager.Config()

@@ -97,7 +97,7 @@ func (f datasetFactoryImpl) buildDatasetFromJSON(descriptor *dsc.TableDescriptor
 	var transfer = make([]map[string]interface{}, 0)
 	err := json.NewDecoder(reader).Decode(&transfer)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to build dataset from %v due to: %v", url, err)
+		return nil, fmt.Errorf("failed to build dataset from %v due to: %v", url, err)
 	}
 	var rows = make([]*Row, len(transfer))
 	for i, values := range transfer {

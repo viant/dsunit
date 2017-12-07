@@ -43,7 +43,7 @@ func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, man
 			dataStoreConfig.Descriptors[i].SchemaUrl = s.expandTestSchemaURLIfNeeded(tableDescriptor.SchemaUrl)
 			table, err := toolbox.ExpandValue(macroEvaluator, tableDescriptor.Table)
 			if err != nil {
-				panic(fmt.Sprintf("Failed to expand macro for table name: %v", tableDescriptor.Table))
+				panic(fmt.Sprintf("failed to expand macro for table name: %v", tableDescriptor.Table))
 			}
 			dataStoreConfig.Descriptors[i].Table = table
 			manager.TableDescriptorRegistry().Register(dataStoreConfig.Descriptors[i])
@@ -74,13 +74,13 @@ func (s *serviceLocal) loadConfigIfNeeded(datastoreConfig *DatastoreConfig) erro
 		datastoreConfig.ConfigURL = s.expandTestSchemaURLIfNeeded(datastoreConfig.ConfigURL)
 		reader, _, err := toolbox.OpenReaderFromURL(datastoreConfig.ConfigURL)
 		if err != nil {
-			return fmt.Errorf("Failed to InitConfig - unable to open url %v due to %v", datastoreConfig.ConfigURL, err)
+			return fmt.Errorf("failed to InitConfig - unable to open url %v due to %v", datastoreConfig.ConfigURL, err)
 
 		}
 		defer reader.Close()
 		err = json.NewDecoder(reader).Decode(&datastoreConfig.Config)
 		if err != nil {
-			return fmt.Errorf("Failed to InitConfig - unable to decode url %v due to %v ", datastoreConfig.ConfigURL, err)
+			return fmt.Errorf("failed to InitConfig - unable to decode url %v due to %v ", datastoreConfig.ConfigURL, err)
 		}
 	}
 	datastoreConfig.Config.Init()
@@ -90,11 +90,11 @@ func (s *serviceLocal) loadConfigIfNeeded(datastoreConfig *DatastoreConfig) erro
 func (s *serviceLocal) expandDatastore(datastoreConfig *DatastoreConfig) error {
 	adminDbName, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.AdminDbName)
 	if err != nil {
-		return fmt.Errorf("Failed to InitConfig - unable to expand macro for adminDbName %v, due to %v", datastoreConfig.AdminDbName, err)
+		return fmt.Errorf("failed to InitConfig - unable to expand macro for adminDbName %v, due to %v", datastoreConfig.AdminDbName, err)
 	}
 	targetDatastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.Datastore)
 	if err != nil {
-		return fmt.Errorf("Failed to InitConfig - unable to expand macro for targetDatastore %v, due to %v", datastoreConfig.Datastore, err)
+		return fmt.Errorf("failed to InitConfig - unable to expand macro for targetDatastore %v, due to %v", datastoreConfig.Datastore, err)
 	}
 	datastoreConfig.AdminDbName = adminDbName
 	datastoreConfig.Datastore = targetDatastore
@@ -117,7 +117,7 @@ func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) 
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Failed to InitConfig - unable to expand config %v due to %v ", datastoreConfig.Config, err)
+		return "", fmt.Errorf("failed to InitConfig - unable to expand config %v due to %v ", datastoreConfig.Config, err)
 	}
 	if datastoreConfig.Config.DriverName == "" {
 		return "", fmt.Errorf("Invalid configuration missing driver %v %v", datastoreConfig.ConfigURL, datastoreConfig.Config)
@@ -151,13 +151,13 @@ func (s *serviceLocal) Init(request *InitDatastoreRequest) *Response {
 		if dataStoreConfig.ClearDatastore {
 			err := s.testManager.ClearDatastore(dataStoreConfig.AdminDbName, dataStoreConfig.Datastore)
 			if err != nil {
-				return newErrorResponse(dsUnitError{fmt.Sprintf("Failed to clear datastores %v, due to %v", dataStoreConfig.Datastore, err)})
+				return newErrorResponse(dsUnitError{fmt.Sprintf("failed to clear datastores %v, due to %v", dataStoreConfig.Datastore, err)})
 			}
 			message = message + fmt.Sprintf("Clear datastore  %v\n", dataStoreConfig.Datastore)
 		}
 	}
 	if message == "" {
-		return newErrorResponse(dsUnitError{fmt.Sprintf("Failed to init datastores, invalid request:%v", request)})
+		return newErrorResponse(dsUnitError{fmt.Sprintf("failed to init datastores, invalid request:%v", request)})
 	}
 	return newOkResponse(message)
 }
@@ -171,7 +171,7 @@ func (s *serviceLocal) InitFromURL(url string) *Response {
 	request := &InitDatastoreRequest{}
 	err = json.NewDecoder(reader).Decode(&request)
 	if err != nil {
-		return newErrorResponse(dsUnitError{"Failed to init datastores, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
+		return newErrorResponse(dsUnitError{"failed to init datastores, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
 	}
 	return s.service.Init(request)
 }
@@ -187,14 +187,14 @@ func (s *serviceLocal) ExecuteScripts(request *ExecuteScriptRequest) *Response {
 				_, err = s.testManager.ExecuteFromURL(script.Datastore, s.expandTestSchemaURLIfNeeded(script.Url))
 			}
 			if err != nil {
-				return newErrorResponse(dsUnitError{"Failed to execut script on " + script.Datastore + " due to:\n\t" + err.Error()})
+				return newErrorResponse(dsUnitError{"failed to execut script on " + script.Datastore + " due to:\n\t" + err.Error()})
 			}
 			message = message + "Executed script " + script.Url + " on " + script.Datastore + "\n"
 		}
 
 	}
 	if message == "" {
-		return newErrorResponse(dsUnitError{fmt.Sprintf("Failed to execute scripts, invalid request:%v", request)})
+		return newErrorResponse(dsUnitError{fmt.Sprintf("failed to execute scripts, invalid request:%v", request)})
 	}
 	return newOkResponse(message)
 }
@@ -208,7 +208,7 @@ func (s *serviceLocal) ExecuteScriptsFromURL(url string) *Response {
 	request := &ExecuteScriptRequest{}
 	err = json.NewDecoder(reader).Decode(request)
 	if err != nil {
-		return newErrorResponse(dsUnitError{"Failed to execute scripts, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
+		return newErrorResponse(dsUnitError{"failed to execute scripts, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
 	}
 	for i, script := range request.Scripts {
 		if len(script.Url) > 0 && len(script.Body) == 0 {
@@ -219,7 +219,7 @@ func (s *serviceLocal) ExecuteScriptsFromURL(url string) *Response {
 				file := url[len(toolbox.FileSchema):]
 				bytes, err := ioutil.ReadFile(file)
 				if err != nil {
-					return newErrorResponse(dsUnitError{"Failed to execute script, unable to read file:" + file + " " + err.Error()})
+					return newErrorResponse(dsUnitError{"failed to execute script, unable to read file:" + file + " " + err.Error()})
 				}
 
 				request.Scripts[i].Body = string(bytes)
@@ -237,14 +237,14 @@ func (s *serviceLocal) PrepareDatastore(request *PrepareDatastoreRequest) *Respo
 	for _, datasets := range request.Prepare {
 		datastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datasets.Datastore)
 		if err != nil {
-			return newErrorResponse(dsUnitError{"Failed to prepare datastore due to:\n\t" + err.Error()})
+			return newErrorResponse(dsUnitError{"failed to prepare datastore due to:\n\t" + err.Error()})
 		}
 		datasets.Datastore = datastore
 		message += fmt.Sprintf("Prepared datastore %v with datasets:", datasets.Datastore)
 		run = true
 		inserted, updated, deleted, err := s.testManager.PrepareDatastore(&datasets)
 		if err != nil {
-			return newErrorResponse(dsUnitError{"Failed to prepare datastore due to:\n\t" + err.Error()})
+			return newErrorResponse(dsUnitError{"failed to prepare datastore due to:\n\t" + err.Error()})
 		}
 		totalInserted += inserted
 		totalUpdated += updated
@@ -257,7 +257,7 @@ func (s *serviceLocal) PrepareDatastore(request *PrepareDatastoreRequest) *Respo
 	if run {
 		return newOkResponse(fmt.Sprintf("%vinserted: %v, updated: %v, deleted: %v\n", message, totalInserted, totalUpdated, totalDeleted))
 	}
-	return newErrorResponse(dsUnitError{fmt.Sprintf("Failed to prepare datastore, invalid request:%v", request)})
+	return newErrorResponse(dsUnitError{fmt.Sprintf("failed to prepare datastore, invalid request:%v", request)})
 }
 
 func (s *serviceLocal) PrepareDatastoreFromURL(url string) *Response {
@@ -269,7 +269,7 @@ func (s *serviceLocal) PrepareDatastoreFromURL(url string) *Response {
 	request := &PrepareDatastoreRequest{}
 	err = json.NewDecoder(reader).Decode(&request)
 	if err != nil {
-		return newErrorResponse(dsUnitError{"Failed to prepare datastore, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
+		return newErrorResponse(dsUnitError{"failed to prepare datastore, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
 	}
 	return s.service.PrepareDatastore(request)
 }
@@ -296,7 +296,7 @@ func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResp
 	for _, datasets := range request.Expect {
 		expandedDatastore, er := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datasets.Datastore)
 		if er != nil {
-			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"Failed to verify datastore with datasets: " + datasets.Datastore + ", " + er.Error()})}
+			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"failed to verify datastore with datasets: " + datasets.Datastore + ", " + er.Error()})}
 		}
 		datasets.Datastore = expandedDatastore
 
@@ -304,7 +304,7 @@ func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResp
 		run = true
 		violations, err = s.testManager.ExpectDatasets(request.CheckPolicy, &datasets)
 		if err != nil {
-			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"Failed to verify expected datasets due to:\n\t" + err.Error()})}
+			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"failed to verify expected datasets due to:\n\t" + err.Error()})}
 		}
 		for _, dataset := range datasets.Datasets {
 			message += fmt.Sprintf("%v(%v), ", dataset.Table, len(dataset.Rows))
@@ -322,7 +322,7 @@ func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResp
 	if run {
 		return &ExpectResponse{Response: newOkResponse(fmt.Sprintf("%vPassed", message))}
 	}
-	return &ExpectResponse{Response: newErrorResponse(dsUnitError{fmt.Sprintf("Failed to verify expected datasets, invalid request:%v", request)})}
+	return &ExpectResponse{Response: newErrorResponse(dsUnitError{fmt.Sprintf("failed to verify expected datasets, invalid request:%v", request)})}
 }
 
 func (s *serviceLocal) ExpectDatasetsFromURL(url string) *ExpectResponse {
@@ -334,7 +334,7 @@ func (s *serviceLocal) ExpectDatasetsFromURL(url string) *ExpectResponse {
 	request := &ExpectDatasetRequest{}
 	err = json.NewDecoder(reader).Decode(&request)
 	if err != nil {
-		return &ExpectResponse{Response: newErrorResponse(dsUnitError{"Failed to verify expected datasets, unable to decode payload from " + url + " due to:\n\t" + err.Error()})}
+		return &ExpectResponse{Response: newErrorResponse(dsUnitError{"failed to verify expected datasets, unable to decode payload from " + url + " due to:\n\t" + err.Error()})}
 	}
 	return s.service.ExpectDatasets(request)
 }
@@ -376,7 +376,7 @@ func (s *serviceLocal) getTableForURL(datastore, url string) string {
 			return table
 		}
 	}
-	panic("Failed to match table in url")
+	panic("failed to match table in url")
 }
 
 func (s *serviceLocal) buildDatasets(datastore string, fragment string, baseDirectory string, method string) (*Datasets, error) {

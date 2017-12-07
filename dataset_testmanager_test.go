@@ -21,11 +21,11 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 	var err error
 	//gbqServiceAccountId, err := toolbox.ExpandValue(datasetTestManager.MacroEvaluator(), "<ds:env[\"GOOGLE_SERVICE_ACCOUNT_ID\"]>")
 	//if err != nil {
-	//	t.Fatalf("Failed to Init %v", err)
+	//	t.Fatalf("failed to Init %v", err)
 	//}
 	//expandedDatasetId, err := toolbox.ExpandValue(datasetTestManager.MacroEvaluator(), macroDatasetId)
 	//if err != nil {
-	//	t.Fatalf("Failed to Init %v", err)
+	//	t.Fatalf("failed to Init %v", err)
 	//}
 	//gbqDatasetId = expandedDatasetId
 
@@ -69,12 +69,12 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 	//}
 	err = datasetTestManager.ClearDatastore("mysql", "bar_test")
 	if err != nil {
-		t.Fatalf("Failed to RecreateDatastore %v", err)
+		t.Fatalf("failed to RecreateDatastore %v", err)
 	}
 
 	//err = datasetTestManager.ClearDatastore(gbqDatasetId, gbqDatasetId)
 	//if err != nil {
-	//	t.Fatalf("Failed to RecreateDatastore %v", err)
+	//	t.Fatalf("failed to RecreateDatastore %v", err)
 	//}
 
 	_, err = datasetTestManager.Execute(&dsunit.Script{
@@ -87,7 +87,7 @@ func Init(t *testing.T) dsunit.DatasetTestManager {
 	})
 
 	if err != nil {
-		t.Fatalf("Failed to init databsae %v", err)
+		t.Fatalf("failed to init databsae %v", err)
 	}
 	datasetTestManager.RegisterTable("bar_test", &dsc.TableDescriptor{Table: "users", Autoincrement: true, PkColumns: []string{"id"}})
 
@@ -136,7 +136,7 @@ func TestPopulateDatastore(t *testing.T) {
 			},
 		})
 		if err != nil {
-			t.Fatalf("Failed to populate db: %v\n", err)
+			t.Fatalf("failed to populate db: %v\n", err)
 		}
 		assert.Equal(t, 2, inserted, "Should have 2 rows added")
 		assert.Equal(t, 1, updated, "Should have 1 row updated")
@@ -185,7 +185,7 @@ func TestExpectsDatastoreBaisc(t *testing.T) {
 			},
 		})
 		if err != nil {
-			t.Fatalf("Failed to test due to error:\n\t%v", err)
+			t.Fatalf("failed to test due to error:\n\t%v", err)
 		}
 
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations))
@@ -228,7 +228,7 @@ func TestExpectsDatastoreBaisc(t *testing.T) {
 			},
 		})
 		if err != nil {
-			t.Fatalf("Failed to test due to error:\n\t%v", err)
+			t.Fatalf("failed to test due to error:\n\t%v", err)
 		}
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations.String()))
 	}
@@ -302,7 +302,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 			},
 		})
 		if err != nil {
-			t.Fatalf("Failed to test sequence macro due to error:\n\t%v", err)
+			t.Fatalf("failed to test sequence macro due to error:\n\t%v", err)
 		}
 
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations.String()))
@@ -346,7 +346,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 			},
 		})
 		if err != nil {
-			t.Fatalf("Failed to test sequence macro due to error:\n\t%v", err)
+			t.Fatalf("failed to test sequence macro due to error:\n\t%v", err)
 		}
 		assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations))
 	}
@@ -427,7 +427,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 	//		},
 	//	})
 	//	if err != nil {
-	//		t.Fatalf("Failed to test sequence macro due to error:\n\t%v", err)
+	//		t.Fatalf("failed to test sequence macro due to error:\n\t%v", err)
 	//	}
 	//
 	//	assert.False(t, violations.HasViolations(), fmt.Sprintf("V:%v\n", violations.String()))

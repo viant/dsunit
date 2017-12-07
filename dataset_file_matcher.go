@@ -26,7 +26,7 @@ func getFiles(candidates []string) ([]string, error) {
 		}
 	}
 	if len(urls) == 0 {
-		return nil, dsUnitError{fmt.Sprintf("Failed to locate files: candidates %v", candidates)}
+		return nil, dsUnitError{fmt.Sprintf("failed to locate files: candidates %v", candidates)}
 	}
 	return urls, nil
 }

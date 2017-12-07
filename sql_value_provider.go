@@ -72,7 +72,7 @@ func (p *queryValueProvider) Get(context toolbox.Context, arguments ...interface
 	var row = make([]interface{}, 0)
 	success, err := manager.ReadSingle(&row, sql, nil, nil)
 	if err != nil {
-		return nil, dsUnitError{"Failed to evalue macro with sql: " + sql + " due to:\n\t" + err.Error()}
+		return nil, dsUnitError{"failed to evalue macro with sql: " + sql + " due to:\n\t" + err.Error()}
 	}
 	if !success {
 		return nil, nil

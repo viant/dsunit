@@ -183,7 +183,6 @@ func (tm *datasetTestManager) persistDataset(connection dsc.Connection, manager 
 		if key == nextKey {
 			continue
 		}
-
 		added, changed, err := manager.PersistAllOnConnection(connection, &rows, dataset.Table, getSQLProvider(dataset, row))
 		if err != nil {
 			return 0, 0, err
@@ -221,12 +220,12 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 	for _, dataset := range *datasets {
 		err := tm.expandTable(dataset)
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to expand macro in the table %v due to %v", datastore, dataset.Table, err)
+			return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to expand macro in the table %v due to %v", datastore, dataset.Table, err)
 		}
 		updateDatasetDescriptorIfNeeded(manager, dataset)
 		err = tm.expandMacros(context, datastore, manager, dataset)
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to expand macros %v", datastore, err)
+			return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to expand macros %v", datastore, err)
 		}
 
 		if tm.datasetMappingRegistry.has(dataset.Table) {
@@ -234,33 +233,32 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 			mapping := tm.datasetMappingRegistry.get(dataset.Table)
 			registry := manager.TableDescriptorRegistry()
 			mappedDatasets := transformer.Transform(datastore, dataset, mapping, registry)
-
-
 			inserted, updated, deleted, err = tm.prepareDatasets(datastore, &mappedDatasets.Datasets, context, manager, connection)
 			if err != nil {
-				return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to persist %v", datastore, err)
+				return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to persist %v", datastore, err)
 			}
 			insertedTotal += inserted
 			updatedTotal += updated
 			continue
 		}
 
+
 		if dataset.Rows == nil || len(dataset.Rows) == 0 || len(dataset.Rows[0].Values) == 0  {
 			result, err := manager.ExecuteOnConnection(connection, "DELETE FROM "+dataset.Table, nil)
 			if err != nil {
-				return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to delete table %v due to %v", datastore, dataset.Table, err)
+				return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to delete table %v due to %v", datastore, dataset.Table, err)
 			}
 			affected, _ := result.RowsAffected()
 			deletedTotal += int(affected)
 		}
-
 		if dialect.CanPersistBatch() {
 			inserted, updated, err = tm.persistDatasetInBatch(connection, manager, dataset)
 		} else {
 			inserted, updated, err = tm.persistDataset(connection, manager, dataset)
+
 		}
 		if err != nil {
-			return 0, 0, 0, fmt.Errorf("Failed to prepare datastore %v - unable to persist %v", datastore, err)
+			return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to persist %v", datastore, err)
 		}
 		insertedTotal += inserted
 		updatedTotal += updated
@@ -283,18 +281,18 @@ func (tm *datasetTestManager) PrepareDatastore(datasets *Datasets) (inserted, up
 
 	err = connection.Begin()
 	if err != nil {
-		return 0, 0, 0, fmt.Errorf("Failed to start transaction on %v due to %v", manager.Config().Descriptor, err)
+		return 0, 0, 0, fmt.Errorf("failed to start transaction on %v due to %v", manager.Config().Descriptor, err)
 	}
 	inserted, updated, deleted, err = tm.prepareDatasets(datasets.Datastore, &datasets.Datasets, context, manager, connection)
 	if err == nil {
 		commitErr := connection.Commit()
 		if commitErr != nil {
-			return 0, 0, 0, fmt.Errorf("Failed to commit on %v due to %v", manager.Config().Descriptor, commitErr)
+			return 0, 0, 0, fmt.Errorf("failed to commit on %v due to %v", manager.Config().Descriptor, commitErr)
 		}
 	} else {
 		rollbackErr := connection.Rollback()
 		if rollbackErr != nil {
-			return 0, 0, 0, fmt.Errorf("Failed to rollback on %v due to %v, %v", manager.Config().Descriptor, err, rollbackErr)
+			return 0, 0, 0, fmt.Errorf("failed to rollback on %v due to %v, %v", manager.Config().Descriptor, err, rollbackErr)
 		}
 	}
 	return inserted, updated, deleted, err
@@ -317,7 +315,6 @@ func (tm *datasetTestManager) expectFullDatasets(manager dsc.Manager, datastore 
 	if config.Has("queryHint") {
 		queryHint = config.Get("queryHint")
 	}
-
 	sqlBuilder := dsc.NewQueryBuilder(expected.TableDescriptor, queryHint)
 	sqlWithArguments := sqlBuilder.BuildQueryAll(expected.Columns)
 	var rows = make([]*Row, 0)
@@ -379,7 +376,7 @@ func (tm *datasetTestManager) expandMacro(context toolbox.Context, row *Row, col
 		if tm.macroEvaluator.HasMacro(textValue) {
 			expanded, err := tm.macroEvaluator.Expand(context, textValue)
 			if err != nil {
-				return dsUnitError{"Failed to expandMacro on " + dataset.Table + " " + (*row).String() + " due to:\n\t" + err.Error()}
+				return dsUnitError{"failed to expandMacro on " + dataset.Table + " " + (*row).String() + " due to:\n\t" + err.Error()}
 			}
 			(*row).SetValue(column, expanded)
 		}
@@ -444,6 +441,9 @@ func updateDatasetDescriptorIfNeeded(manager dsc.Manager, dataset *Dataset) {
 		dataset.PkColumns = tableDescriptor.PkColumns
 		dataset.FromQuery = tableDescriptor.FromQuery
 	}
+	if len(dataset.Columns) == 0 {
+		dataset.Columns = buildColumnsForDataset(dataset)
+	}
 }
 
 //ExpectDatasets verifies that passed in expected dataset data values are present in the datastore, this methods reports any violations.
@@ -453,13 +453,29 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 	var result = make([]AssertViolation, 0)
 
 	for i := range datasets.Datasets {
+
 		err := tm.expandTable(datasets.Datasets[i])
 		if err != nil {
 			return nil, err
 		}
 		err = tm.expandFromQuery(context, datasets.Datasets[i])
 		if err != nil {
-			return nil, fmt.Errorf("Failed to prepare datastore %v - unable to expand macro in the fromQuery %v due to %v", datasets.Datastore, datasets.Datasets[i].Table, err)
+			return nil, fmt.Errorf("failed to prepare datastore %v - unable to expand macro in the fromQuery %v due to %v", datasets.Datastore, datasets.Datasets[i].Table, err)
+		}
+		var dataset = datasets.Datasets[i]
+		if tm.datasetMappingRegistry.has(dataset.Table) {
+			transformer := NewDatasetTransformer()
+			mapping := tm.datasetMappingRegistry.get(dataset.Table)
+			registry := manager.TableDescriptorRegistry()
+			mappedDatasets := transformer.Transform(datasets.Datastore, dataset, mapping, registry)
+			violation, err := tm.ExpectDatasets(checkPolicy, mappedDatasets)
+			if err != nil {
+				return nil, err
+			}
+			if violation.HasViolations() {
+				result = append(result, violation.Violations()...)
+			}
+			continue
 		}
 		updateDatasetDescriptorIfNeeded(manager, datasets.Datasets[i])
 		mapper := newDatasetRowMapper(datasets.Datasets[i].Columns, nil)
@@ -467,23 +483,24 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 		if err != nil {
 			return nil, err
 		}
-		switch checkPolicy {
+
+				switch checkPolicy {
 		case FullTableDatasetCheckPolicy:
-			voliation, err := tm.expectFullDatasets(manager, datasets.Datastore, datasets.Datasets[i], mapper)
+			violation, err := tm.expectFullDatasets(manager, datasets.Datastore, datasets.Datasets[i], mapper)
 			if err != nil {
 				return nil, err
 			}
-			result = append(result, voliation...)
+			result = append(result, violation...)
 			continue
 		case SnapshotDatasetCheckPolicy:
-			voliation, err := tm.expectSnapshotDatasets(manager, datasets.Datastore, datasets.Datasets[i], mapper)
+			violation, err := tm.expectSnapshotDatasets(manager, datasets.Datastore, datasets.Datasets[i], mapper)
 			if err != nil {
 				return nil, err
 			}
-			result = append(result, voliation...)
+			result = append(result, violation...)
 			continue
 		default:
-			panic(fmt.Sprintf("Unsupported policy: %v", checkPolicy))
+			panic(fmt.Sprintf("unsupported policy: %v", checkPolicy))
 		}
 	}
 
