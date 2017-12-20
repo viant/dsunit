@@ -39,6 +39,7 @@ func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor,
 		}
 		rows[i] = row
 	}
+
 	columns := toolbox.MapKeysToStringSlice(allColumns)
 	return &Dataset{
 		TableDescriptor: &dsc.TableDescriptor{
@@ -188,6 +189,7 @@ func (f datasetFactoryImpl) CreateDatasets(dataResource *DatasetResource) (*Data
 			if err != nil {
 				return nil, err
 			}
+			defer reader.Close()
 			ext := path.Ext(cadidate.URL())
 			if ext != "" {
 				ext = string(ext[1:])
