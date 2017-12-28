@@ -29,6 +29,7 @@ func (f datasetFactoryImpl) ensurePkValues(data map[string]interface{}, descript
 }
 
 func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor, rows []*Row) *Dataset {
+
 	var allColumns = make(map[string]interface{})
 	for i, row := range rows {
 		if len(row.Values) > 0 {
@@ -51,6 +52,9 @@ func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor,
 		},
 		Rows: rows,
 	}
+
+
+
 }
 
 func (f datasetFactoryImpl) CreateFromMap(datastore string, table string, dataset ...map[string]interface{}) *Dataset {
@@ -125,6 +129,9 @@ func (f datasetFactoryImpl) CreateFromURL(datastore string, table string, url st
 
 func (f datasetFactoryImpl) createDataset(reader io.Reader, datastore, table, mimeType, url string) (*Dataset, error) {
 	manager := f.managerRegistry.Get(datastore)
+	if manager == nil {
+		return nil, fmt.Errorf("failed to lookup manager for %v", datastore)
+	}
 	descriptor := manager.TableDescriptorRegistry().Get(table)
 	if descriptor == nil {
 		descriptor = &dsc.TableDescriptor{
@@ -143,7 +150,7 @@ func (f datasetFactoryImpl) createDataset(reader io.Reader, datastore, table, mi
 		return f.buildDatasetFromJSON(descriptor, url, reader)
 	}
 
-	return nil, dsUnitError{"Unsupprted mime type: " + mimeType + " on " + url}
+	return nil, dsUnitError{"unsupprted mime type: " + mimeType + " on " + url}
 }
 
 //CreateDatasets crate a datasets from passed in data resources

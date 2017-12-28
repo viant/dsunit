@@ -126,13 +126,25 @@ func (t DatasetTester) assertRowCount(datastore string, expected, actual *Datase
 
 func (t DatasetTester) assertRows(datastore string, expected, actual *Dataset) []AssertViolation {
 	var result = make([]AssertViolation, 0)
-	actualRows := indexDataset(*actual)
-	expectedRows := indexDataset(*expected)
+
+
+	var timeColumns =make(map[string]bool)
+
+	actualRows := indexDataset(actual, timeColumns)
+	expectedRows := indexDataset(expected, timeColumns)
 	expectedKeys := toolbox.SortStrings(toolbox.MapKeysToStringSlice(expectedRows))
 	for _, key := range expectedKeys {
+
+
+
 		expectedRow := expectedRows[key]
 		actualRow, ok := actualRows[key]
+
+
+
 		if !ok {
+
+
 			result = append(result, AssertViolation{
 				Datastore: datastore,
 				Type:      ViolationTypeMissingActualRow,
@@ -404,14 +416,29 @@ func isEqual(expected, actual interface{}, dateLayout string) bool {
 
 }
 
-func indexDataset(dataset Dataset) map[string]*Row {
+func indexDataset(dataset *Dataset, timeColumns map[string]bool) map[string]*Row {
 	var result = make(map[string]*Row)
 	toolbox.IndexSlice(dataset.Rows, result, func(row *Row) string {
 		var pkValues = make([]string, 0)
 		toolbox.TransformSlice(dataset.PkColumns, &pkValues, func(pkColumn string) string {
+			if _, ok:= timeColumns[pkColumn];ok {
+				value := row.ValueAsString(pkColumn)
+				timeValue, err := toolbox.ToTime(value, toolbox.DefaultDateLayout)
+				if err == nil {
+					return timeValue.String()
+				}
+			}
 			return row.ValueAsString(pkColumn)
 		})
 		return strings.Join(pkValues, ",")
 	})
+
+	if len(dataset.Rows) > 0 {
+		for k, v := range dataset.Rows[0].Values {
+			if toolbox.IsTime(v) {
+				timeColumns[k] = true
+			}
+		}
+	}
 	return result
 }

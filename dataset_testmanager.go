@@ -244,7 +244,10 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 
 
 		if dataset.Rows == nil || len(dataset.Rows) == 0 || len(dataset.Rows[0].Values) == 0  {
-			result, err := manager.ExecuteOnConnection(connection, "DELETE FROM "+dataset.Table, nil)
+			if len(dataset.Rows) > 0 {
+				dataset.Rows = dataset.Rows[1:]
+			}
+			result, err := manager.Execute("DELETE FROM "+dataset.Table)
 			if err != nil {
 				return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to delete table %v due to %v", datastore, dataset.Table, err)
 			}

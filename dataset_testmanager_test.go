@@ -383,7 +383,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 	//
 	//	inserted, updated, _, err := datasetTestManager.PrepareDatastore(&dsunit.Datasets{
 	//		Datastore: gbqDatasetId,
-	//		Datasets: []*dsunit.Dataset{
+	//		Datasets: []*dsunit.Table{
 	//			initDataset,
 	//		},
 	//	})
@@ -422,7 +422,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 	//
 	//	violations, err := datasetTestManager.ExpectDatasets(dsunit.FullTableDatasetCheckPolicy, &dsunit.Datasets{
 	//		Datastore: gbqDatasetId,
-	//		Datasets: []*dsunit.Dataset{
+	//		Datasets: []*dsunit.Table{
 	//			expectedDataset,
 	//		},
 	//	})
