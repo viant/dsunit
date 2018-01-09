@@ -29,7 +29,7 @@ func (tm *datasetTestManager) GetDialectable(datastore string) dsc.DatastoreDial
 
 func (tm *datasetTestManager) dropDatastoreIfNeeded(adminDatastore string, targetDatastore string) error {
 	if tm.safeMode && !strings.Contains(targetDatastore, "test") {
-		return dsUnitError{("Faild to recreate datastore: " + targetDatastore + " - Only test datastore can be recreated (databse name has to contain 'test' fragment)")}
+		return dsUnitError{fmt.Sprintf("failed to recreate datastore: %v - Only test datastore can be recreated (databse name has to contain 'test' fragment)", targetDatastore)}
 	}
 	adminManager := tm.managerRegistry.Get(adminDatastore)
 	dialect := tm.GetDialectable(adminDatastore)
@@ -247,7 +247,7 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 			if len(dataset.Rows) > 0 {
 				dataset.Rows = dataset.Rows[1:]
 			}
-			result, err := manager.Execute("DELETE FROM "+dataset.Table)
+			result, err := manager.ExecuteOnConnection(connection, "DELETE FROM "+dataset.Table, nil)
 			if err != nil {
 				return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to delete table %v due to %v", datastore, dataset.Table, err)
 			}
@@ -318,6 +318,8 @@ func (tm *datasetTestManager) expectFullDatasets(manager dsc.Manager, datastore 
 	if config.Has("queryHint") {
 		queryHint = config.Get("queryHint")
 	}
+
+
 	sqlBuilder := dsc.NewQueryBuilder(expected.TableDescriptor, queryHint)
 	sqlWithArguments := sqlBuilder.BuildQueryAll(expected.Columns)
 	var rows = make([]*Row, 0)
@@ -443,6 +445,7 @@ func updateDatasetDescriptorIfNeeded(manager dsc.Manager, dataset *Dataset) {
 		dataset.Autoincrement = tableDescriptor.Autoincrement
 		dataset.PkColumns = tableDescriptor.PkColumns
 		dataset.FromQuery = tableDescriptor.FromQuery
+
 	}
 	if len(dataset.Columns) == 0 {
 		dataset.Columns = buildColumnsForDataset(dataset)
@@ -455,17 +458,17 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 	manager := tm.managerRegistry.Get(datasets.Datastore)
 	var result = make([]AssertViolation, 0)
 
-	for i := range datasets.Datasets {
+	for _, dataset := range datasets.Datasets {
 
-		err := tm.expandTable(datasets.Datasets[i])
+		err := tm.expandTable(dataset)
 		if err != nil {
 			return nil, err
 		}
-		err = tm.expandFromQuery(context, datasets.Datasets[i])
+		err = tm.expandFromQuery(context, dataset)
 		if err != nil {
-			return nil, fmt.Errorf("failed to prepare datastore %v - unable to expand macro in the fromQuery %v due to %v", datasets.Datastore, datasets.Datasets[i].Table, err)
+			return nil, fmt.Errorf("failed to prepare datastore %v - unable to expand macro in the fromQuery %v due to %v", datasets.Datastore, dataset.Table, err)
 		}
-		var dataset = datasets.Datasets[i]
+
 		if tm.datasetMappingRegistry.has(dataset.Table) {
 			transformer := NewDatasetTransformer()
 			mapping := tm.datasetMappingRegistry.get(dataset.Table)
@@ -480,23 +483,24 @@ func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets
 			}
 			continue
 		}
-		updateDatasetDescriptorIfNeeded(manager, datasets.Datasets[i])
-		mapper := newDatasetRowMapper(datasets.Datasets[i].Columns, nil)
-		err = tm.expandMacros(context, datasets.Datastore, manager, datasets.Datasets[i])
+
+		updateDatasetDescriptorIfNeeded(manager, dataset)
+
+		mapper := newDatasetRowMapper(dataset.Columns, nil)
+		err = tm.expandMacros(context, datasets.Datastore, manager, dataset)
 		if err != nil {
 			return nil, err
 		}
-
-				switch checkPolicy {
+		switch checkPolicy {
 		case FullTableDatasetCheckPolicy:
-			violation, err := tm.expectFullDatasets(manager, datasets.Datastore, datasets.Datasets[i], mapper)
+			violation, err := tm.expectFullDatasets(manager, datasets.Datastore, dataset, mapper)
 			if err != nil {
 				return nil, err
 			}
 			result = append(result, violation...)
 			continue
 		case SnapshotDatasetCheckPolicy:
-			violation, err := tm.expectSnapshotDatasets(manager, datasets.Datastore, datasets.Datasets[i], mapper)
+			violation, err := tm.expectSnapshotDatasets(manager, datasets.Datastore, dataset, mapper)
 			if err != nil {
 				return nil, err
 			}

@@ -40,7 +40,6 @@ type Script struct {
 
 //DatasetTestManager supervises datastore initialization, test dataset preparation, and final datastore dataset verification
 type DatasetTestManager interface {
-
 	//ClearDatastore clears datastore, it takes adminDatastore and targetDatastore names.
 	ClearDatastore(adminDatastore string, targetDatastore string) error
 
@@ -103,7 +102,6 @@ type TableRows struct {
 
 //DatasetFactory represents a dataset factory.
 type DatasetFactory interface {
-
 	//Create creates a dataset from map for passed in table descriptor
 	Create(descriptor *dsc.TableDescriptor, dataset ...map[string]interface{}) *Dataset
 
@@ -157,6 +155,7 @@ type AssertViolation struct {
 	Expected  string
 	Actual    string
 	Source    string
+	Path      string
 }
 
 //AssertViolations represents a test violations.
@@ -181,7 +180,6 @@ type DatastoreConfig struct {
 
 //Service represents test service
 type Service interface {
-
 	//Init creates datastore manager and register it in manaer registry, if ClearDatastore flag is set it will drop and create datastore.
 	Init(request *InitDatastoreRequest) *Response
 

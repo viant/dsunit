@@ -35,7 +35,14 @@ func (r Row) ValueAsString(column string) string {
 
 //Columns returns column names.
 func (r Row) Columns() []string {
-	return toolbox.MapKeysToStringSlice(r.Values)
+	var result = make([]string, 0)
+	for k := range r.Values {
+		if k == "" {
+			continue
+		}
+		result = append(result, k)
+	}
+	return result
 }
 
 //SetValue sets column value on this row.
