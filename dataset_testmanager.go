@@ -251,8 +251,12 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 			if err != nil {
 				return 0, 0, 0, fmt.Errorf("failed to prepare datastore %v - unable to delete table %v due to %v", datastore, dataset.Table, err)
 			}
+			//since deletion has to happen before new entries are added to address new modification, deletion needs to be commited first
+			//for classified as insertable or updatable to work correctly
 			connection.Commit()
 			connection.Begin()
+			dialect.DisableForeignKeyCheck(manager, connection)
+
 
 			affected, _ := result.RowsAffected()
 			deletedTotal += int(affected)
