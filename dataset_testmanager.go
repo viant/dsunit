@@ -183,7 +183,12 @@ func (tm *datasetTestManager) persistDataset(connection dsc.Connection, manager 
 		if key == nextKey {
 			continue
 		}
-		added, changed, err := manager.PersistAllOnConnection(connection, &rows, dataset.Table, getSQLProvider(dataset, row))
+
+		if len(dataset.PkColumns) == 0 {
+			return 0, 0, fmt.Errorf("failed to detect primary key on table %v\n", dataset.Table)
+		}
+		var provider = getSQLProvider(dataset, row)
+		added, changed, err := manager.PersistAllOnConnection(connection, &rows, dataset.Table, provider)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -256,8 +261,6 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 			connection.Commit()
 			connection.Begin()
 			dialect.DisableForeignKeyCheck(manager, connection)
-
-
 			affected, _ := result.RowsAffected()
 			deletedTotal += int(affected)
 		}
