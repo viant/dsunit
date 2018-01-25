@@ -311,7 +311,7 @@ func (tm *datasetTestManager) PrepareDatastore(datasets *Datasets) (inserted, up
 	return inserted, updated, deleted, err
 }
 
-func (tm *datasetTestManager) assertDatasets(datastore string, expected *Dataset, actual *Dataset) ([]AssertViolation, error) {
+func (tm *datasetTestManager) assertDatasets(datastore string, expected *Dataset, actual *Dataset) ([]*AssertViolation, error) {
 	datasetTester := &DatasetTester{}
 	manager := tm.managerRegistry.Get(datastore)
 	config := manager.Config()
@@ -322,7 +322,7 @@ func (tm *datasetTestManager) assertDatasets(datastore string, expected *Dataset
 	return violations, nil
 }
 
-func (tm *datasetTestManager) expectFullDatasets(manager dsc.Manager, datastore string, expected *Dataset, mapper dsc.RecordMapper) ([]AssertViolation, error) {
+func (tm *datasetTestManager) expectFullDatasets(manager dsc.Manager, datastore string, expected *Dataset, mapper dsc.RecordMapper) ([]*AssertViolation, error) {
 	config := manager.Config()
 	queryHint := ""
 	if config.Has("queryHint") {
@@ -361,7 +361,7 @@ func (tm *datasetTestManager) SafeMode(safeMode bool) {
 	tm.safeMode = safeMode
 }
 
-func (tm *datasetTestManager) expectSnapshotDatasets(manager dsc.Manager, datastore string, expected *Dataset, mapper dsc.RecordMapper) ([]AssertViolation, error) {
+func (tm *datasetTestManager) expectSnapshotDatasets(manager dsc.Manager, datastore string, expected *Dataset, mapper dsc.RecordMapper) ([]*AssertViolation, error) {
 	var pkValues = buildPkValues(expected)
 	var rows = make([]*Row, 0)
 	config := manager.Config()
@@ -466,7 +466,7 @@ func updateDatasetDescriptorIfNeeded(manager dsc.Manager, dataset *Dataset) {
 func (tm *datasetTestManager) ExpectDatasets(checkPolicy int, datasets *Datasets) (AssertViolations, error) {
 	context := toolbox.NewContext()
 	manager := tm.managerRegistry.Get(datasets.Datastore)
-	var result = make([]AssertViolation, 0)
+	var result = make([]*AssertViolation, 0)
 
 	for _, dataset := range datasets.Datasets {
 

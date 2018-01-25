@@ -22,11 +22,11 @@ const (
 
 //AssertViolations represents collection of test failures
 type assertViolations struct {
-	violations []AssertViolation
+	violations []*AssertViolation
 }
 
 //Violations returns slice of AssertViolation
-func (v *assertViolations) Violations() []AssertViolation {
+func (v *assertViolations) Violations() []*AssertViolation {
 	return v.violations
 }
 
@@ -38,14 +38,14 @@ func (v *assertViolations) HasViolations() bool {
 //String produces aggregated by key test failure report
 func (v *assertViolations) String() string {
 	result := ""
-	var aggregate = make(map[string](*[]AssertViolation))
+	var aggregate = make(map[string](*[]*AssertViolation))
 	var aggregateKey = make([]string, 0)
 	var ok bool
 	for _, violation := range v.violations {
 		key := violation.Datastore + "." + violation.Table
-		var casesForThisKey *[]AssertViolation
+		var casesForThisKey *[]*AssertViolation
 		if casesForThisKey, ok = aggregate[key]; !ok {
-			var newViolations = make([]AssertViolation, 0)
+			var newViolations = make([]*AssertViolation, 0)
 			casesForThisKey = &newViolations
 			aggregate[key] = casesForThisKey
 			aggregateKey = append(aggregateKey, key)
@@ -86,7 +86,7 @@ func (v *assertViolations) String() string {
 }
 
 //NewAssertViolations creates a new instance of AssertViolations
-func NewAssertViolations(violations []AssertViolation) AssertViolations {
+func NewAssertViolations(violations []*AssertViolation) AssertViolations {
 	return &assertViolations{violations: violations}
 }
 
@@ -96,11 +96,11 @@ type DatasetTester struct {
 }
 
 //Assert compares expected and actual dataset, it reports and violations as result.
-func (t DatasetTester) Assert(datastore string, expected, actual *Dataset) []AssertViolation {
-	var result = make([]AssertViolation, 0)
+func (t DatasetTester) Assert(datastore string, expected, actual *Dataset) []*AssertViolation {
+	var result = make([]*AssertViolation, 0)
 	violation := t.assertRowCount(datastore, expected, actual)
 	if violation != nil {
-		result = append(result, *violation)
+		result = append(result, violation)
 	}
 
 	violations := t.assertRows(datastore, expected, actual)
@@ -124,28 +124,17 @@ func (t DatasetTester) assertRowCount(datastore string, expected, actual *Datase
 	return nil
 }
 
-func (t DatasetTester) assertRows(datastore string, expected, actual *Dataset) []AssertViolation {
-	var result = make([]AssertViolation, 0)
-
-
+func (t DatasetTester) assertRows(datastore string, expected, actual *Dataset) []*AssertViolation {
+	var result = make([]*AssertViolation, 0)
 	var timeColumns =make(map[string]bool)
-
 	actualRows := indexDataset(actual, timeColumns)
 	expectedRows := indexDataset(expected, timeColumns)
 	expectedKeys := toolbox.SortStrings(toolbox.MapKeysToStringSlice(expectedRows))
 	for _, key := range expectedKeys {
-
-
-
 		expectedRow := expectedRows[key]
 		actualRow, ok := actualRows[key]
-
-
-
 		if !ok {
-
-
-			result = append(result, AssertViolation{
+			result = append(result, &AssertViolation{
 				Datastore: datastore,
 				Type:      ViolationTypeMissingActualRow,
 				Table:     expected.TableDescriptor.Table,
@@ -166,8 +155,8 @@ func (t DatasetTester) assertRows(datastore string, expected, actual *Dataset) [
 	return result
 }
 
-func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset, expected, actual *Row) []AssertViolation {
-	var result = make([]AssertViolation, 0)
+func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset, expected, actual *Row) []*AssertViolation {
+	var result = make([]*AssertViolation, 0)
 	expectedDiff, actualDiff := "", ""
 	var sortedColumns = toolbox.SortStrings(expected.Columns())
 	for _, column := range sortedColumns {
@@ -205,7 +194,7 @@ func (t DatasetTester) assertRow(datastore, key string, expectedDataset *Dataset
 
 	}
 	if len(expectedDiff) > 0 {
-		result = append(result, AssertViolation{
+		result = append(result, &AssertViolation{
 			Datastore: datastore,
 			Type:      ViolationTypeRowNotEqual,
 			Table:     expectedDataset.TableDescriptor.Table,

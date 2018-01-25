@@ -160,7 +160,7 @@ type AssertViolation struct {
 
 //AssertViolations represents a test violations.
 type AssertViolations interface {
-	Violations() []AssertViolation
+	Violations() []*AssertViolation
 
 	HasViolations() bool
 
@@ -220,7 +220,7 @@ type Response struct {
 //ExpectResponse represetns a dataset verification response.
 type ExpectResponse struct {
 	*Response
-	Violations []AssertViolation
+	Violations []*AssertViolation
 }
 
 //InitDatastoreRequest represent initialization in dsunit service datastore request.

@@ -896,17 +896,17 @@ func TestAssertRegexp(t *testing.T) {
 
 }
 
-func TestAsserViolations(t *testing.T) {
+func TestAssertViolations(t *testing.T) {
 
-	var violationsSlice = make([]dsunit.AssertViolation, 0)
+	var violationsSlice = make([]*dsunit.AssertViolation, 0)
 	voilations := dsunit.NewAssertViolations(violationsSlice)
 	assert.False(t, voilations.HasViolations())
-	violationsSlice = append(violationsSlice, dsunit.AssertViolation{Type: dsunit.ViolationTypeInvalidRowCount, Expected: "3", Actual: "2", Key: "1"})
-	violationsSlice = append(violationsSlice, dsunit.AssertViolation{Type: dsunit.ViolationTypeMissingActualRow, Expected: "a", Actual: "", Key: "1"})
-	violationsSlice = append(violationsSlice, dsunit.AssertViolation{Type: dsunit.ViolationTypeRowNotEqual, Expected: "a", Actual: "b", Key: "1"})
-	violationsSlice = append(violationsSlice, dsunit.AssertViolation{Type: dsunit.ViolationTypeInvalidRowCount, Expected: "3", Actual: "2", Key: "2"})
-	violationsSlice = append(violationsSlice, dsunit.AssertViolation{Type: dsunit.ViolationTypeMissingActualRow, Expected: "a", Actual: "", Key: "2"})
-	violationsSlice = append(violationsSlice, dsunit.AssertViolation{Type: dsunit.ViolationTypeRowNotEqual, Expected: "a", Actual: "b", Key: "2"})
+	violationsSlice = append(violationsSlice, &dsunit.AssertViolation{Type: dsunit.ViolationTypeInvalidRowCount, Expected: "3", Actual: "2", Key: "1"})
+	violationsSlice = append(violationsSlice, &dsunit.AssertViolation{Type: dsunit.ViolationTypeMissingActualRow, Expected: "a", Actual: "", Key: "1"})
+	violationsSlice = append(violationsSlice, &dsunit.AssertViolation{Type: dsunit.ViolationTypeRowNotEqual, Expected: "a", Actual: "b", Key: "1"})
+	violationsSlice = append(violationsSlice, &dsunit.AssertViolation{Type: dsunit.ViolationTypeInvalidRowCount, Expected: "3", Actual: "2", Key: "2"})
+	violationsSlice = append(violationsSlice, &dsunit.AssertViolation{Type: dsunit.ViolationTypeMissingActualRow, Expected: "a", Actual: "", Key: "2"})
+	violationsSlice = append(violationsSlice, &dsunit.AssertViolation{Type: dsunit.ViolationTypeRowNotEqual, Expected: "a", Actual: "b", Key: "2"})
 	voilations = dsunit.NewAssertViolations(violationsSlice)
 	assert.True(t, voilations.HasViolations())
 	assert.Equal(t, 6, len(voilations.Violations()))
