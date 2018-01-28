@@ -388,6 +388,7 @@ func (tm *datasetTestManager) expectSnapshotDatasets(manager dsc.Manager, datast
 func (tm *datasetTestManager) expandMacro(context toolbox.Context, row *Row, column string, dataset *Dataset) error {
 	value := (*row).Value(column)
 	if textValue, ok := value.(string); ok {
+
 		if tm.macroEvaluator.HasMacro(textValue) {
 			expanded, err := tm.macroEvaluator.Expand(context, textValue)
 			if err != nil {
@@ -572,17 +573,20 @@ func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("seq", newSequenceValueProvider())
 	registry.Register("pos", newPositionValueProvider())
 	registry.Register("sql", newQueryValueProvider())
+
+
 	registry.Register("nil", toolbox.NewNilValueProvider())
 	registry.Register("env", toolbox.NewEnvValueProvider())
 	registry.Register("cast", toolbox.NewCastedValueProvider())
 	registry.Register("timediff", toolbox.NewTimeDiffProvider())
 	registry.Register("current_timestamp", toolbox.NewCurrentTimeProvider())
 	registry.Register("current_date", toolbox.NewCurrentDateProvider())
-	registry.Register("between", newBetweenPredicateValueProvider())
-	registry.Register("within_sec", newWithinSecPredicateValueProvider())
+	registry.Register("between", toolbox.NewBetweenPredicateValueProvider())
+	registry.Register("within_sec", toolbox.NewWithinSecPredicateValueProvider())
+	registry.Register("weekday", toolbox.NewWeekdayProvider())
+
 	registry.Register("fromQuery", newBgQueryProvider())
 	registry.Register("cat", newFileValueProvider())
-	registry.Register("weekday", toolbox.NewWeekdayProvider())
 
 }
 

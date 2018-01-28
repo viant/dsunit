@@ -200,8 +200,8 @@ func TestAssertPredicate(t *testing.T) {
 	var datasetFactory dsunit.DatasetFactory = dsunit.NewDatasetTestManager().DatasetFactory()
 	descriptor := &dsc.TableDescriptor{Table: "users", Autoincrement: true, PkColumns: []string{"id"}}
 	now := time.Now()
-	predicate := dsunit.NewWithinPredicate(now, 10, "")
-	var predicate2 toolbox.Predicate = dsunit.NewWithinPredicate(now, 10, "")
+	predicate := toolbox.NewWithinPredicate(now, 10, "")
+	var predicate2 toolbox.Predicate = toolbox.NewWithinPredicate(now, 10, "")
 	{
 		//not equal
 		actual := datasetFactory.Create(descriptor,

@@ -9,6 +9,7 @@ import (
 	_ "github.com/viant/bgc"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
+	"github.com/viant/toolbox"
 )
 
 //var macroDatasetId = "<ds:env[\"GOOGLE_SERVICE_DATASET_ID\"]>"
@@ -311,7 +312,7 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 
 	{
 
-		predicate := dsc.NewBetweenPredicate(11301, 11303)
+		predicate := toolbox.NewBetweenPredicate(11301, 11303)
 		expectedDataset := datasetFactory.CreateFromMap("bar_test", "users",
 			map[string]interface{}{
 				"id":       1,
