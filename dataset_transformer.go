@@ -52,14 +52,14 @@ func (dt *DatasetTransformer) isRowDuplicated(dataset *Dataset, mapping *Dataset
 			}
 		}
 		pkValue := "__ " + mapping.Table + required + ":"
-		var hasPk = false;
+		var hasPk = false
 		for _, pkColumn := range dataset.PkColumns {
 			if value, ok := row.Values[pkColumn]; ok {
 				pkValue += toolbox.AsString(value) + ":"
 				hasPk = true
 			}
 		}
-		if ! hasPk {
+		if !hasPk {
 			return false
 		}
 

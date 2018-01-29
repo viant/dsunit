@@ -53,8 +53,6 @@ func (f datasetFactoryImpl) buildDatasetForRows(descriptor *dsc.TableDescriptor,
 		Rows: rows,
 	}
 
-
-
 }
 
 func (f datasetFactoryImpl) CreateFromMap(datastore string, table string, dataset ...map[string]interface{}) *Dataset {
@@ -106,7 +104,7 @@ func (f datasetFactoryImpl) buildDatasetFromJSON(descriptor *dsc.TableDescriptor
 	}
 	var rows = make([]*Row, len(transfer))
 	for i, values := range transfer {
-		if len(values) >0 {
+		if len(values) > 0 {
 			f.ensurePkValues(values, descriptor)
 		}
 		var row = &Row{

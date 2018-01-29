@@ -311,7 +311,6 @@ func TestExpectsDatastoreWithAutoincrementMacro(t *testing.T) {
 	}
 
 	{
-
 		predicate := toolbox.NewBetweenPredicate(11301, 11303)
 		expectedDataset := datasetFactory.CreateFromMap("bar_test", "users",
 			map[string]interface{}{
@@ -446,7 +445,7 @@ func TestRegisteredMapping(t *testing.T) {
 func TestValueProviderRegistry(t *testing.T) {
 	datasetTestManager := Init(t)
 	valueProvider := datasetTestManager.ValueProviderRegistry()
-	assert.True(t,  len(valueProvider.Names()) > 0)
+	assert.True(t, len(valueProvider.Names()) > 0)
 }
 
 func TestExecuteFromURL(t *testing.T) {

@@ -126,7 +126,7 @@ func (t DatasetTester) assertRowCount(datastore string, expected, actual *Datase
 
 func (t DatasetTester) assertRows(datastore string, expected, actual *Dataset) []*AssertViolation {
 	var result = make([]*AssertViolation, 0)
-	var timeColumns =make(map[string]bool)
+	var timeColumns = make(map[string]bool)
 	actualRows := indexDataset(actual, timeColumns)
 	expectedRows := indexDataset(expected, timeColumns)
 	expectedKeys := toolbox.SortStrings(toolbox.MapKeysToStringSlice(expectedRows))
@@ -410,7 +410,7 @@ func indexDataset(dataset *Dataset, timeColumns map[string]bool) map[string]*Row
 	toolbox.IndexSlice(dataset.Rows, result, func(row *Row) string {
 		var pkValues = make([]string, 0)
 		toolbox.TransformSlice(dataset.PkColumns, &pkValues, func(pkColumn string) string {
-			if _, ok:= timeColumns[pkColumn];ok {
+			if _, ok := timeColumns[pkColumn]; ok {
 				value := row.ValueAsString(pkColumn)
 				timeValue, err := toolbox.ToTime(value, toolbox.DefaultDateLayout)
 				if err == nil {

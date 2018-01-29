@@ -247,8 +247,7 @@ func (tm *datasetTestManager) prepareDatasets(datastore string, datasets *[]*Dat
 			continue
 		}
 
-
-		if dataset.Rows == nil || len(dataset.Rows) == 0 || len(dataset.Rows[0].Values) == 0  {
+		if dataset.Rows == nil || len(dataset.Rows) == 0 || len(dataset.Rows[0].Values) == 0 {
 			if len(dataset.Rows) > 0 {
 				dataset.Rows = dataset.Rows[1:]
 			}
@@ -328,7 +327,6 @@ func (tm *datasetTestManager) expectFullDatasets(manager dsc.Manager, datastore 
 	if config.Has("queryHint") {
 		queryHint = config.Get("queryHint")
 	}
-
 
 	sqlBuilder := dsc.NewQueryBuilder(expected.TableDescriptor, queryHint)
 	sqlWithArguments := sqlBuilder.BuildQueryAll(expected.Columns)
@@ -573,7 +571,6 @@ func registerValueProvider(registry toolbox.ValueProviderRegistry) {
 	registry.Register("seq", newSequenceValueProvider())
 	registry.Register("pos", newPositionValueProvider())
 	registry.Register("sql", newQueryValueProvider())
-
 
 	registry.Register("nil", toolbox.NewNilValueProvider())
 	registry.Register("env", toolbox.NewEnvValueProvider())

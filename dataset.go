@@ -2,9 +2,9 @@ package dsunit
 
 import (
 	"fmt"
-	"reflect"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
+	"reflect"
 )
 
 //AsRow cast instance as Row.
@@ -31,7 +31,6 @@ func (r Row) ValueAsString(column string) string {
 	value := r.Values[column]
 	return fmt.Sprintf("%v", value)
 }
-
 
 //Columns returns column names.
 func (r Row) Columns() []string {

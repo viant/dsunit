@@ -12,7 +12,6 @@ import (
 
 func TestDatastoreDatasetSnapshotTaker_Take(t *testing.T) {
 
-
 	if os.Getenv("TestDatastoreDatasetSnapshotTaker") != "" {
 		dbRegistry := dsc.NewManagerRegistry()
 		managerFactory := dsc.NewManagerFactory()
