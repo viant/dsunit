@@ -1,6 +1,6 @@
 # Introduction
 
-This package describes the datastore unit  (dsunit) API in detail.
+This package describes the datastore unit (dsunit) API in detail.
 
 
 
@@ -9,7 +9,7 @@ This package describes the datastore unit  (dsunit) API in detail.
 
 Before preparing dataset, dsunit needs to know what datastore is being used including details about all tables used in tests.
 The easiest way to provide that is to create a test directory with datastore_init.json. 
-This JSON represent  [InitDatastoresRequest] (./../api.go#InitDatastoresRequest).
+This JSON represent  [InitDatastoresRequest](./../api.go#InitDatastoresRequest).
 
 Please refer to [datastore_init.json](./../example/datastore_init.json) as example for various datatsore.
 Note that different datastore implementation needs different configuration parameters.
@@ -31,17 +31,17 @@ import (
 func TestSetup(t *testing.T) {
 
     dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
-    ...
+    // ...
     
-)
+}
 ```
 
 
 ### test uri schema 
- 'test//' - is special fragment that will be dynamically expanded to the diretory, where your test file is located.
+ `test://` - is special fragment that will be dynamically expanded to the directory, where your test file is located.
 
-Some datastore like sql databases may need to run a sql script to create schema after clearing datastore. The script may have many sql statemnt, each terminated by ';'
-For store procedure it is possible to change delimiter from ';' to any other delimiter by using 'DELIMITER ;;' instruction, in this case ';;' is statement terminator.
+Some datastore like SQL databases may need to run an SQL script to create schema after clearing datastore. The script may contain multiple statements, terminated by a semicolon (`;`). For store procedure it is possible to change delimiter from ';' to any other delimiter by using 'DELIMITER ;;' instruction, in this case ';;' is statement terminator.
+
 Datastore schema can be loaded from local file system of from central source code repository. i.e.
 
 
@@ -63,18 +63,17 @@ type Dataset struct {
 
 Each table uses its own dataset instance with rows.
 
-Dataset that are used to prepare data in datastore, and to verify expected state of datastore.
+Datasets are used to prepare data in datastore, and to verify expected state of datastore.
 
-In the preparation stage all values from dataset will be persisted in datastore if defined.
+In the preparation stage all values from datasets will be persisted in datastore.
 If dataset is listed with no values then underlying data will be removed from the datastore.
 
 
 
 
-There are two way of organizing you test datasets, that will be auto discovered by this library.
+There are two way of organizing your test datasets, that will be auto discovered by this library.
 
-The first one expect the dataset files be placed in the same directory as your test file, starting with exactly the same name (without .go extension) 
-followed by lower case undescore name of the test method that will be using the data, and eiter  prepare or expect keyword ending with table name and format file.
+The first one expect the dataset files be placed in the same directory as your test file, starting with exactly the same name (without .go extension), followed by lower case undescore name of the test method that will be using the data, and eiter  prepare or expect keyword ending with table name and format file.
 
 For instance is a tester wrote a test method TestSubmit in service_test.go file, the auto-discovery matches any file with the following pattern:
     
@@ -89,7 +88,7 @@ func TestSubmit(t *.testing.T) {
     ...
 	dsunit.PrepareDatastore(t, "mystore")
 	
-	//business logic comes here
+	// business logic comes here
 	
 	dsunit.ExpectDatasets(t, "mystore", dsunit.SnapshotDatasetCheckPolicy)
 
@@ -183,7 +182,7 @@ Predicate allows expected value to be evaluated with actual dataset value using 
 
 ## Local and Remote Datastore unit mode
 
-Start [DS Unit Server] (./../main/dsunit-server.go).
+Start [DS Unit Server](./../main/dsunit-server.go).
 
 To run dsunit in remote mode add the following code in you test file
 
