@@ -9,8 +9,8 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 
 - [Introduction](#Introduction)
 - [Motivation](#Motivation)
-
 - [API Documentaion](#API-Documentation)
+- [Examples](#examples)
 - [License](#License)
 - [Credits and Acknowledgements](#Credits-and-Acknowledgements)
 
@@ -67,6 +67,8 @@ func TestSetup(t *testing.T) {
 ```
 
 
+
+<a name="API-Documentation"></a>
 ## API Documentation
 
 API documentation is available in the [`docs`](docs/README.md) directory.
@@ -74,6 +76,12 @@ API documentation is available in the [`docs`](docs/README.md) directory.
 ## GoCover
 
 [![GoCover](https://gocover.io/github.com/viant/dsunit)](https://gocover.io/github.com/viant/dsunit)
+
+
+<a name="examples"></a>
+# Examples
+
+[Simple CRUD app with dsunit](https://github.com/viant/dsc/tree/master/examples)
 
 
 <a name="License"></a>
