@@ -72,6 +72,11 @@ func (r *Record) String() string {
 }
 
 
+
+
+
+
+
 //SourcedRow represents a row with source description (i.e  users.csv:line 13)
 type SourcedRow struct {
 	Values map[string]interface{}

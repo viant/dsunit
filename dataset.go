@@ -10,6 +10,13 @@ import (
 	"encoding/json"
 	"bytes"
 	"github.com/viant/dsunit/sv"
+	"github.com/viant/assertly"
+	"strings"
+)
+
+const (
+	AutoincrementDirective = "@Autoincrement@"
+	FromQuery              = "@FromQuery"
 )
 
 //Records represent data records
@@ -18,16 +25,108 @@ type Dataset struct {
 	Records Records `required:"true"`
 }
 
+//NewDataset creates a new dataset for supplied table and records.
 func NewDataset(table string, records ... map[string]interface{}) *Dataset {
 	return &Dataset{
-		Table:table,
-		Records:records,
+		Table:   table,
+		Records: records,
 	}
 }
 
-//Records represnet table records
+//Records represents table records
 type Records []map[string]interface{}
 
+//Records returns non empty records //directive a filtered out
+func (r *Records) Expand(context toolbox.Context) (result []interface{}, err error) {
+	result = make([]interface{}, 0)
+	var evaluator = assertly.NewDefaultMacroEvaluator()
+	for _, candidate := range (*r) {
+		record := Record(candidate)
+
+		for k, v := range record {
+			if text, ok := v.(string); ok {
+				if record[k], err = evaluator.Expand(context, text); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if len(record.Columns()) > 0 {
+			result = append(result, candidate)
+		}
+	}
+	return result, nil
+}
+
+//ShouldDeleteAll checks if dataset contains empty record (indicator to delete all)
+func (r *Records) ShouldDeleteAll() bool {
+	var result = false
+	directiveScan(*r, func(record Record) {
+		if record == nil || len(record) == 0 {
+			result = true
+		}
+	})
+	return result
+}
+
+//UniqueKeys returns value for unique key directive, it test keys in the following order: @Autoincrement@, @IndexBy@
+func (r *Records) UniqueKeys() []string {
+	var result []string
+	directiveScan(*r, func(record Record) {
+		for k, v := range record {
+			if k == AutoincrementDirective {
+				result = []string{toolbox.AsString(v)}
+			}
+			if k == assertly.IndexByDirective {
+				result = strings.Split(toolbox.AsString(v), ",")
+			}
+		}
+	})
+	return result
+}
+
+
+
+//UniqueKeys returns value for unique key directive, it test keys in the following order: @Autoincrement@, @IndexBy@
+func (r *Records) FromQuery() string {
+	var result string
+	directiveScan(*r, func(record Record) {
+		for k, v := range record {
+			if k == FromQuery {
+				result = toolbox.AsString(v)
+			}
+		}
+	})
+	return result
+}
+
+//PrimaryKey returns primary key directive if matched in the following order: @Autoincrement@, @IndexBy@
+func (r *Records) Autoincrement() bool {
+	var result = false
+	directiveScan(*r, func(record Record) {
+		for k := range record {
+			if k == AutoincrementDirective {
+				result = true
+			}
+		}
+	})
+	return result
+}
+
+//Columns returns unique column names for this dataset
+func (r *Records) Columns() []string {
+	var result = make([]string, 0)
+	var unique = make(map[string]bool)
+	for _, record := range *r {
+		for _, column := range Record(record).Columns() {
+			if _, has := unique[column]; has {
+				continue
+			}
+			unique[column] = true
+			result = append(result, column)
+		}
+	}
+	return result
+}
 
 //DatastoreDatasets represents a collection of datastore datasets
 type DatastoreDatasets struct {
@@ -38,18 +137,16 @@ type DatastoreDatasets struct {
 //DatasetResource represents a dataset resource
 type DatasetResource struct {
 	*url.Resource      ` description:"data file location, csv, json, ndjson formats are supported"`
-	*DatastoreDatasets  `required:"true" description:"datastore datasets"`
+	*DatastoreDatasets `required:"true" description:"datastore datasets"`
 	Prefix  string     ` description:"location data file prefix"`  //apply prefix
 	Postfix string     ` description:"location data file postgix"` //apply suffix
 }
-
-
 
 //Loads datasets from specified resource
 func (r *DatasetResource) Load() (err error) {
 
 	if r.Resource == nil || r.Resource.URL == "" {
-		err = errors.New("resource was emtpy")
+		err = errors.New("resource was empty")
 		return err
 	}
 	var storageService storage.Service
@@ -145,81 +242,3 @@ func (r *DatasetResource) loadSeparatedData(delimiter string, datafile *Datafile
 	r.Datasets = append(r.Datasets, dataSet)
 	return nil
 }
-
-
-
-
-
-
-//
-//
-//type datasetDmlProvider struct {
-//	dmlBuilder *dsc.DmlBuilder
-//}
-//
-//func (p *datasetDmlProvider) Key(instance interface{}) []interface{} {
-//	result := readValues(instance, p.dmlBuilder.TableDescriptor.PkColumns)
-//	for i, value := range result {
-//		if toolbox.IsFloat(value) {
-//			result[i] = toolbox.AsInt(value)
-//		}
-//	}
-//	return result
-//}
-//
-//func (p *datasetDmlProvider) SetKey(instance interface{}, seq int64) {
-//	key := p.dmlBuilder.TableDescriptor.PkColumns[0]
-//	row := AsRow(instance)
-//	(*row).SetValue(key, seq)
-//}
-//
-//func (p *datasetDmlProvider) Get(sqlType int, instance interface{}) *dsc.ParametrizedSQL {
-//	row := AsRow(instance)
-//	return p.dmlBuilder.GetParametrizedSQL(sqlType, func(column string) interface{} {
-//		return readValue(row, column)
-//	})
-//}
-//
-//func newDatasetDmlProvider(dmlBuilder *dsc.DmlBuilder) dsc.DmlProvider {
-//	var result dsc.DmlProvider = &datasetDmlProvider{dmlBuilder}
-//	return result
-//}
-//
-//type datasetRowMapper struct {
-//	columns          []string
-//	columnToIndexMap map[string]int
-//}
-//
-//func (m *datasetRowMapper) Map(scanner dsc.Scanner) (interface{}, error) {
-//	columnValues, columns, err := dsc.ScanRow(scanner)
-//	if err != nil {
-//		return nil, err
-//	}
-//	var values = make(map[string]interface{})
-//	for i, item := range columnValues {
-//		values[columns[i]] = item
-//	}
-//	var result = Record{
-//		Source: "DatasetRowMapper",
-//		Values: values,
-//	}
-//	return &result, nil
-//
-//}
-//
-//func newDatasetRowMapper(columns []string, columnToIndexMap map[string]int) dsc.RecordMapper {
-//	if columnToIndexMap == nil {
-//		index := 0
-//		columnToIndexMap = make(map[string]int)
-//		toolbox.SliceToMap(columns, columnToIndexMap, toolbox.CopyStringValueProvider, func(column string) int {
-//			index++
-//			return index
-//		})
-//	}
-//
-//	var result dsc.RecordMapper = &datasetRowMapper{
-//		columns:          columns,
-//		columnToIndexMap: columnToIndexMap,
-//	}
-//	return result
-//}

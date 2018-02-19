@@ -1,147 +1,112 @@
 package dsunit
+
+import (
+	"strings"
+	"testing"
+	"github.com/viant/toolbox"
+)
+
+
+var dsUnitService Service
+var baseDirectory string
+
+//SetService sets global dsunit service.
+func SetService(service Service) {
+	dsUnitService = service
+}
+
+//GetService returns dsunit service.
+func GetService() Service {
+	if dsUnitService == nil {
+		baseDirectory = toolbox.CallerDirectory(5)
+		dsUnitService = New(baseDirectory)
+	}
+	return dsUnitService
+}
+
+
+
+
+
+
+//InitDatastoreFromURL initialises datastore from URL, URL needs to point to  InitDatastoreRequest JSON
+//it register datastore, table descriptor, data mapping, and optionally recreate datastore
+func InitDatastoreFromURL(t *testing.T, url string) {
+	service := GetService()
+	response := service.InitFromURL(url)
+	handleResponse(t, response)
+}
+
+
+
+//PrepareDatastoreFor matches all dataset files that are located in baseDirectory with method name and
+// populate datastore with all listed dataset
+// Note the matchable dataset files in the base directory have the following naming:
 //
-//import (
-//	"path"
-//	"runtime"
-//	"strings"
-//	"testing"
+//  <lower_underscore method name>_populate_<table>.[json|csv]
+//  To prepare dataset to populate datastore table: 'users' and 'permissions' for test method ReadAll you would
+//  have you create the following files in the baseDirectory
 //
-//	"github.com/viant/toolbox"
-//)
+//  read_all_prepare_travelers2.json
+//  read_all_populate_permissions.json
 //
-//var dsUnitService Service
-//var baseDirectory string
+func PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, method string) {
+	service := GetService()
+	response := service.PrepareDatastoreFor(datastore, baseDirectory, method)
+
+	handleResponse(t, response)
+}
+
+
+
+//ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name and
+// verifies that all listed dataset values are present in datastore
+// Note the matchable dataset files in the base directory have the following naming:
 //
-////SetService sets global dsunit service.
-//func SetService(service Service) {
-//	dsUnitService = service
-//}
+//  <lower_underscore method name>_expect_<table>.[json|csv]
+//  To prepare expected dataset table: 'users' and 'permissions' for test method ReadAll you would
+//  have you create the following files in the baseDirectory
 //
-////GetService returns dsunit service.
-//func GetService() Service {
-//	if dsUnitService == nil {
-//		file, _, _ := getCallerInfo(4)
-//		baseDirectory = path.Dir(file) + "/"
-//		dsUnitService = NewServiceLocal(baseDirectory)
-//	}
-//	return dsUnitService
-//}
+//  read_all_expect_users.json
+//  read_all_expect_permissions.json
 //
-////UseRemoteTestServer this method changes service to run all operation remotely using passed in URL.
-//func UseRemoteTestServer(serverURL string) {
-//	file, _, _ := getCallerInfo(3)
-//	baseDirectory := path.Dir(file) + "/"
-//	SetService(NewServiceClient(baseDirectory, serverURL))
-//}
-//
-//func getCallerFileAndMethod() (string, string) {
-//	file, method, _ := getCallerInfo(3)
-//	return file, method
-//}
-//
-//func handleResponse(t *testing.T, response *Response) {
-//	if response.hasError() {
-//		file, method, line := getCallerInfo(4)
-//		_, file = path.Split(file)
-//		t.Errorf("\n%v.%v:%v %v", file, method, line, response.Message)
-//		t.FailNow()
-//	} else {
-//		t.Logf(response.Message)
-//	}
-//}
-//
-//func getCallerInfo(callerIndex int) (string, string, int) {
-//	var callerPointer = make([]uintptr, 10) // at least 1 entry needed
-//	runtime.Callers(callerIndex, callerPointer)
-//	callerInfo := runtime.FuncForPC(callerPointer[0])
-//	file, line := callerInfo.FileLine(callerPointer[0])
-//	callerName := callerInfo.Name()
-//	dotPosition := strings.LastIndex(callerName, ".")
-//	return file, callerName[dotPosition+1:], line
-//}
-//
-////PrepareDatastore matches all dataset files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name.
-//func PrepareDatastore(t *testing.T, datastore string) {
-//	testFile, method, _ := getCallerInfo(3)
-//	pathPrefix := removeFileExtension(testFile)
-//	service := GetService()
-//	response := service.PrepareDatastoreFor(datastore, pathPrefix+"_", method)
-//	handleResponse(t, response)
-//}
-//
-////PrepareDatastoreFor matches all dataset files that are located in baseDirectory with method name and
-//// populate datastore with all listed dataset
-//// Note the matchable dataset files in the base directory have the following naming:
-////
-////  <lower_underscore method name>_populate_<table>.[json|csv]
-////  To prepare dataset to populate datastore table: 'users' and 'permissions' for test method ReadAll you would
-////  have you create the following files in the baseDirectory
-////
-////  read_all_prepare_travelers2.json
-////  read_all_populate_permissions.json
-////
-//func PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, method string) {
-//	service := GetService()
-//	response := service.PrepareDatastoreFor(datastore, baseDirectory, method)
-//	handleResponse(t, response)
-//}
-//
-////ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name and
-////verifies that all listed dataset values are present in datastore
-//func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) {
-//	file, method, _ := getCallerInfo(3)
-//	pathPrefix := removeFileExtension(file)
-//	service := GetService()
-//	response := service.ExpectDatasetsFor(datastore, pathPrefix+"_", method, checkPolicy)
-//	handleResponse(t, response.Response)
-//}
-//
-////ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name and
-//// verifies that all listed dataset values are present in datastore
-//// Note the matchable dataset files in the base directory have the following naming:
-////
-////  <lower_underscore method name>_expect_<table>.[json|csv]
-////  To prepare expected dataset table: 'users' and 'permissions' for test method ReadAll you would
-////  have you create the following files in the baseDirectory
-////
-////  read_all_expect_users.json
-////  read_all_expect_permissions.json
-////
-//func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) {
-//	service := GetService()
-//	response := service.ExpectDatasetsFor(datastore, baseDirectory, method, checkPolicy)
-//	handleResponse(t, response.Response)
-//}
-//
-////InitDatastoreFromURL initialises datastore from URL, URL needs to point to  InitDatastoreRequest JSON
-////it register datastore, table descriptor, data mapping, and optionally recreate datastore
-//func InitDatastoreFromURL(t *testing.T, url string) {
-//	service := GetService()
-//	response := service.InitFromURL(url)
-//	handleResponse(t, response)
-//}
-//
-////ExecuteScriptFromURL executes script from URL, URL should point to  ExecuteScriptRequest JSON.
-//func ExecuteScriptFromURL(t *testing.T, url string) {
-//	service := GetService()
-//	response := service.ExecuteScriptsFromURL(url)
-//	handleResponse(t, response)
-//}
-//
-////ExpandTestProtocolAsUrlIfNeeded extends input if it start with test:// fragment to currently test file directory as file protocol
-//func ExpandTestProtocolAsURLIfNeeded(input string) string {
-//	GetService()
-//	if strings.HasPrefix(input, TestSchema) {
-//		return toolbox.FileSchema + baseDirectory + input[len(TestSchema):]
-//	}
-//	return input
-//}
-//
-////ExpandTestProtocolAsPathIfNeeded extends input if it start with test:// fragment to currently test file directory
-//func ExpandTestProtocolAsPathIfNeeded(input string) string {
-//	GetService()
-//	if strings.HasPrefix(input, TestSchema) {
-//		return baseDirectory + input[len(TestSchema):]
-//	}
-//	return input
-//}
+func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) {
+	service := GetService()
+	response := service.ExpectDatasetsFor(datastore, baseDirectory, method, checkPolicy)
+	handleResponse(t, response.Response)
+}
+
+
+
+
+
+//ExecuteScriptFromURL executes script from URL, URL should point to  ExecuteScriptRequest JSON.
+func ExecuteScriptFromURL(t *testing.T, url string) {
+	service := GetService()
+	response := service.ExecuteScriptsFromURL(url)
+	handleResponse(t, response)
+}
+
+
+
+
+
+
+//ExpandTestProtocolAsUrlIfNeeded extends input if it start with test:// fragment to currently test file directory as file protocol
+func ExpandTestProtocolAsURLIfNeeded(input string) string {
+	GetService()
+	if strings.HasPrefix(input, TestSchema) {
+		return toolbox.FileSchema + baseDirectory + input[len(TestSchema):]
+	}
+	return input
+}
+
+
+//ExpandTestProtocolAsPathIfNeeded extends input if it start with test:// fragment to currently test file directory
+func ExpandTestProtocolAsPathIfNeeded(input string) string {
+	GetService()
+	if strings.HasPrefix(input, TestSchema) {
+		return baseDirectory + input[len(TestSchema):]
+	}
+	return input
+}

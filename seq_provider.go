@@ -1,24 +1,40 @@
-package provider
+package dsunit
 
 import (
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"strings"
+	"fmt"
 )
 
 type sequence struct {
 	seq map[string]int64
 }
 
-type sequenceValueProvider struct{}
+type sequenceValueProvider struct{
+	match string
+}
 
-func (p *sequenceValueProvider) countInsertable(dataset *Dataset) int64 {
+func (p *sequenceValueProvider) countMatched(dataset *Dataset) int64 {
 	var result = 0
-	for _, row := range dataset.Rows {
-		for _, pkColumn := range dataset.PkColumns {
-			value := row.Value(pkColumn)
+	pkColumns := dataset.Records.UniqueKeys()
+	if len(pkColumns) == 0 {
+		for _, record := range dataset.Records {
+			for _, v := range record {
+				if value, ok := v.(string);ok {
+					if strings.Contains(value, p.match) {
+						result++
+					}
+				}
+			}
+		}
+		return int64(result)
+	}
+	for _, record := range dataset.Records {
+		for _, pkColumn := range pkColumns {
+			value := record[pkColumn]
 			if textValue, ok := value.(string); ok {
-				if strings.Contains(textValue, ":seq ") {
+				if strings.Contains(textValue, p.match) {
 					result++
 				}
 			}
@@ -30,13 +46,12 @@ func (p *sequenceValueProvider) countInsertable(dataset *Dataset) int64 {
 func (p *sequenceValueProvider) fetchSequence(context toolbox.Context, sequenceName string) (int64, error) {
 	manager := *context.GetOptional((*dsc.Manager)(nil)).(*dsc.Manager)
 	dataset := context.GetOptional((*Dataset)(nil)).(*Dataset)
-	sqlDialectable := *context.GetOptional((*dsc.DatastoreDialect)(nil)).(*dsc.DatastoreDialect)
-	seq, err := sqlDialectable.GetSequence(manager, sequenceName)
+	datastoreDialect := *context.GetOptional((*dsc.DatastoreDialect)(nil)).(*dsc.DatastoreDialect)
+	seq, err := datastoreDialect.GetSequence(manager, sequenceName)
 	if err != nil {
 		return 0, err
 	}
-	insertableCount := p.countInsertable(dataset)
-
+	insertableCount := p.countMatched(dataset)
 	result := seq - insertableCount
 	return result, nil
 }
@@ -59,8 +74,9 @@ func (p *sequenceValueProvider) Get(context toolbox.Context, arguments ...interf
 	return result, nil
 }
 
-func newSequenceValueProvider() toolbox.ValueProvider {
-	var result toolbox.ValueProvider = &sequenceValueProvider{}
+
+func newSequenceValueProvider(exprMatch string) toolbox.ValueProvider {
+	var result toolbox.ValueProvider = &sequenceValueProvider{match:exprMatch}
 	return result
 }
 
@@ -72,7 +88,7 @@ func (p *queryValueProvider) Get(context toolbox.Context, arguments ...interface
 	var row = make([]interface{}, 0)
 	success, err := manager.ReadSingle(&row, sql, nil, nil)
 	if err != nil {
-		return nil, dsUnitError{"failed to evalue macro with sql: " + sql + " due to:\n\t" + err.Error()}
+		return nil, fmt.Errorf("failed to evalue macro with sql: %v, %v", sql, err)
 	}
 	if !success {
 		return nil, nil
