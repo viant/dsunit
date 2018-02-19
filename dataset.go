@@ -16,7 +16,7 @@ import (
 
 const (
 	AutoincrementDirective = "@Autoincrement@"
-	FromQuery              = "@FromQuery"
+	FromQueryDirective              = "@FromQuery"
 )
 
 //Records represent data records
@@ -91,7 +91,7 @@ func (r *Records) FromQuery() string {
 	var result string
 	directiveScan(*r, func(record Record) {
 		for k, v := range record {
-			if k == FromQuery {
+			if k == FromQueryDirective {
 				result = toolbox.AsString(v)
 			}
 		}

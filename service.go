@@ -35,11 +35,12 @@ type Service interface {
 	//Verify datastore with supplied expected datasets
 	Expect(request *ExpectRequest) *ExpectResponse
 
-
 }
 
+
+
+
 type service struct {
-	baseDirectory string
 	registry      dsc.ManagerRegistry
 	mapper        *Mapper
 }
@@ -327,15 +328,17 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 
 
 
-
-func New(baseDirectory string) Service {
+//New creates new dsunit service
+func New() Service {
 	fmt.Printf("bootstrap service with %v\n", baseDirectory)
 	return &service{
-		baseDirectory: baseDirectory,
 		registry:      dsc.NewManagerRegistry(),
 		mapper:        NewMapper(),
 	}
 }
+
+
+
 
 //GetDatastoreDialect return GetDatastoreDialect for supplied datastore and registry.
 func GetDatastoreDialect(datastore string, registry dsc.ManagerRegistry) dsc.DatastoreDialect {

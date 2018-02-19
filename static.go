@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 	"github.com/viant/toolbox"
+	"path"
 )
 
 
@@ -18,8 +19,8 @@ func SetService(service Service) {
 //GetService returns dsunit service.
 func GetService() Service {
 	if dsUnitService == nil {
-		baseDirectory = toolbox.CallerDirectory(5)
-		dsUnitService = New(baseDirectory)
+		baseDirectory = toolbox.CallerDirectory(3)
+		dsUnitService = New()
 	}
 	return dsUnitService
 }
@@ -29,10 +30,25 @@ func GetService() Service {
 
 
 
+func handleResponse(t *testing.T, response *BaseResponse) {
+	if response.Status != "" {
+		file, method, line := getCallerInfo(4)
+		_, file = path.Split(file)
+		t.Errorf("\n%v.%v:%v %v", file, method, line, response.Message)
+		t.FailNow()
+	} else {
+		t.Logf(response.Message)
+	}
+}
+
+
+
+
 //InitDatastoreFromURL initialises datastore from URL, URL needs to point to  InitDatastoreRequest JSON
 //it register datastore, table descriptor, data mapping, and optionally recreate datastore
 func InitDatastoreFromURL(t *testing.T, url string) {
 	service := GetService()
+
 	response := service.InitFromURL(url)
 	handleResponse(t, response)
 }

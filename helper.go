@@ -5,6 +5,8 @@ import (
 	"github.com/viant/toolbox"
 	"github.com/viant/assertly"
 	"fmt"
+	"strings"
+	"runtime"
 )
 
 
@@ -127,9 +129,8 @@ func validateDatastores(registery dsc.ManagerRegistry, response *BaseResponse, d
 
 
 func expandDscConfig(config *dsc.Config, datastore string)  *dsc.Config {
-
-
-
+	config.Parameters["name"] = datastore
+	config.Init()
 	return config
 }
 
@@ -147,3 +148,14 @@ func buildBatchedPkValues(records Records, pkColumns []string) [][]interface{} {
 }
 
 
+
+
+func getCallerInfo(callerIndex int) (string, string, int) {
+	var callerPointer = make([]uintptr, 10) // at least 1 entry needed
+	runtime.Callers(callerIndex, callerPointer)
+	callerInfo := runtime.FuncForPC(callerPointer[0])
+	file, line := callerInfo.FileLine(callerPointer[0])
+	callerName := callerInfo.Name()
+	dotPosition := strings.LastIndex(callerName, ".")
+	return file, callerName[dotPosition+1:], line
+}
