@@ -1,4 +1,4 @@
-package dsunit
+package snapshot
 
 import (
 	"fmt"

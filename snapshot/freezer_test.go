@@ -1,4 +1,4 @@
-package dsunit_test
+package snapshot
 
 import (
 	_ "github.com/go-sql-driver/mysql"

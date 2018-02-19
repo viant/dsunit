@@ -1,10 +1,13 @@
-package dsunit
+package script
 
 import (
-	"bufio"
 	"io"
+	"bufio"
 	"strings"
 )
+
+
+var delimiterKeyword = "delimiter"
 
 //parseSQLScript parses sql script and breaks it down to submittable sql statements
 func ParseSQLScript(reader io.Reader) []string {
@@ -75,4 +78,17 @@ func normalizeCommand(command string) []string {
 		}
 	}
 	return result
+}
+
+
+
+func hasDelimiter(line, delimiter string, index int) (contains bool, indexIncrease int) {
+	if !(index+len(delimiter) <= len(line)) {
+		return false, 0
+	}
+
+	if line[index:index+len(delimiter)] == delimiter {
+		return true, len(delimiter) - 1
+	}
+	return false, 0
 }

@@ -1,0 +1,44 @@
+package dsunit
+
+//Mapping represents mapping
+type Mapping struct {
+	*MappingTable
+	Name string `required:"true" description:"mapping name (i.e view name)"`
+}
+
+
+//MappingTable represents a table mapping, mapping allow to route data defined in only one table to many tables.
+type MappingTable struct {
+	Table        string `required:"true"`
+	Columns      []*MappingColumn `required:"true"`
+	Associations []*MappingTable
+}
+
+
+
+//MappingColumn represents column with its source definition.
+type MappingColumn struct {
+	Name         string `required:"true" description:"column name"`
+	DefaultValue string
+	FromColumn   string `description:"if specified it defined value source for this column"`
+	Required     bool `description:"table record will be mapped if values for all required columns are present"`
+}
+
+
+//Tables returns tables of this mapping
+func (m *Mapping) Tables() []string {
+	var result = make([]string, 0)
+	addTables(&result, m.MappingTable)
+	return result
+}
+
+
+func addTables(tables *[]string, mapping *MappingTable) {
+	*tables = append(*tables, mapping.Table)
+	if len(mapping.Associations) == 0 {
+		return
+	}
+	for _, association := range mapping.Associations {
+		addTables(tables, association)
+	}
+}

@@ -1,4 +1,4 @@
-package dsunit
+package provider
 
 import (
 	"github.com/viant/dsc"
