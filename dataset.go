@@ -16,7 +16,7 @@ import (
 
 const (
 	AutoincrementDirective = "@Autoincrement@"
-	FromQueryDirective              = "@FromQuery"
+	FromQueryDirective     = "@FromQuery"
 )
 
 //Records represent data records
@@ -83,8 +83,6 @@ func (r *Records) UniqueKeys() []string {
 	})
 	return result
 }
-
-
 
 //UniqueKeys returns value for unique key directive, it test keys in the following order: @Autoincrement@, @IndexBy@
 func (r *Records) FromQuery() string {
@@ -241,4 +239,16 @@ func (r *DatasetResource) loadSeparatedData(delimiter string, datafile *Datafile
 	}
 	r.Datasets = append(r.Datasets, dataSet)
 	return nil
+}
+
+
+func NewDatasetResource(datastore string, URL, prefix, postfix string) *DatasetResource {
+	return &DatasetResource{
+		Resource: url.NewResource(URL),
+		DatastoreDatasets: &DatastoreDatasets{
+			Datastore: datastore,
+		},
+		Prefix:  prefix,
+		Postfix: postfix,
+	}
 }

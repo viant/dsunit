@@ -159,3 +159,21 @@ func getCallerInfo(callerIndex int) (string, string, int) {
 	dotPosition := strings.LastIndex(callerName, ".")
 	return file, callerName[dotPosition+1:], line
 }
+
+
+
+func convertToLowerUnderscore(upperCamelCase string) string {
+	if len(upperCamelCase) == 0 {
+		return ""
+	}
+	result := strings.ToLower(upperCamelCase[0:1])
+	for i := 1; i < len(upperCamelCase); i++ {
+		aChar := upperCamelCase[i : i+1]
+		if strings.ToUpper(aChar) == aChar && !(aChar >= "0" && aChar <= "9") {
+			result = result + "_" + strings.ToLower(aChar)
+		} else {
+			result = result + aChar
+		}
+	}
+	return result
+}

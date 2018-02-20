@@ -156,7 +156,9 @@ func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
 
 func (s *service) newContext(manager dsc.Manager) toolbox.Context {
 	context := toolbox.NewContext()
-
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	context.Replace((*dsc.Manager)(nil), &manager)
+	context.Replace((*dsc.DatastoreDialect)(nil), &dialect)
 	return context
 }
 
@@ -195,6 +197,8 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
 		return err
 	}
+	context.Replace((*Dataset)(nil), dataset)
+	context.Replace((*dsc.TableDescriptor)(nil), table)
 	var records []interface{}
 	if records, err = dataset.Records.Expand(context); err != nil {
 		return err
@@ -267,6 +271,9 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	if table, err = getTableDescriptor(dataset, manager, context); err != nil {
 		return err
 	}
+	context.Replace((*Dataset)(nil), dataset)
+	context.Replace((*dsc.TableDescriptor)(nil), table)
+
 	if _, err = dataset.Records.Expand(context); err != nil {
 		return err
 	}
