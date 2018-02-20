@@ -12,11 +12,12 @@ import (
 	"github.com/viant/dsunit/sv"
 	"github.com/viant/assertly"
 	"strings"
+	"sort"
 )
 
 const (
-	AutoincrementDirective = "@Autoincrement@"
-	FromQueryDirective     = "@FromQuery"
+	AutoincrementDirective = "@autoincrement@"
+	FromQueryDirective     = "@fromQuery@"
 )
 
 //Records represent data records
@@ -42,16 +43,19 @@ func (r *Records) Expand(context toolbox.Context) (result []interface{}, err err
 	var evaluator = assertly.NewDefaultMacroEvaluator()
 	for _, candidate := range (*r) {
 		record := Record(candidate)
-
-		for k, v := range record {
+		recordValues := make(map[string]interface{})
+		for _, k := range record.Columns() {
+			v := record[k]
+			recordValues[k] = v
 			if text, ok := v.(string); ok {
-				if record[k], err = evaluator.Expand(context, text); err != nil {
+				if recordValues[k], err = evaluator.Expand(context, text); err != nil {
 					return nil, err
 				}
 			}
 		}
-		if len(record.Columns()) > 0 {
-			result = append(result, candidate)
+
+		if len(recordValues) > 0 {
+			result = append(result, recordValues)
 		}
 	}
 	return result, nil
@@ -73,18 +77,22 @@ func (r *Records) UniqueKeys() []string {
 	var result []string
 	directiveScan(*r, func(record Record) {
 		for k, v := range record {
-			if k == AutoincrementDirective {
-				result = []string{toolbox.AsString(v)}
-			}
-			if k == assertly.IndexByDirective {
-				result = strings.Split(toolbox.AsString(v), ",")
+			if k == AutoincrementDirective || k == assertly.IndexByDirective {
+				if keys, ok := v.([]string); ok {
+					result = keys
+				} else {
+					result = strings.Split(toolbox.AsString(v), ",")
+				}
 			}
 		}
 	})
 	return result
 }
 
-//UniqueKeys returns value for unique key directive, it test keys in the following order: @Autoincrement@, @IndexBy@
+
+
+
+//FromQuery returns value for @FromQuery@ directive
 func (r *Records) FromQuery() string {
 	var result string
 	directiveScan(*r, func(record Record) {
@@ -96,6 +104,8 @@ func (r *Records) FromQuery() string {
 	})
 	return result
 }
+
+
 
 //PrimaryKey returns primary key directive if matched in the following order: @Autoincrement@, @IndexBy@
 func (r *Records) Autoincrement() bool {
@@ -115,7 +125,8 @@ func (r *Records) Columns() []string {
 	var result = make([]string, 0)
 	var unique = make(map[string]bool)
 	for _, record := range *r {
-		for _, column := range Record(record).Columns() {
+		var actualRecord = Record(record)
+		for _, column := range actualRecord.Columns() {
 			if _, has := unique[column]; has {
 				continue
 			}
@@ -123,6 +134,7 @@ func (r *Records) Columns() []string {
 			result = append(result, column)
 		}
 	}
+	sort.Strings(result)
 	return result
 }
 
@@ -240,7 +252,6 @@ func (r *DatasetResource) loadSeparatedData(delimiter string, datafile *Datafile
 	r.Datasets = append(r.Datasets, dataSet)
 	return nil
 }
-
 
 func NewDatasetResource(datastore string, URL, prefix, postfix string) *DatasetResource {
 	return &DatasetResource{

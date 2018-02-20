@@ -303,6 +303,9 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 			actual = append(actual, batched...)
 		}
 	}
+
+	//TODO inject source directive value to actual, and maybe expected value for PK identification
+
 	if validation.Validation, err = assertly.Assert(expected, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
