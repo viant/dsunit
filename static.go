@@ -5,7 +5,7 @@ import (
 	"testing"
 	"github.com/viant/toolbox"
 	"path"
-	"github.com/viant/t/url"
+	"github.com/viant/toolbox/url"
 	"fmt"
 )
 

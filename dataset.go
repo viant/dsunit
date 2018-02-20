@@ -89,9 +89,6 @@ func (r *Records) UniqueKeys() []string {
 	return result
 }
 
-
-
-
 //FromQuery returns value for @FromQuery@ directive
 func (r *Records) FromQuery() string {
 	var result string
@@ -104,8 +101,6 @@ func (r *Records) FromQuery() string {
 	})
 	return result
 }
-
-
 
 //PrimaryKey returns primary key directive if matched in the following order: @Autoincrement@, @IndexBy@
 func (r *Records) Autoincrement() bool {
@@ -193,6 +188,7 @@ func (r *DatasetResource) load(service storage.Service, object storage.Object) (
 	switch datafile.Ext {
 	case "json":
 		loader = r.loadJSON
+
 	case "csv":
 		loader = r.loadCSV
 	case "tsv":
@@ -223,9 +219,13 @@ func (r *DatasetResource) loadJSON(datafile *DatafileInfo, data []byte) error {
 					dataSet.Records = append(dataSet.Records, recordMap)
 				}
 			}
+			r.Datasets = append(r.Datasets, dataSet)
+			return nil
 		}
+
 	}
-	if err := json.NewDecoder(bytes.NewReader(data)).Decode(dataSet.Records); err != nil {
+	err := json.NewDecoder(bytes.NewReader(data)).Decode(&dataSet.Records);
+	if err != nil {
 		return err
 	}
 	r.Datasets = append(r.Datasets, dataSet)

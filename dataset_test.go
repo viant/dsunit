@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/toolbox"
 	"path"
-	"fmt"
+	"strings"
 )
 
 func TestNewDataset(t *testing.T) {
@@ -84,7 +84,8 @@ func TestNewDatasetResource_Load(t *testing.T) {
 		assert.EqualValues(t, 4, len(datasetResource.Datasets))
 
 		for _, dataset := range datasetResource.Datasets {
-			fmt.Printf("%v\n", dataset.Table)
+			assert.EqualValues(t, 3, len(dataset.Records))
+			assert.True(t, strings.HasPrefix(dataset.Table, "user"), dataset.Table)
 		}
 	}
 
