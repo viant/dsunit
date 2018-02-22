@@ -149,32 +149,26 @@ func buildBatchedPkValues(records Records, pkColumns []string) [][]interface{} {
 }
 
 
-
-
-func getCallerInfo(callerIndex int) (string, string, int) {
-	var callerPointer = make([]uintptr, 10) // at least 1 entry needed
-	runtime.Callers(callerIndex, callerPointer)
-	callerInfo := runtime.FuncForPC(callerPointer[0])
-	file, line := callerInfo.FileLine(callerPointer[0])
-	callerName := callerInfo.Name()
-	dotPosition := strings.LastIndex(callerName, ".")
-	return file, callerName[dotPosition+1:], line
+func hasMatch(target string, candidates ... string) bool {
+	for _, candidate := range candidates {
+		if strings.HasSuffix(target, candidate) {
+			return true
+		}
+	}
+	return false
 }
-
 
 func discoverCaller(offset, maxDepth int, ignoreFiles ...string) (string, string, int) {
 	var callerPointer = make([]uintptr, maxDepth) // at least 1 entry needed
 	var caller *runtime.Func
 	var filename string
 	var line int
-	outer: for  i := offset;i<maxDepth;i++ {
+	for  i := offset;i<maxDepth;i++ {
 		runtime.Callers(i, callerPointer)
 		caller = runtime.FuncForPC(callerPointer[0])
 		filename, line = caller.FileLine(callerPointer[0])
-		for _, ignoreFile := range ignoreFiles {
-			if strings.HasSuffix(filename, ignoreFile) {
-				continue outer
-			}
+		if hasMatch(filename, ignoreFiles...) {
+			continue
 		}
 		break
 	}
@@ -189,13 +183,22 @@ func convertToLowerUnderscore(upperCamelCase string) string {
 	if len(upperCamelCase) == 0 {
 		return ""
 	}
+	upperCount := 0;
 	result := strings.ToLower(upperCamelCase[0:1])
 	for i := 1; i < len(upperCamelCase); i++ {
 		aChar := upperCamelCase[i : i+1]
-		if strings.ToUpper(aChar) == aChar && !(aChar >= "0" && aChar <= "9")  && aChar != "_" {
+
+		isUpperCase := strings.ToUpper(aChar) == aChar
+		if isUpperCase {
+			upperCount++
+		} else {
+			upperCount = 0
+		}
+
+		if isUpperCase && !(aChar >= "0" && aChar <= "9")  && aChar != "_" && upperCount == 1 {
 			result = result + "_" + strings.ToLower(aChar)
 		} else {
-			result = result + aChar
+			result = result + strings.ToLower(aChar)
 		}
 	}
 	return result
@@ -206,7 +209,10 @@ func discoverBaseURLAndPrefix(operation string) (string, string) {
 	testfile, method, _ := discoverCaller(2,10,  "tester.go", "helper.go","static.go")
 	parent, name := path.Split(testfile)
 	name = string(name[:len(name)-3]) //remove .go
-	method = string(method[5:]) //remove Test_
+	var lastSegment = strings.LastIndex(method, "_")
+	if lastSegment > 0 {
+		method = string(method[lastSegment+1:])
+	}
 	method = convertToLowerUnderscore(method)
 	return parent, fmt.Sprintf(name + "_%v_%v_", method, operation)
 }

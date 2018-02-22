@@ -1,6 +1,8 @@
 package dsunit
 
-import "testing"
+import (
+	"testing"
+)
 
 var tester = NewTester()
 

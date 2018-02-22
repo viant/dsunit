@@ -6,6 +6,11 @@ import (
 	"fmt"
 )
 
+
+
+var LogF = fmt.Printf
+
+
 type Tester interface {
 	//Register registers new datastore connection
 	Register(t *testing.T, request *RegisterRequest) bool
@@ -87,7 +92,12 @@ type Tester interface {
 	//  read_all_expect_permissions.json
 	//
 	ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool
+
+
+
 }
+
+
 
 type localTester struct {
 	service Service
@@ -95,7 +105,7 @@ type localTester struct {
 
 func handleError(t *testing.T, err error) {
 	if err != nil {
-		file, method, line := getCallerInfo(3)
+		file, method, line := discoverCaller(2, 10, "static.go", "tester.go", "helper.go")
 		_, file = path.Split(file)
 		t.Errorf("\n%v.%v:%v %v", file, method, line, err)
 		t.FailNow()
@@ -103,14 +113,15 @@ func handleError(t *testing.T, err error) {
 }
 
 func handleResponse(t *testing.T, response *BaseResponse) bool {
+	file, method, line := discoverCaller(3, 10, "static.go", "tester.go", "helper.go")
+	_, file = path.Split(file)
 	if response.Status != StatusOk {
-		file, method, line := getCallerInfo(4)
-		_, file = path.Split(file)
-		t.Errorf("\n%v.%v:%v %v", file, method, line, response.Message)
+		LogF("%v:%v (%v)\n%v\n", file, line, method, response.Message)
+		t.Fail()
 		return false
 	}
 	if response.Message != "" {
-		t.Logf(response.Message)
+		LogF("%v:%v (%v)%v\n", file, line, method, response.Message)
 	}
 	return true
 }
@@ -243,7 +254,8 @@ func (s *localTester) PrepareDatastoreFor(t *testing.T, datastore, baseDirectory
 //Verify datastore with supplied expected datasets
 func (s *localTester) Expect(t *testing.T, request *ExpectRequest) bool {
 	response := s.service.Expect(request)
-	return handleResponse(t, response.BaseResponse)
+	var result =  handleResponse(t, response.BaseResponse)
+	return result
 }
 
 //Verify datastore with supplied expected datasets, JSON request is fetched from URL
@@ -257,10 +269,11 @@ func (s *localTester) ExpectFromURL(t *testing.T, URL string) bool {
 //verify that all listed dataset values are present in datastore
 func (s *localTester) ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool {
 	URL, prefix := discoverBaseURLAndPrefix("expect")
-	request := &PrepareRequest{
+	request := &ExpectRequest{
+		CheckPolicy:checkPolicy,
 		DatasetResource: NewDatasetResource(datastore, URL, prefix, ""),
 	}
-	return s.Prepare(t, request)
+	return s.Expect(t, request)
 }
 
 //ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name to
@@ -275,12 +288,21 @@ func (s *localTester) ExpectDatasets(t *testing.T, datastore string, checkPolicy
 //  read_all_expect_permissions.json
 //
 func (s *localTester) ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory, method string) bool {
-
-	return true
+	request := &ExpectRequest{
+		DatasetResource: NewDatasetResource(datastore, baseDirectory, fmt.Sprintf("%v_expect_", method), ""),
+	}
+	return s.Expect(t, request)
 }
 
+//NewTester creates a new local tester
 func NewTester() Tester {
 	return &localTester{service: New()}
+}
+
+
+//NewRemoveTester creates a new remove tester
+func NewRemoveTester(endpoint string) Tester {
+	return &localTester{service: NewServiceClient(endpoint)}
 }
 
 

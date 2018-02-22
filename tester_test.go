@@ -9,7 +9,7 @@ import (
 
 
 
-func TestTester_RunFronURL(t *testing.T) {
+func TestTester_FromURL(t *testing.T) {
 	var tester = dsunit.NewTester()
 
 	toolbox.RemoveFileIfExist("test/tester/tester.db")

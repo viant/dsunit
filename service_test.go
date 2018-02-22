@@ -70,14 +70,15 @@ func TestService_Prepare(t *testing.T) {
 		return
 	}
 	response := service.Prepare(&dsunit.PrepareRequest{
-		dsunit.NewDatasetResource("db1", "test/", "test1_prepare_", ""),
+		dsunit.NewDatasetResource("db1", "test/db1/data", "test1_prepare_", ""),
 	})
-	assert.EqualValues(t, dsunit.StatusOk, response.Status)
-	assert.EqualValues(t, "users", response.Modification["users"].Subject)
-	assert.EqualValues(t, 4, response.Modification["users"].Added)
-	assert.EqualValues(t, 0, response.Modification["users"].Modified)
-	assert.EqualValues(t, 0, response.Modification["users"].Deleted)
 
+	if assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
+		assert.EqualValues(t, "users", response.Modification["users"].Subject)
+		assert.EqualValues(t, 4, response.Modification["users"].Added)
+		assert.EqualValues(t, 0, response.Modification["users"].Modified)
+		assert.EqualValues(t, 0, response.Modification["users"].Deleted)
+	}
 }
 
 
@@ -89,14 +90,14 @@ func TestService_Expect(t *testing.T) {
 	}
 	{
 		response := service.Prepare(&dsunit.PrepareRequest{
-			dsunit.NewDatasetResource("db1", "test/", "db1_prepare_", ""),
+			dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
 		})
 		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
 			return
 		}
 	}
 	response := service.Expect(&dsunit.ExpectRequest{
-		DatasetResource: dsunit.NewDatasetResource("db1", "test/", "db1_expect_", ""),
+		DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data/	", "db1_expect_", ""),
 	})
 
 	if !assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
@@ -104,6 +105,46 @@ func TestService_Expect(t *testing.T) {
 	}
 	assert.EqualValues(t, 18, response.PassedCount)
 	assert.EqualValues(t, 0, response.FailedCount)
+
+}
+
+func TestService_Query(t *testing.T) {
+	service, err := getTestService("db1", "test/db1/", "test/db1/schema.ddl")
+	if assert.Nil(t, err) {
+		response := service.Prepare(&dsunit.PrepareRequest{
+			dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+		})
+		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
+			return
+		}
+		serviceResponse := service.Query(dsunit.NewQueryRequest("db1", "SELECT COUNT(1) AS cnt FROM users"))
+		if assert.Equal(t, dsunit.StatusOk, serviceResponse.Status) {
+			assert.EqualValues(t, map[string]interface{}{
+				"cnt": int64(4),
+			}, serviceResponse.Records[0])
+		}
+	}
+
+
+}
+
+
+
+func TestService_Sequences(t *testing.T) {
+	service, err := getTestService("db1", "test/db1/", "test/db1/schema.ddl")
+	if assert.Nil(t, err) {
+		response := service.Prepare(&dsunit.PrepareRequest{
+			dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+		})
+		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
+			return
+		}
+		serviceResponse := service.Sequence(dsunit.NewSequenceRequest("db1", "users"))
+		if assert.Equal(t, dsunit.StatusOk, serviceResponse.Status) {
+			assert.EqualValues(t, 5, serviceResponse.Sequences["users"])
+		}
+	}
+
 
 }
 

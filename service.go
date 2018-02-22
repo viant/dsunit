@@ -41,7 +41,16 @@ type Service interface {
 
 	//Verify datastore with supplied expected datasets
 	Expect(request *ExpectRequest) *ExpectResponse
+
+	//Query returns query from database
+	Query(request *QueryRequest) *QueryResponse
+
+	//Sequence returns sequence for supplied tables
+	Sequence(request *SequenceRequest) *SequenceResponse
+
 }
+
+
 
 type service struct {
 	registry dsc.ManagerRegistry
@@ -401,6 +410,8 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
 		response.PassedCount += validation.Validation.PassedCount
+		response.Message += "\n" + dataset.Table + "\n" + validation.Report()
+
 	}
 	return err
 }
@@ -422,7 +433,7 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	var err error
 	if err = request.Load(); err == nil {
 		if len(request.Datasets) == 0 {
-			response.SetErrror(fmt.Errorf("no dataset: %v", request.URL))
+			response.SetErrror(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
 			return response
 		}
 		for _, dataset := range request.Datasets {
@@ -430,10 +441,59 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 				break
 			}
 		}
+
 	}
 	response.SetErrror(err)
 	return response
 }
+
+
+//Query returns query from database
+func (s *service) Query(request *QueryRequest) *QueryResponse {
+	var response = &QueryResponse{
+		BaseResponse: NewBaseOkResponse(),
+		Records:make([]map[string]interface{}, 0),
+	}
+	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	manager := s.registry.Get(request.Datastore)
+	macroEvaluator := assertly.NewDefaultMacroEvaluator()
+	context := toolbox.NewContext()
+	SQL, err := macroEvaluator.Expand(context, request.SQL)
+	if err != nil {
+		response.SetErrror(err)
+		return response
+	}
+
+	err =manager.ReadAll(&response.Records, toolbox.AsString(SQL), nil, nil)
+	response.SetErrror(err)
+	return response
+}
+
+
+//Sequence returns sequence for supplied tables
+func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
+	var response = &SequenceResponse{
+		BaseResponse: NewBaseOkResponse(),
+		Sequences:make(map[string]int),
+	}
+	if len(request.Tables) == 0 {
+		response.SetErrror(errors.New("tables were empty"))
+	}
+	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	manager := s.registry.Get(request.Datastore)
+	dialect := GetDatastoreDialect(request.Datastore, s.registry)
+	for _, table := range request.Tables {
+		if sequence, err := dialect.GetSequence(manager, table);err == nil {
+			response.Sequences[table] = int(sequence)
+		}
+	}
+	return response
+}
+
 
 //New creates new dsunit service
 func New() Service {

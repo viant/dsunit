@@ -1,61 +1,108 @@
 package dsunit
-//
-//import (
-//	"github.com/viant/toolbox"
-//)
-//
-//type serviceClient struct {
-//	serviceLocal
-//	serverURL string
-//}
-//
-//func getResponseOrErrorResponse(response *Response, err error) *Response {
-//	if err != nil {
-//		return newErrorResponse(err)
-//	}
-//	return response
-//}
-//
-//func (c *serviceClient) Init(request *InitDatastoreRequest) *Response {
-//	for i := range request.DatastoreConfigs {
-//		_, err := c.initDatastorFromConfig(&request.DatastoreConfigs[i])
-//		if err != nil {
-//			return newErrorResponse(err)
-//		}
-//	}
-//	response := &Response{}
-//	err := toolbox.RouteToService("post", c.serverURL+initURI, request, response)
-//	return getResponseOrErrorResponse(response, err)
-//}
-//
-//func (c *serviceClient) ExecuteScripts(request *ExecuteScriptRequest) *Response {
-//	response := &Response{}
-//	err := toolbox.RouteToService("post", c.serverURL+executeURI, request, response)
-//	return getResponseOrErrorResponse(response, err)
-//}
-//
-//func (c *serviceClient) PrepareDatastore(request *PrepareDatastoreRequest) *Response {
-//	response := &Response{}
-//	err := toolbox.RouteToService("post", c.serverURL+prepareURI, request, response)
-//	return getResponseOrErrorResponse(response, err)
-//}
-//
-//func (c *serviceClient) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResponse {
-//	response := &ExpectResponse{}
-//	err := toolbox.RouteToService("post", c.serverURL+expectURI, request, response)
-//	if err != nil {
-//		return &ExpectResponse{Response: getResponseOrErrorResponse(response.Response, err), Violations: response.Violations}
-//	}
-//	return response
-//}
-//
-////NewServiceClient returns a new dsunit service client
-//func NewServiceClient(testDirectory, serverURL string) Service {
-//	datasetTestManager := NewDatasetTestManager()
-//	var localService = serviceLocal{testManager: datasetTestManager, testDirectory: testDirectory}
-//	var dsUnitClient = &serviceClient{serviceLocal: localService, serverURL: serverURL}
-//	var result Service = dsUnitClient
-//	localService.service = result
-//	dsUnitClient.service = result
-//	return result
-//}
+
+import (
+	"github.com/viant/toolbox"
+	"github.com/viant/dsc"
+)
+
+type serviceClient struct {
+	serverURL string
+}
+
+//Registry returns registry of registered database managers
+func (c *serviceClient) Registry() dsc.ManagerRegistry {
+	return dsc.NewManagerRegistry()
+}
+
+//Register register database connection
+func (c *serviceClient) Register(request *RegisterRequest) *RegisterResponse {
+	var response = &RegisterResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+registerURI, request, response)
+	response.SetErrror(err)
+	return response
+
+}
+
+//Recreate remove and creates datastore
+func (c *serviceClient) Recreate(request *RecreateRequest) *RecreateResponse {
+	var response = &RecreateResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+recreateURI, request, response)
+	response.SetErrror(err)
+	return response
+
+}
+
+//RunSQL runs supplied SQL
+func (c *serviceClient) RunSQL(request *RunSQLRequest) *RunSQLResponse {
+	var response = &RunSQLResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+sqlURI, request, response)
+	response.SetErrror(err)
+	return response
+
+}
+
+//RunScript runs supplied SQL scripts
+func (c *serviceClient) RunScript(request *RunScriptRequest) *RunSQLResponse {
+	var response = &RunSQLResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+scriptURI, request, response)
+	response.SetErrror(err)
+	return response
+
+}
+
+//Add table mapping
+func (c *serviceClient) AddTableMapping(request *MappingRequest) *MappingResponse {
+	var response = &MappingResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+mappingURI, request, response)
+	response.SetErrror(err)
+	return response
+
+}
+
+func (c *serviceClient) Init(request *InitRequest) *InitResponse {
+	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+initURI, request, response)
+	response.SetErrror(err)
+	return response
+}
+
+//Populate database with datasets
+func (c *serviceClient) Prepare(request *PrepareRequest) *PrepareResponse {
+	var response = &PrepareResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+prepareURI, request, response)
+	response.SetErrror(err)
+	return response
+
+}
+
+//Verify datastore with supplied expected datasets
+func (c *serviceClient) Expect(request *ExpectRequest) *ExpectResponse {
+	var response = &ExpectResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+expectURI, request, response)
+	response.SetErrror(err)
+	return response
+}
+
+//Query returns query from database
+func (c *serviceClient) Query(request *QueryRequest) *QueryResponse {
+	var response = &QueryResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+queryURI, request, response)
+	response.SetErrror(err)
+	return response
+
+}
+
+//Sequence returns sequence for supplied tables
+func (c *serviceClient) Sequence(request *SequenceRequest) *SequenceResponse {
+	var response = &SequenceResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+sequenceURI, request, response)
+	response.SetErrror(err)
+	return response
+}
+
+
+//NewServiceClient returns a new dsunit service client
+func NewServiceClient(serverURL string) Service {
+	var result Service = &serviceClient{serverURL: serverURL}
+	return result
+}

@@ -1,0 +1,5 @@
+{
+  "Datastore":"static",
+  "URL":"test/static/data",
+  "Prefix":"use_case_1_prepare_"
+}

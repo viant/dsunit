@@ -302,8 +302,52 @@ type ExpectResponse struct {
 	FailedCount int
 }
 
-//NamedQuery represents a named query
-type NamedQuery struct {
-	Name string `required:"true"`
-	SQL  string `required:"true"`
+
+//SequenceRequest represents get sequences request
+type SequenceRequest struct {
+	Datastore string
+	Tables []string
 }
+
+
+func NewSequenceRequest(datastore string, tables ... string) *SequenceRequest {
+	return &SequenceRequest{
+		Datastore:datastore,
+		Tables:tables,
+	}
+}
+
+
+
+//SequenceResponse represents get sequences response
+type SequenceResponse struct {
+	*BaseResponse
+	Sequences map[string]int
+}
+
+
+
+
+//QueryRequest represents get sequences request
+type QueryRequest struct {
+	Datastore string
+	SQL string
+}
+
+
+func NewQueryRequest(datastore, SQL string) *QueryRequest {
+	return &QueryRequest{
+		Datastore:datastore,
+		SQL:SQL,
+	}
+}
+
+
+//QueryResponse represents get sequences response
+type QueryResponse struct {
+	*BaseResponse
+	Records Records
+}
+
+
+
