@@ -4,7 +4,11 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox/url"
 	"github.com/viant/assertly"
+	"errors"
 )
+
+//StatusOk represents ok status
+const StatusOk = "ok"
 
 //BaseResponse represent base response.
 type BaseResponse struct {
@@ -20,14 +24,39 @@ func (r *BaseResponse) SetErrror(err error) {
 	r.Message = err.Error()
 }
 
+func NewBaseResponse(status, message string) *BaseResponse {
+	return &BaseResponse{
+		Status:  status,
+		Message: message,
+	}
+}
+
+func NewBaseOkResponse() *BaseResponse {
+	return NewBaseResponse(StatusOk, "")
+}
+
 //RegisterRequest represent register request
 type RegisterRequest struct {
-	Datastore         string                 `required:"true" description:"datastore name"`
-	Config            *dsc.Config            `required:"true" description:"datastore config"`
-	AdminConfig       *dsc.Config
-	AdminDatastore    string                 `description:"admin datastore, needed to connect and create test database"`
-	RecreateDatastore bool                   `description:"flag to re create datastore"`
-	Descriptors       []*dsc.TableDescriptor `description:"optional table descriptors"`
+	Datastore string                 `required:"true" description:"datastore name"`
+	Config    *dsc.Config            `description:"datastore config"`
+	ConfigURL string                 `description:"datastore config URL"`
+	Tables    []*dsc.TableDescriptor `description:"optional table descriptors"`
+}
+
+//NewRegisterRequest create new register request
+func NewRegisterRequest(datastore string, config *dsc.Config, tables ... *dsc.TableDescriptor) *RegisterRequest {
+	return &RegisterRequest{
+		Datastore: datastore,
+		Config:    config,
+		Tables:    tables,
+	}
+}
+
+func NewRegisterRequestFromURL(URL string) (*RegisterRequest, error) {
+	var result = &RegisterRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
 }
 
 //RegisterResponse represents register response
@@ -35,10 +64,54 @@ type RegisterResponse struct {
 	*BaseResponse
 }
 
+//RecreateRequest represent recreate datastore request
+type RecreateRequest struct {
+	Datastore      string `required:"true" description:"datastore name to recreate, come database will create the whole schema, other will remove exiting tables and add registered one"`
+	AdminDatastore string `description:"database  used to run DDL"`
+}
+
+//NewRecreateRequest create new recreate request
+func NewRecreateRequest(datastore, adminDatastore string) *RecreateRequest {
+	return &RecreateRequest{
+		Datastore:      datastore,
+		AdminDatastore: adminDatastore,
+	}
+}
+
+//NewRecreateRequestFromURL create a request from URL
+func NewRecreateRequestFromURL(URL string) (*RecreateRequest, error) {
+	var result = &RecreateRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
+
+}
+
+//RecreateResponse represents recreate datastore response
+type RecreateResponse struct {
+	*BaseResponse
+}
+
 //RunSQLRequest represents run SQL request
 type RunSQLRequest struct {
 	Datastore string `required:"true" description:"registered datastore name"`
-	SQLs      []string
+	SQL      []string
+}
+
+//NewRunSQLRequest creates new run SQL request
+func NewRunSQLRequest(datastore string, SQL ... string) *RunSQLRequest {
+	return &RunSQLRequest{
+		Datastore: datastore,
+		SQL:      SQL,
+	}
+}
+
+//NewRunSQLRequestFromURL create a request from URL
+func NewRunSQLRequestFromURL(URL string) (*RunSQLRequest, error) {
+	var result = &RunSQLRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
 }
 
 //RunSQLRequest represents run SQL response
@@ -53,9 +126,41 @@ type RunScriptRequest struct {
 	Scripts   []*url.Resource
 }
 
+//NewRunScriptRequest creates new run script request
+func NewRunScriptRequest(datastore string, scripts ...*url.Resource) *RunScriptRequest {
+	return &RunScriptRequest{
+		Datastore: datastore,
+		Scripts:   scripts,
+	}
+}
+
+//NewRunScriptRequestFromURL create a request from URL
+func NewRunScriptRequestFromURL(URL string) (*RunScriptRequest, error) {
+	var result = &RunScriptRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
+}
+
 //MappingRequest represnet a mapping request
 type MappingRequest struct {
 	Mappings []*Mapping `required:"true" description:"virtual table mapping"`
+}
+
+
+//NewMappingRequest creates new mapping request
+func NewMappingRequest(mappings ... *Mapping) *MappingRequest {
+	return &MappingRequest{
+		Mappings: mappings,
+	}
+}
+
+//NewMappingRequestFromURL create a request from URL
+func NewMappingRequestFromURL(URL string) (*MappingRequest, error) {
+	var result = &MappingRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
 }
 
 //MappingResponse represents mapping response
@@ -64,9 +169,73 @@ type MappingResponse struct {
 	Tables []string
 }
 
+//InitRequest represents datastore init request, it actual aggregates, registraction, recreation, mapping and run script request
+type InitRequest struct {
+	Datastore string
+	Recreate  bool
+	*RegisterRequest
+	Admin     *RegisterRequest
+	*MappingRequest
+	*RunScriptRequest
+}
+
+//NewInitRequest creates a new database init request
+func NewInitRequest(datastore string, recreate bool, register, admin *RegisterRequest, mapping *MappingRequest, script *RunScriptRequest) *InitRequest {
+	return &InitRequest{
+		Datastore:        datastore,
+		Recreate:         recreate,
+		RegisterRequest:  register,
+		Admin:            admin,
+		MappingRequest:   mapping,
+		RunScriptRequest: script,
+	}
+}
+
+//NewInitRequestFromURL create a request from URL
+func NewInitRequestFromURL(URL string) (*InitRequest, error) {
+	var result = &InitRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
+}
+
+//InitResponse represent init datastore response
+type InitResponse struct {
+	*BaseResponse
+	Tables []string
+}
+
 //PrepareRequest represents a request to populate datastore with data resource
 type PrepareRequest struct {
 	*DatasetResource `required:"true" description:"datasets resource"`
+}
+
+//Validate checks if request is valid
+func (r *PrepareRequest) Validate() error {
+	if r.Resource == nil {
+		return errors.New("url was empty")
+	}
+	if r.DatastoreDatasets == nil {
+		return errors.New("datastore was empty")
+	}
+	return nil
+}
+
+
+
+//NewPrepareRequest creates a new prepare request
+func NewPrepareRequest(resource *DatasetResource) *PrepareRequest {
+	return &PrepareRequest{
+		DatasetResource: resource,
+	}
+}
+
+//NewPrepareRequestFromURL create a request from URL
+func NewPrepareRequestFromURL(URL string) (*PrepareRequest, error) {
+	var result = &PrepareRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
 }
 
 //ModificationInfo represents a modification info
@@ -90,15 +259,40 @@ type ExpectRequest struct {
 	CheckPolicy int `required:"true" description:"0 - FullTableDatasetCheckPolicy, 1 - SnapshotDatasetCheckPolicy"`
 }
 
+
+
+//Validate checks if request is valid
+func (r *ExpectRequest) Validate() error {
+	if r.Resource == nil {
+		return errors.New("url was empty")
+	}
+	if r.DatastoreDatasets == nil {
+		return errors.New("datastore was empty")
+	}
+	return nil
+}
+
+//NewExpectRequest creates a new prepare request
+func NewExpectRequest(checkPolicy int, resource *DatasetResource) *ExpectRequest {
+	return &ExpectRequest{
+		CheckPolicy:     checkPolicy,
+		DatasetResource: resource,
+	}
+}
+
+//NewExpectRequestFromURL create a request from URL
+func NewExpectRequestFromURL(URL string) (*ExpectRequest, error) {
+	var result = &ExpectRequest{}
+	resource := url.NewResource(URL)
+	err := resource.JSONDecode(result)
+	return result, err
+}
+
 //ExpectRequest represents data validation
 type DatasetValidation struct {
 	Dataset string
 	*assertly.Validation
 }
-
-
-
-
 
 //ExpectResponse represents verification response
 type ExpectResponse struct {

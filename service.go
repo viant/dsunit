@@ -8,6 +8,7 @@ import (
 	"github.com/viant/toolbox"
 	"fmt"
 	"github.com/viant/assertly"
+	"github.com/pkg/errors"
 )
 
 var batchSize = 200
@@ -20,8 +21,11 @@ type Service interface {
 	//Register registers new datastore connection
 	Register(request *RegisterRequest) *RegisterResponse
 
-	//RunSQLs runs supplied SQLs
-	RunSQLs(request *RunSQLRequest) *RunSQLResponse
+	//Recreate remove and creates datastore
+	Recreate(request *RecreateRequest) *RecreateResponse
+
+	//RunSQL runs supplied SQL
+	RunSQL(request *RunSQLRequest) *RunSQLResponse
 
 	//RunScript runs supplied SQL scripts
 	RunScript(request *RunScriptRequest) *RunSQLResponse
@@ -29,20 +33,19 @@ type Service interface {
 	//Add table mapping
 	AddTableMapping(request *MappingRequest) *MappingResponse
 
+	//Init datastore, (register, recreated, run sql, add mapping)
+	Init(request *InitRequest) *InitResponse
+
 	//Populate database with datasets
 	Prepare(request *PrepareRequest) *PrepareResponse
 
 	//Verify datastore with supplied expected datasets
 	Expect(request *ExpectRequest) *ExpectResponse
-
 }
 
-
-
-
 type service struct {
-	registry      dsc.ManagerRegistry
-	mapper        *Mapper
+	registry dsc.ManagerRegistry
+	mapper   *Mapper
 }
 
 func (s *service) Registry() dsc.ManagerRegistry {
@@ -50,51 +53,55 @@ func (s *service) Registry() dsc.ManagerRegistry {
 }
 
 func (s *service) Register(request *RegisterRequest) *RegisterResponse {
+	var err error
 	var response = &RegisterResponse{
-		BaseResponse: &BaseResponse{Status: "ok"},
+		BaseResponse: NewBaseOkResponse(),
 	}
-	if request.RecreateDatastore && request.AdminDatastore == "" {
-		request.AdminDatastore = request.Datastore
+	if request.ConfigURL != "" {
+		if request.Config, err = dsc.NewConfigFromURL(request.ConfigURL); err != nil {
+			response.SetErrror(err)
+			return response
+		}
 	}
 	config := expandDscConfig(request.Config, request.Datastore)
 	manager, err := dsc.NewManagerFactory().Create(config);
 	if err == nil {
 		s.registry.Register(request.Datastore, manager)
-		if request.AdminDatastore != "" {
-			adminConfig := request.AdminConfig
-			if adminConfig == nil {
-				adminConfig = request.Config
-			}
-			var adminManager dsc.Manager
-			adminConfig = expandDscConfig(adminConfig, request.AdminDatastore)
-			if adminManager, err = dsc.NewManagerFactory().Create(config); err == nil {
-				s.registry.Register(request.AdminDatastore, adminManager)
-				err = RecreateDatastore(request.AdminDatastore, request.Datastore, s.registry)
-			}
-		}
-		if len(request.Descriptors) > 0 {
-			for _, table:= range request.Descriptors {
+		if len(request.Tables) > 0 {
+			for _, table := range request.Tables {
 				manager.TableDescriptorRegistry().Register(table)
 			}
 		}
 	}
-
 	if err != nil {
 		response.SetErrror(err)
 	}
 	return response
 }
 
-func (s *service) RunSQLs(request *RunSQLRequest) *RunSQLResponse {
+//Recreate removes and re-creates datastore
+func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
+	var response = &RecreateResponse{
+		BaseResponse: NewBaseOkResponse(),
+	}
+	if request.AdminDatastore == "" {
+		request.AdminDatastore = request.Datastore
+	}
+	err := RecreateDatastore(request.AdminDatastore, request.Datastore, s.registry)
+	response.SetErrror(err)
+	return response
+}
+
+func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{
-		BaseResponse: &BaseResponse{Status: "ok"},
+		BaseResponse: NewBaseOkResponse(),
 	}
 	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
 
 	manager := s.registry.Get(request.Datastore)
-	results, err := manager.ExecuteAll(request.SQLs)
+	results, err := manager.ExecuteAll(request.SQL)
 	if err != nil {
 		response.SetErrror(err)
 		return response
@@ -109,22 +116,23 @@ func (s *service) RunSQLs(request *RunSQLRequest) *RunSQLResponse {
 
 func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{
-		BaseResponse: &BaseResponse{Status: "ok"},
+		BaseResponse: NewBaseOkResponse(),
 	}
 	if len(request.Scripts) == 0 {
 		return response
 	}
-	var SQLs = []string{}
+	var SQL = []string{}
 	var err error
 	var storageService storage.Service
 	var storageObject storage.Object
 	for _, resource := range request.Scripts {
+		resource.Init()
 		var reader io.ReadCloser
 		if storageService, err = storage.NewServiceForURL(resource.URL, resource.Credential); err == nil {
 			if storageObject, err = storageService.StorageObject(resource.URL); err == nil {
 				if reader, err = storageService.Download(storageObject); err == nil {
 					defer reader.Close()
-					SQLs = append(SQLs, script.ParseSQLScript(reader)...)
+					SQL = append(SQL, script.ParseSQLScript(reader)...)
 				}
 			}
 		}
@@ -133,15 +141,15 @@ func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
 			return response
 		}
 	}
-	return s.RunSQLs(&RunSQLRequest{
+	return s.RunSQL(&RunSQLRequest{
 		Datastore: request.Datastore,
-		SQLs:      SQLs,
+		SQL:       SQL,
 	})
 }
 
 func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
 	var response = &MappingResponse{
-		BaseResponse: &BaseResponse{Status: "ok"},
+		BaseResponse: NewBaseOkResponse(),
 		Tables:       make([]string, 0),
 	}
 	if len(request.Mappings) == 0 {
@@ -150,6 +158,68 @@ func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
 	for _, mapping := range request.Mappings {
 		s.mapper.Add(mapping)
 		response.Tables = append(response.Tables, mapping.Tables()...)
+	}
+	return response
+}
+
+//Init datastore, (register, recreated, run sql, add mapping)
+func (s *service) Init(request *InitRequest) *InitResponse {
+	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
+	if request.Datastore == "" {
+		response.SetErrror(errors.New("datastore was empty"))
+		return response
+	}
+	registerRequest := request.RegisterRequest
+	if registerRequest == nil {
+		response.SetErrror(errors.New("unable recreates - registerRequest datastore was empty"))
+		return response
+	}
+	if registerRequest.Datastore == "" {
+		registerRequest.Datastore = request.Datastore
+	}
+
+	registerRequests := []*RegisterRequest{registerRequest, request.Admin}
+	for _, registerRequest := range registerRequests {
+		if registerRequest == nil {
+			continue
+		}
+		serviceResponse := s.Register(registerRequest)
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+	}
+
+	if request.Recreate {
+		var adminDatastore = registerRequest.Datastore
+		if request.Admin != nil {
+			adminDatastore = request.Admin.Datastore
+		}
+		serviceResponse := s.Recreate(NewRecreateRequest(registerRequest.Datastore, adminDatastore))
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+	}
+
+	if request.RunScriptRequest != nil && len(request.Scripts) > 0 {
+		if request.RunScriptRequest.Datastore == "" {
+			request.RunScriptRequest.Datastore = request.Datastore
+		}
+		serviceResponse := s.RunScript(request.RunScriptRequest)
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+	}
+
+	if request.MappingRequest != nil && len(request.Mappings) > 0 {
+		serviceResponse := s.AddTableMapping(request.MappingRequest)
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+		response.Tables = serviceResponse.Tables
 	}
 	return response
 }
@@ -184,9 +254,14 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	if s.mapper.Has(dataset.Table) {
 		datasets := s.mapper.Map(dataset)
 		for _, dataset := range datasets {
-			s.populate(dataset, response, context, manager, connection)
+			if err = s.populate(dataset, response, context, manager, connection); err != nil {
+				return err
+			}
 		}
 		return
+	}
+	if len(response.Modification) == 0 {
+		response.Modification = make(map[string]*ModificationInfo)
 	}
 	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist",}
 	var modification = response.Modification[dataset.Table]
@@ -209,6 +284,7 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 		modification.Added, err = manager.PersistData(connection, records, table.Table, nil, insertSQLProvider(dmlBuilder)); //TODO add insert sql provider
 		return err
 	}
+
 	modification.Added, modification.Modified, err = manager.PersistAllOnConnection(connection, &records, table.Table, dmlBuilder)
 	return err
 }
@@ -221,7 +297,10 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 
 	context := s.newContext(manager)
 	for _, dataset := range request.Datasets {
-		s.populate(dataset, response, context, manager, connection)
+		err = s.populate(dataset, response, context, manager, connection)
+		if err != nil {
+			break
+		}
 	}
 	if err == nil {
 		err = connection.Commit()
@@ -235,8 +314,13 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 
 func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 	var response = &PrepareResponse{
-		BaseResponse: &BaseResponse{Status: "ok"},
+		BaseResponse: NewBaseOkResponse(),
 	}
+	if err := request.Validate(); err != nil {
+		response.SetErrror(err)
+		return response
+	}
+
 	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
@@ -244,6 +328,10 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 	var connection dsc.Connection
 	manager := s.registry.Get(request.Datastore)
 	if err = request.Load(); err == nil {
+		if len(request.Datasets) == 0 {
+			response.SetErrror(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
+			return response
+		}
 		connection, err = manager.ConnectionProvider().Get()
 	}
 	if err != nil {
@@ -263,10 +351,13 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	if s.mapper.Has(dataset.Table) {
 		datasets := s.mapper.Map(dataset)
 		for _, dataset := range datasets {
-			s.expect(policy, dataset, response, context, manager)
+			if err = s.expect(policy, dataset, response, context, manager); err != nil {
+				return err
+			}
 		}
-		return nil
+		return err
 	}
+
 	var table *dsc.TableDescriptor
 	if table, err = getTableDescriptor(dataset, manager, context); err != nil {
 		return err
@@ -314,12 +405,15 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	return err
 }
 
-
-
 func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	var response = &ExpectResponse{
-		BaseResponse: &BaseResponse{Status: "ok"},
+		BaseResponse: NewBaseOkResponse(),
 	}
+	if err := request.Validate(); err != nil {
+		response.SetErrror(err)
+		return response
+	}
+
 	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
@@ -327,28 +421,27 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	context := s.newContext(manager)
 	var err error
 	if err = request.Load(); err == nil {
+		if len(request.Datasets) == 0 {
+			response.SetErrror(fmt.Errorf("no dataset: %v", request.URL))
+			return response
+		}
 		for _, dataset := range request.Datasets {
-			s.expect(request.CheckPolicy, dataset, response, context, manager)
+			if err = s.expect(request.CheckPolicy, dataset, response, context, manager); err != nil {
+				break
+			}
 		}
 	}
 	response.SetErrror(err)
 	return response
 }
 
-
-
-
 //New creates new dsunit service
 func New() Service {
-	fmt.Printf("bootstrap service with %v\n", baseDirectory)
 	return &service{
-		registry:      dsc.NewManagerRegistry(),
-		mapper:        NewMapper(),
+		registry: dsc.NewManagerRegistry(),
+		mapper:   NewMapper(),
 	}
 }
-
-
-
 
 //GetDatastoreDialect return GetDatastoreDialect for supplied datastore and registry.
 func GetDatastoreDialect(datastore string, registry dsc.ManagerRegistry) dsc.DatastoreDialect {

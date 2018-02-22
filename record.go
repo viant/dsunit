@@ -65,22 +65,9 @@ func (r *Record) AsMap() map[string]interface{} {
 
 //String return row content as string JSON.
 func (r *Record) String() string {
-	if result, err := toolbox.AsJSONText(r.AsMap())	;err != nil {
+	if result, err := toolbox.AsJSONText(r.AsMap())	;err == nil {
 		return result
 	}
 	return fmt.Sprintf("%v", (*r))
 }
-
-
-
-
-
-
-
-//SourcedRow represents a row with source description (i.e  users.csv:line 13)
-type SourcedRow struct {
-	Values map[string]interface{}
-	Source string
-}
-
 

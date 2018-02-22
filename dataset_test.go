@@ -19,12 +19,16 @@ func TestNewDataset(t *testing.T) {
 				dsunit.AutoincrementDirective: "id",
 			},
 			map[string]interface{}{
+
+			},
+			map[string]interface{}{
 				"id":       1,
 				"username": "Dudi",
 				"active":   true,
 				"comments": "abc",
 				"@source@": "pk:1",
 			},
+
 			map[string]interface{}{
 				"id":       2,
 				"username": "Bogi",
@@ -34,6 +38,7 @@ func TestNewDataset(t *testing.T) {
 
 		assert.Equal(t, "table1", dataset.Table)
 		assert.True(t, dataset.Records.Autoincrement())
+		assert.True(t, dataset.Records.ShouldDeleteAll())
 		assert.Equal(t, []string{"id"}, dataset.Records.UniqueKeys())
 		assert.Equal(t, []string{"active", "comments", "email", "id", "username"}, dataset.Records.Columns())
 
@@ -80,11 +85,14 @@ func TestNewDataset(t *testing.T) {
 func TestNewDatasetResource_Load(t *testing.T) {
 	baseDirectory := toolbox.CallerDirectory(3)
 	datasetResource := dsunit.NewDatasetResource("db1", path.Join(baseDirectory, "test", "load"), "prefix_", "")
+
 	if assert.Nil(t, datasetResource.Load()) {
 		assert.EqualValues(t, 4, len(datasetResource.Datasets))
-
 		for _, dataset := range datasetResource.Datasets {
-			assert.EqualValues(t, 3, len(dataset.Records))
+			context :=toolbox.NewContext()
+			records, err := dataset.Records.Expand(context)
+			assert.Nil(t, err)
+			assert.EqualValues(t, 3, len(records))
 			assert.True(t, strings.HasPrefix(dataset.Table, "user"), dataset.Table)
 		}
 	}

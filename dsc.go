@@ -10,6 +10,16 @@ type datasetDmlProvider struct {
 	*dsc.DmlBuilder
 }
 
+func (p *datasetDmlProvider) record(instance interface{}) *map[string]interface{} {
+	switch result := instance.(type) {
+	case map[string]interface{}:
+		return &result
+	case *map[string]interface{}:
+		return result
+	}
+	return nil
+}
+
 func (p *datasetDmlProvider) Key(instance interface{}) []interface{} {
 	record := instance.(map[string]interface{})
 	var result = make([]interface{}, 0)
@@ -24,15 +34,15 @@ func (p *datasetDmlProvider) Key(instance interface{}) []interface{} {
 }
 
 func (p *datasetDmlProvider) SetKey(instance interface{}, seq int64) {
-	record := instance.(map[string]interface{})
+	record := p.record(instance)
 	key := p.TableDescriptor.PkColumns[0]
-	record[key] = seq
+	(*record)[key] = seq
 }
 
 func (p *datasetDmlProvider) Get(sqlType int, instance interface{}) *dsc.ParametrizedSQL {
-	record := instance.(map[string]interface{})
+	record := p.record(instance)
 	return p.GetParametrizedSQL(sqlType, func(column string) interface{} {
-		return record[column]
+		return (*record)[column]
 	})
 }
 

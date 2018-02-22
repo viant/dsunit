@@ -154,6 +154,7 @@ func (r *DatasetResource) Load() (err error) {
 		err = errors.New("resource was empty")
 		return err
 	}
+	r.Resource.Init()
 	var storageService storage.Service
 	storageService, err = storage.NewServiceForURL(r.URL, r.Credential)
 	if err != nil {
@@ -253,13 +254,15 @@ func (r *DatasetResource) loadSeparatedData(delimiter string, datafile *Datafile
 	return nil
 }
 
-func NewDatasetResource(datastore string, URL, prefix, postfix string) *DatasetResource {
-	return &DatasetResource{
+func NewDatasetResource(datastore string, URL, prefix, postfix string, datasets ...*Dataset) *DatasetResource {
+	var result =  &DatasetResource{
 		Resource: url.NewResource(URL),
 		DatastoreDatasets: &DatastoreDatasets{
 			Datastore: datastore,
+			Datasets:datasets,
 		},
 		Prefix:  prefix,
 		Postfix: postfix,
 	}
+	return result
 }
