@@ -30,7 +30,7 @@ import (
 
 func TestSetup(t *testing.T) {
 
-    dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
+    dsunit.InitDatastoresFromUrl(t, "test/datastore_init.json")
     // ...
     
 }
@@ -139,39 +139,6 @@ type DatasetMapping struct {
 }
 
 ```
-
-
-## Validation
-
-This library uses [assertly](https://github.com/viant/assertly) as the undelying validation mechanism 
-
-It adds the following validation macros and predicates
-
-## Macros
-
-The macro is an expression with parameters that expands original text value. 
-The general format of macro: &lt;ds:MACRO_NAME [json formated array of parameters]>
-
-The following macro are build-in:
-
-
-| Name | Parameters | Description | Example | 
-| --- | --- | --- | --- |
-| sql | SQL expression | Returns value of SQL expression | &lt;ds:sql["SELECT CURRENT_DATE()"]> |
-| seq | name of sequence/table for autoicrement| Returns value of Sequence| &lt;ds:seq["users"]> |
-
-
-
-
-## Predicates
-
-Predicate allows expected value to be evaluated with actual dataset value using custom predicate logic.
-
-
-| Name | Parameters | Description | Example | 
-| --- | --- | --- | --- |
-| between | from, to values | Evaluate actual value with between predicate | &lt;ds:between[1.888889, 1.88889]> |
-| within_sec | base time, delta, optional date format | Evaluate if actual time is within delta of the base time | &lt;ds:within_sec["now", 6, "yyyyMMdd HH:mm:ss"]> |
 
 
 

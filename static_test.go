@@ -8,12 +8,6 @@ import (
 	"time"
 )
 
-func init() {
-	go func() {
-		dsunit.StartServer("8877")
-	}()
-
-}
 
 func TestTableMapping(t *testing.T) {
 	dsunit.InitFromURL(t, "test/static/init.json")
@@ -24,6 +18,10 @@ func TestTableMapping(t *testing.T) {
 }
 
 func TestTableMappingRemote(t *testing.T) {
+
+	go func() {
+		dsunit.StartServer("8877")
+	}()
 	time.Sleep(time.Second)
 	tester := dsunit.NewRemoveTester("http://127.0.0.1:8877")
 	tester.InitFromURL(t, "test/static/init.json")

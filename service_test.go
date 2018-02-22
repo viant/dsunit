@@ -70,7 +70,7 @@ func TestService_Prepare(t *testing.T) {
 		return
 	}
 	response := service.Prepare(&dsunit.PrepareRequest{
-		dsunit.NewDatasetResource("db1", "test/db1/data", "test1_prepare_", ""),
+		DatasetResource:dsunit.NewDatasetResource("db1", "test/db1/data", "test1_prepare_", ""),
 	})
 
 	if assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
@@ -90,7 +90,7 @@ func TestService_Expect(t *testing.T) {
 	}
 	{
 		response := service.Prepare(&dsunit.PrepareRequest{
-			dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+			DatasetResource:dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
 		})
 		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
 			return
@@ -112,7 +112,7 @@ func TestService_Query(t *testing.T) {
 	service, err := getTestService("db1", "test/db1/", "test/db1/schema.ddl")
 	if assert.Nil(t, err) {
 		response := service.Prepare(&dsunit.PrepareRequest{
-			dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+			DatasetResource:dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
 		})
 		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
 			return
@@ -130,11 +130,40 @@ func TestService_Query(t *testing.T) {
 
 
 
-func TestService_Sequences(t *testing.T) {
+func TestService_FromQueryValidation(t *testing.T) {
+	service, err := getTestService("db1", "test/db1/", "test/db1/schema.ddl")
+	if assert.Nil(t, err) {
+		{
+			response := service.Prepare(&dsunit.PrepareRequest{
+				DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+			})
+			if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
+				return
+			}
+		}
+
+
+		response := service.Expect(&dsunit.ExpectRequest{
+			DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data", "db1_query_expect_", ""),
+		})
+		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
+			return
+		}
+		assert.EqualValues(t, 12, response.PassedCount)
+		assert.EqualValues(t, 0, response.FailedCount, response.Message)
+
+	}
+}
+
+
+
+
+
+func TestService_GetSequences(t *testing.T) {
 	service, err := getTestService("db1", "test/db1/", "test/db1/schema.ddl")
 	if assert.Nil(t, err) {
 		response := service.Prepare(&dsunit.PrepareRequest{
-			dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+			DatasetResource:dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
 		})
 		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
 			return
@@ -144,7 +173,7 @@ func TestService_Sequences(t *testing.T) {
 			assert.EqualValues(t, 5, serviceResponse.Sequences["users"])
 		}
 	}
-
-
 }
+
+
 

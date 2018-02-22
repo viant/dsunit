@@ -8,19 +8,15 @@ No mocking, but actual test against various datastores likes sql RDBMS, Aerospik
 
 
 
-
-
-
 Usage:
 
-    dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
-    dsunit.ExecuteScriptFromUrl(t, "svn://test/vertica_script_request.json")
-    dsunit.PrepareDatastore(t, "mytestdb")
+    dsunit.InitFromURL(t, "test/datastore_init.json")
+    dsunit.PrepareFromURL(t, "test/use_case1/data.json")
 
 
     ... business test logic comes here
 
-    dsunit.ExpectDatasets(t, "mytestdb", dsunit.SnapshotDatasetCheckPolicy)
+    dsunit.ExpectFromURL(t, "test/use_case1/data.json")
 
 
 */

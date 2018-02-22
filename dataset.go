@@ -155,6 +155,7 @@ func (r *DatasetResource) Load() (err error) {
 		return err
 	}
 	r.Resource.Init()
+
 	var storageService storage.Service
 	storageService, err = storage.NewServiceForURL(r.URL, r.Credential)
 	if err != nil {

@@ -16,7 +16,14 @@ type BaseResponse struct {
 	Message string
 }
 
-func (r *BaseResponse) SetErrror(err error) {
+func (r BaseResponse) Error() error {
+	if r.Status != StatusOk {
+		return errors.New(r.Message)
+	}
+	return nil
+}
+
+func (r *BaseResponse) SetError(err error) {
 	if err == nil {
 		return
 	}
@@ -95,14 +102,15 @@ type RecreateResponse struct {
 //RunSQLRequest represents run SQL request
 type RunSQLRequest struct {
 	Datastore string `required:"true" description:"registered datastore name"`
-	SQL      []string
+	Expand bool  `description:"substitute $ expression with content of context.state"`
+	SQL       []string
 }
 
 //NewRunSQLRequest creates new run SQL request
 func NewRunSQLRequest(datastore string, SQL ... string) *RunSQLRequest {
 	return &RunSQLRequest{
 		Datastore: datastore,
-		SQL:      SQL,
+		SQL:       SQL,
 	}
 }
 
@@ -123,6 +131,7 @@ type RunSQLResponse struct {
 //RunScriptRequest represents run SQL Script request
 type RunScriptRequest struct {
 	Datastore string `required:"true" description:"registered datastore name"`
+	Expand bool  `description:"substitute $ expression with content of context.state"`
 	Scripts   []*url.Resource
 }
 
@@ -146,7 +155,6 @@ func NewRunScriptRequestFromURL(URL string) (*RunScriptRequest, error) {
 type MappingRequest struct {
 	Mappings []*Mapping `required:"true" description:"virtual table mapping"`
 }
-
 
 //NewMappingRequest creates new mapping request
 func NewMappingRequest(mappings ... *Mapping) *MappingRequest {
@@ -207,6 +215,7 @@ type InitResponse struct {
 
 //PrepareRequest represents a request to populate datastore with data resource
 type PrepareRequest struct {
+	Expand bool  `description:"substitute $ expression with content of context.state"`
 	*DatasetResource `required:"true" description:"datasets resource"`
 }
 
@@ -220,8 +229,6 @@ func (r *PrepareRequest) Validate() error {
 	}
 	return nil
 }
-
-
 
 //NewPrepareRequest creates a new prepare request
 func NewPrepareRequest(resource *DatasetResource) *PrepareRequest {
@@ -250,6 +257,7 @@ type ModificationInfo struct {
 //PrepareResponse represents a prepare response
 type PrepareResponse struct {
 	*BaseResponse
+	Expand bool  `description:"substitute $ expression with content of context.state"`
 	Modification map[string]*ModificationInfo `description:"modification info by subject"`
 }
 
@@ -258,8 +266,6 @@ type ExpectRequest struct {
 	*DatasetResource
 	CheckPolicy int `required:"true" description:"0 - FullTableDatasetCheckPolicy, 1 - SnapshotDatasetCheckPolicy"`
 }
-
-
 
 //Validate checks if request is valid
 func (r *ExpectRequest) Validate() error {
@@ -302,22 +308,18 @@ type ExpectResponse struct {
 	FailedCount int
 }
 
-
 //SequenceRequest represents get sequences request
 type SequenceRequest struct {
 	Datastore string
-	Tables []string
+	Tables    []string
 }
-
 
 func NewSequenceRequest(datastore string, tables ... string) *SequenceRequest {
 	return &SequenceRequest{
-		Datastore:datastore,
-		Tables:tables,
+		Datastore: datastore,
+		Tables:    tables,
 	}
 }
-
-
 
 //SequenceResponse represents get sequences response
 type SequenceResponse struct {
@@ -325,29 +327,21 @@ type SequenceResponse struct {
 	Sequences map[string]int
 }
 
-
-
-
 //QueryRequest represents get sequences request
 type QueryRequest struct {
 	Datastore string
-	SQL string
+	SQL       string
 }
-
 
 func NewQueryRequest(datastore, SQL string) *QueryRequest {
 	return &QueryRequest{
-		Datastore:datastore,
-		SQL:SQL,
+		Datastore: datastore,
+		SQL:       SQL,
 	}
 }
-
 
 //QueryResponse represents get sequences response
 type QueryResponse struct {
 	*BaseResponse
 	Records Records
 }
-
-
-

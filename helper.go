@@ -3,16 +3,12 @@ package dsunit
 import (
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
-	"github.com/viant/assertly"
 	"fmt"
 	"strings"
 	"runtime"
 	"path"
 )
 
-
-//TestSchema represents a placeholder to be replaced with location where go test file are located
-const TestSchema = "test://"
 
 
 func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
@@ -74,43 +70,6 @@ func directiveScan(records []map[string]interface{}, recordHandler func(record R
 
 
 
-func getTableDescriptor(dataset *Dataset, manager dsc.Manager, context toolbox.Context) (*dsc.TableDescriptor, error) {
-	macroEvaluator := assertly.NewDefaultMacroEvaluator()
-	expandedTable, err := macroEvaluator.Expand(context, dataset.Table)
-	if err != nil {
-		return nil, err
-	}
-	tableName :=toolbox.AsString(expandedTable)
-	table := manager.TableDescriptorRegistry().Get(tableName)
-	if table == nil {
-		table = &dsc.TableDescriptor{Table:tableName}
-		manager.TableDescriptorRegistry().Register(table)
-	}
-	var autoincrement = dataset.Records.Autoincrement()
-	var uniqueKeys = dataset.Records.UniqueKeys()
-	var fromQuery = dataset.Records.FromQuery()
-	if ! table.Autoincrement {
-		table.Autoincrement = autoincrement
-	}
-	table.FromQuery = fromQuery
-	if len(table.PkColumns) == 0 {
-		table.PkColumns = uniqueKeys
-	} else if len(uniqueKeys) == 0 {
-		if len(dataset.Records) > 0 {
-			if len(dataset.Records[0]) == 0 {
-				dataset.Records[0] = make(map[string]interface{})
-			}
-			dataset.Records[0][assertly.IndexByDirective] = table.PkColumns
-		}
-	}
-	var columns = dataset.Records.Columns()
-	if len(columns) > 0 {
-		table.Columns = columns
-	}
-	return table, nil
-}
-
-
 func insertSQLProvider(provider *datasetDmlProvider)  func(item interface{}) *dsc.ParametrizedSQL {
 	return func(item interface{}) *dsc.ParametrizedSQL {
 		return provider.Get(dsc.SQLTypeInsert, item)
@@ -121,7 +80,7 @@ func insertSQLProvider(provider *datasetDmlProvider)  func(item interface{}) *ds
 func validateDatastores(registery dsc.ManagerRegistry, response *BaseResponse, datastores ...string) bool {
 	for _, datastore := range datastores {
 		if registery.Get(datastore) == nil {
-			response.SetErrror(fmt.Errorf("unknown datastore: %v", datastore))
+			response.SetError(fmt.Errorf("unknown datastore: %v", datastore))
 			return false
 		}
 	}

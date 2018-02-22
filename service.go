@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/viant/assertly"
 	"github.com/pkg/errors"
+	"github.com/viant/toolbox/data"
 )
 
 var batchSize = 200
@@ -48,6 +49,7 @@ type Service interface {
 	//Sequence returns sequence for supplied tables
 	Sequence(request *SequenceRequest) *SequenceResponse
 
+	SetContext(context toolbox.Context)
 }
 
 
@@ -55,6 +57,7 @@ type Service interface {
 type service struct {
 	registry dsc.ManagerRegistry
 	mapper   *Mapper
+	context  toolbox.Context
 }
 
 func (s *service) Registry() dsc.ManagerRegistry {
@@ -68,7 +71,7 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 	}
 	if request.ConfigURL != "" {
 		if request.Config, err = dsc.NewConfigFromURL(request.ConfigURL); err != nil {
-			response.SetErrror(err)
+			response.SetError(err)
 			return response
 		}
 	}
@@ -83,10 +86,12 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 		}
 	}
 	if err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 	}
 	return response
 }
+
+
 
 //Recreate removes and re-creates datastore
 func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
@@ -97,9 +102,30 @@ func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
 		request.AdminDatastore = request.Datastore
 	}
 	err := RecreateDatastore(request.AdminDatastore, request.Datastore, s.registry)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 }
+
+
+
+//expandSQLIfNeeded expand content of SQL with context.state key
+func (s *service) expandSQLIfNeeded(request *RunSQLRequest, manager dsc.Manager) []string {
+	if ! request.Expand {
+		return request.SQL
+	}
+	context := s.newContext(manager)
+	state := s.getContextState(context)
+	if state == nil {
+		return request.SQL
+	}
+	result := make([]string, 0)
+	for _, SQL := range request.SQL {
+		result = append(result, state.ExpandAsText(SQL))
+	}
+	return result
+}
+
+
 
 func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{
@@ -110,9 +136,10 @@ func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	}
 
 	manager := s.registry.Get(request.Datastore)
-	results, err := manager.ExecuteAll(request.SQL)
+	var SQL = s.expandSQLIfNeeded(request, manager)
+	results, err := manager.ExecuteAll(SQL)
 	if err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 		return response
 	}
 	for _, result := range results {
@@ -146,11 +173,12 @@ func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
 			}
 		}
 		if err != nil {
-			response.SetErrror(err)
+			response.SetError(err)
 			return response
 		}
 	}
 	return s.RunSQL(&RunSQLRequest{
+		Expand:    request.Expand,
 		Datastore: request.Datastore,
 		SQL:       SQL,
 	})
@@ -175,12 +203,12 @@ func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
 func (s *service) Init(request *InitRequest) *InitResponse {
 	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
 	if request.Datastore == "" {
-		response.SetErrror(errors.New("datastore was empty"))
+		response.SetError(errors.New("datastore was empty"))
 		return response
 	}
 	registerRequest := request.RegisterRequest
 	if registerRequest == nil {
-		response.SetErrror(errors.New("unable recreates - registerRequest datastore was empty"))
+		response.SetError(errors.New("unable recreates - registerRequest datastore was empty"))
 		return response
 	}
 	if registerRequest.Datastore == "" {
@@ -233,8 +261,21 @@ func (s *service) Init(request *InitRequest) *InitResponse {
 	return response
 }
 
+var stateKey = (*data.Map)(nil)
+
+func (s *service) getContextState(context toolbox.Context) *data.Map {
+	if ! context.Contains(stateKey) {
+		return nil
+	}
+	var state = context.GetOptional(stateKey).(*data.Map)
+	return state
+}
+
 func (s *service) newContext(manager dsc.Manager) toolbox.Context {
 	context := toolbox.NewContext()
+	if s.context != nil {
+		context = s.context.Clone()
+	}
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	context.Replace((*dsc.Manager)(nil), &manager)
 	context.Replace((*dsc.DatastoreDialect)(nil), &dialect)
@@ -259,6 +300,44 @@ func (s *service) deleteDatasetIfNeeded(dataset *Dataset, table *dsc.TableDescri
 	return nil
 }
 
+
+func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, context toolbox.Context) (*dsc.TableDescriptor, error) {
+	macroEvaluator := assertly.NewDefaultMacroEvaluator()
+	expandedTable, err := macroEvaluator.Expand(context, dataset.Table)
+	if err != nil {
+		return nil, err
+	}
+	var state = s.getContextState(context)
+	tableName := state.ExpandAsText(toolbox.AsString(expandedTable))
+	table := manager.TableDescriptorRegistry().Get(tableName)
+	if table == nil {
+		table = &dsc.TableDescriptor{Table: tableName}
+		manager.TableDescriptorRegistry().Register(table)
+	}
+	var autoincrement = dataset.Records.Autoincrement()
+	var uniqueKeys = dataset.Records.UniqueKeys()
+	var fromQuery = dataset.Records.FromQuery()
+	if ! table.Autoincrement {
+		table.Autoincrement = autoincrement
+	}
+	table.FromQuery = fromQuery
+	if len(table.PkColumns) == 0 {
+		table.PkColumns = uniqueKeys
+	} else if len(uniqueKeys) == 0 {
+		if len(dataset.Records) > 0 {
+			if len(dataset.Records[0]) == 0 {
+				dataset.Records[0] = make(map[string]interface{})
+			}
+			dataset.Records[0][assertly.IndexByDirective] = table.PkColumns
+		}
+	}
+	var columns = dataset.Records.Columns()
+	if len(columns) > 0 {
+		table.Columns = columns
+	}
+	return table, nil
+}
+
 func (s *service) populate(dataset *Dataset, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
 	if s.mapper.Has(dataset.Table) {
 		datasets := s.mapper.Map(dataset)
@@ -275,7 +354,7 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist",}
 	var modification = response.Modification[dataset.Table]
 	var table *dsc.TableDescriptor
-	if table, err = getTableDescriptor(dataset, manager, context); err != nil {
+	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
 		return err
 	}
 	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
@@ -301,7 +380,7 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, manager dsc.Manager, connection dsc.Connection) {
 	err := connection.Begin()
 	if err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 	}
 
 	context := s.newContext(manager)
@@ -317,7 +396,7 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 		_ = connection.Rollback()
 	}
 	if err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 	}
 }
 
@@ -326,7 +405,7 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 		BaseResponse: NewBaseOkResponse(),
 	}
 	if err := request.Validate(); err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 		return response
 	}
 
@@ -338,13 +417,13 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 	manager := s.registry.Get(request.Datastore)
 	if err = request.Load(); err == nil {
 		if len(request.Datasets) == 0 {
-			response.SetErrror(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
+			response.SetError(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
 			return response
 		}
 		connection, err = manager.ConnectionProvider().Get()
 	}
 	if err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 		return response
 	}
 	dialect := GetDatastoreDialect(request.Datastore, s.registry)
@@ -368,13 +447,14 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	}
 
 	var table *dsc.TableDescriptor
-	if table, err = getTableDescriptor(dataset, manager, context); err != nil {
+	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
 		return err
 	}
 	context.Replace((*Dataset)(nil), dataset)
 	context.Replace((*dsc.TableDescriptor)(nil), table)
 
-	if _, err = dataset.Records.Expand(context); err != nil {
+	 expectedRecords, err := dataset.Records.Expand(context);
+	 if err != nil {
 		return err
 	}
 	expected := dataset.Records
@@ -404,14 +484,12 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 		}
 	}
 
-	//TODO inject source directive value to actual, and maybe expected value for PK identification
 
-	if validation.Validation, err = assertly.Assert(expected, actual, assertly.NewDataPath(table.Table)); err == nil {
+	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
 		response.PassedCount += validation.Validation.PassedCount
 		response.Message += "\n" + dataset.Table + "\n" + validation.Report()
-
 	}
 	return err
 }
@@ -421,7 +499,7 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 		BaseResponse: NewBaseOkResponse(),
 	}
 	if err := request.Validate(); err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 		return response
 	}
 
@@ -431,9 +509,12 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	manager := s.registry.Get(request.Datastore)
 	context := s.newContext(manager)
 	var err error
+
+
+
 	if err = request.Load(); err == nil {
 		if len(request.Datasets) == 0 {
-			response.SetErrror(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
+			response.SetError(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
 			return response
 		}
 		for _, dataset := range request.Datasets {
@@ -443,16 +524,16 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 		}
 
 	}
-	response.SetErrror(err)
+
+	response.SetError(err)
 	return response
 }
-
 
 //Query returns query from database
 func (s *service) Query(request *QueryRequest) *QueryResponse {
 	var response = &QueryResponse{
 		BaseResponse: NewBaseOkResponse(),
-		Records:make([]map[string]interface{}, 0),
+		Records:      make([]map[string]interface{}, 0),
 	}
 	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
@@ -462,24 +543,23 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 	context := toolbox.NewContext()
 	SQL, err := macroEvaluator.Expand(context, request.SQL)
 	if err != nil {
-		response.SetErrror(err)
+		response.SetError(err)
 		return response
 	}
 
-	err =manager.ReadAll(&response.Records, toolbox.AsString(SQL), nil, nil)
-	response.SetErrror(err)
+	err = manager.ReadAll(&response.Records, toolbox.AsString(SQL), nil, nil)
+	response.SetError(err)
 	return response
 }
-
 
 //Sequence returns sequence for supplied tables
 func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
 	var response = &SequenceResponse{
 		BaseResponse: NewBaseOkResponse(),
-		Sequences:make(map[string]int),
+		Sequences:    make(map[string]int),
 	}
 	if len(request.Tables) == 0 {
-		response.SetErrror(errors.New("tables were empty"))
+		response.SetError(errors.New("tables were empty"))
 	}
 	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
@@ -487,13 +567,16 @@ func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
 	manager := s.registry.Get(request.Datastore)
 	dialect := GetDatastoreDialect(request.Datastore, s.registry)
 	for _, table := range request.Tables {
-		if sequence, err := dialect.GetSequence(manager, table);err == nil {
+		if sequence, err := dialect.GetSequence(manager, table); err == nil {
 			response.Sequences[table] = int(sequence)
 		}
 	}
 	return response
 }
 
+func (s *service) SetContext(context toolbox.Context) {
+	s.context = context
+}
 
 //New creates new dsunit service
 func New() Service {

@@ -18,7 +18,7 @@ func (c *serviceClient) Registry() dsc.ManagerRegistry {
 func (c *serviceClient) Register(request *RegisterRequest) *RegisterResponse {
 	var response = &RegisterResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+registerURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 
 }
@@ -27,7 +27,7 @@ func (c *serviceClient) Register(request *RegisterRequest) *RegisterResponse {
 func (c *serviceClient) Recreate(request *RecreateRequest) *RecreateResponse {
 	var response = &RecreateResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+recreateURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 
 }
@@ -36,7 +36,7 @@ func (c *serviceClient) Recreate(request *RecreateRequest) *RecreateResponse {
 func (c *serviceClient) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+sqlURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 
 }
@@ -45,7 +45,7 @@ func (c *serviceClient) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 func (c *serviceClient) RunScript(request *RunScriptRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+scriptURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 
 }
@@ -54,7 +54,7 @@ func (c *serviceClient) RunScript(request *RunScriptRequest) *RunSQLResponse {
 func (c *serviceClient) AddTableMapping(request *MappingRequest) *MappingResponse {
 	var response = &MappingResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+mappingURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 
 }
@@ -62,7 +62,7 @@ func (c *serviceClient) AddTableMapping(request *MappingRequest) *MappingRespons
 func (c *serviceClient) Init(request *InitRequest) *InitResponse {
 	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+initURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 }
 
@@ -70,7 +70,7 @@ func (c *serviceClient) Init(request *InitRequest) *InitResponse {
 func (c *serviceClient) Prepare(request *PrepareRequest) *PrepareResponse {
 	var response = &PrepareResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+prepareURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 
 }
@@ -79,7 +79,7 @@ func (c *serviceClient) Prepare(request *PrepareRequest) *PrepareResponse {
 func (c *serviceClient) Expect(request *ExpectRequest) *ExpectResponse {
 	var response = &ExpectResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+expectURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 }
 
@@ -87,7 +87,7 @@ func (c *serviceClient) Expect(request *ExpectRequest) *ExpectResponse {
 func (c *serviceClient) Query(request *QueryRequest) *QueryResponse {
 	var response = &QueryResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+queryURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 
 }
@@ -96,10 +96,13 @@ func (c *serviceClient) Query(request *QueryRequest) *QueryResponse {
 func (c *serviceClient) Sequence(request *SequenceRequest) *SequenceResponse {
 	var response = &SequenceResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+sequenceURI, request, response)
-	response.SetErrror(err)
+	response.SetError(err)
 	return response
 }
 
+func (s *serviceClient) SetContext(context toolbox.Context) {
+
+}
 
 //NewServiceClient returns a new dsunit service client
 func NewServiceClient(serverURL string) Service {
