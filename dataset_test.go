@@ -2,54 +2,99 @@ package dsunit_test
 
 import (
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
+	"github.com/viant/assertly"
+	"github.com/stretchr/testify/assert"
+	"github.com/viant/toolbox"
+	"path"
+	"strings"
 )
 
-func TestDataset(test *testing.T) {
-	var datasetFactory dsunit.DatasetFactory = dsunit.NewDatasetTestManager().DatasetFactory()
-	descriptor := &dsc.TableDescriptor{Table: "users", Autoincrement: true, PkColumns: []string{"id"}}
-
-	dataset := datasetFactory.Create(descriptor,
-		map[string]interface{}{
-			"id":       1,
-			"username": "Dudi",
-			"active":   true,
-			"comments": "abc",
-		},
-		map[string]interface{}{
-			"id":       2,
-			"username": "Bogi",
-			"active":   false,
-		},
-	)
-
-	assert.NotNil(test, dataset, "Should a dataset")
-	assert.Equal(test, "users", dataset.Table, "Should a dataset for users table")
-	assert.Equal(test, "id", dataset.PkColumns[0], "Should have a dataset with id pkcolumn")
-	assert.Equal(test, true, dataset.Autoincrement, "Should have a dataset with autoincrement")
-	assert.Equal(test, 2, len(dataset.Rows), "Should have a dataset with 2 rows")
+func TestNewDataset(t *testing.T) {
 
 	{
-		row := dataset.Rows[0]
-		assert.Equal(test, 4, len(row.Columns()), "The first row should have 4 columns")
-		assert.Equal(test, 1, row.Value("id"), "The first row should have id")
-		assert.Equal(test, true, row.Value("active"), "The first row should be active")
-		assert.True(test, row.HasColumn("id"), "The first row should have column id")
-		assert.True(test, row.HasColumn("comments"), "The first row should have column comments")
+		dataset := dsunit.NewDataset("table1",
+			map[string]interface{}{
+				assertly.IndexByDirective:     []string{"id"},
+				dsunit.AutoincrementDirective: "id",
+			},
+			map[string]interface{}{
+
+			},
+			map[string]interface{}{
+				"id":       1,
+				"username": "Dudi",
+				"active":   true,
+				"comments": "abc",
+				"@source@": "pk:1",
+			},
+
+			map[string]interface{}{
+				"id":       2,
+				"username": "Bogi",
+				"active":   false,
+				"email":    "a@as.ws",
+			}, )
+
+		assert.Equal(t, "table1", dataset.Table)
+		assert.True(t, dataset.Records.Autoincrement())
+		assert.True(t, dataset.Records.ShouldDeleteAll())
+		assert.Equal(t, []string{"id"}, dataset.Records.UniqueKeys())
+		assert.Equal(t, []string{"active", "comments", "email", "id", "username"}, dataset.Records.Columns())
+
+		context := toolbox.NewContext()
+		records, err := dataset.Records.Expand(context)
+		if assert.Nil(t, err) {
+			assert.Equal(t, 2, len(records))
+			assert.EqualValues(t, map[string]interface{}{
+				"id":       1,
+				"username": "Dudi",
+				"active":   true,
+				"comments": "abc",
+			}, records[0])
+		}
+	}
+	{
+		dataset := dsunit.NewDataset("table1",
+			map[string]interface{}{
+				assertly.IndexByDirective: "id",
+				dsunit.FromQueryDirective: "SELECT * FROM table1",
+			},
+			map[string]interface{}{
+				"id":       1,
+				"username": "Dudi",
+				"active":   true,
+				"@source@": "pk:1",
+			},
+			map[string]interface{}{
+				"id":       2,
+				"username": "Bogi",
+				"active":   false,
+				"email":    "a@as.ws",
+			}, )
+
+		assert.Equal(t, "table1", dataset.Table)
+		assert.False(t, dataset.Records.Autoincrement())
+		assert.Equal(t, []string{"id"}, dataset.Records.UniqueKeys())
+		assert.Equal(t, []string{"active", "email", "id", "username"}, dataset.Records.Columns())
+		assert.EqualValues(t, "SELECT * FROM table1", dataset.Records.FromQuery())
 
 	}
+}
 
-	{
-		row := dataset.Rows[1]
-		assert.Equal(test, 3, len(row.Columns()), "The second row should have 3 columns")
-		assert.Equal(test, 2, row.Value("id"), "The second row should have id")
-		assert.Equal(test, false, row.Value("active"), "The second row should be inactive")
-		assert.True(test, row.HasColumn("id"), "The second row should have column id")
-		assert.False(test, row.HasColumn("comments"), "The second row should not have column comments")
+func TestNewDatasetResource_Load(t *testing.T) {
+	baseDirectory := toolbox.CallerDirectory(3)
+	datasetResource := dsunit.NewDatasetResource("db1", path.Join(baseDirectory, "test", "load"), "prefix_", "")
 
+	if assert.Nil(t, datasetResource.Load()) {
+		assert.EqualValues(t, 4, len(datasetResource.Datasets))
+		for _, dataset := range datasetResource.Datasets {
+			context :=toolbox.NewContext()
+			records, err := dataset.Records.Expand(context)
+			assert.Nil(t, err)
+			assert.EqualValues(t, 3, len(records))
+			assert.True(t, strings.HasPrefix(dataset.Table, "user"), dataset.Table)
+		}
 	}
 
 }

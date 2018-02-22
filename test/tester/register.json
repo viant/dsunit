@@ -1,0 +1,10 @@
+{
+  "Datastore": "tester",
+  "Config": {
+    "DriverName": "sqlite3",
+    "Descriptor": "[url]",
+    "Parameters": {
+      "url": "test/tester/tester.db"
+    }
+  }
+}

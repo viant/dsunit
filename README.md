@@ -43,6 +43,8 @@ Finally a dataset like a view can be used to store data for many datastore sourc
 Datastore initialization and dataset data verification can by managed locally or remotely on remote data store unit test server.
 
 
+<a name="Usage"></a>
+
 ```go
 
 
@@ -55,16 +57,107 @@ import (
 
 func TestSetup(t *testing.T) {
 
-    dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
-	dsunit.ExecuteScriptFromUrl(t, vertica_script_request.json)
-	dsunit.PrepareDatastore(t, "mytestdb")
+    var verticaRequest = dsunit.NewScriptRequest(...)
+
+    dsunit.InitFromURL(t, "test/init.json")
+	dsunit.RunScript(t, verticaRequest)
+	dsunit.PrepareFromURL(t, "mytestdb")
 	
 	
 	... business test logic comes here
 	
-	dsunit.ExpectDatasets(t, "mytestdb", dsunit.SnapshotDatasetCheckPolicy)
+	dsunit.ExpectFromURL(t, "mytestdb", dsunit.SnapshotDatasetCheckPolicy)
 }
+
+
 ```
+
+
+
+
+## Validation
+
+This library uses [assertly](https://github.com/viant/assertly) as the undelying validation mechanism 
+
+
+
+### Macros
+
+The macro is an expression with parameters that expands original text value. 
+The general format of macro: &lt;ds:MACRO_NAME [json formated array of parameters]>
+
+The following macro are build-in:
+
+
+| Name | Parameters | Description | Example | 
+| --- | --- | --- | --- |
+| sql | SQL expression | Returns value of SQL expression | &lt;ds:sql["SELECT CURRENT_DATE()"]> |
+| seq | name of sequence/table for autoicrement| Returns value of Sequence| &lt;ds:seq["users"]> |
+
+
+
+
+### Predicates
+
+Predicate allows expected value to be evaluated with actual dataset value using custom predicate logic.
+
+
+| Name | Parameters | Description | Example | 
+| --- | --- | --- | --- |
+| between | from, to values | Evaluate actual value with between predicate | &lt;ds:between[1.888889, 1.88889]> |
+| within_sec | base time, delta, optional date format | Evaluate if actual time is within delta of the base time | &lt;ds:within_sec["now", 6, "yyyyMMdd HH:mm:ss"]> |
+
+
+
+### Directives
+
+
+#### Data preparation
+
+Most SQL drivers provide meta data about autoincrement, primary key, however if this is not available or partial verification with SQL is used, 
+the following directive come handy. 
+
+**@autoincrement@**
+
+Allows specifying autoincrement field    
+
+[
+  {"@autoincrement@":"id"},
+  {"id":1, "username":"Dudi", "active":true, "salary":12400, "comments":"abc","last_access_time": "2016-03-01 03:10:00"},
+  {"id":2, "username":"Rudi", "active":true, "salary":12600, "comments":"def","last_access_time": "2016-03-01 05:10:00"}
+]
+
+**@indexBy@**
+
+(see also asserly indexBy directive usage, for nested data structe validation) 
+
+Allows specifying pk fields
+
+[
+  {"@indexBy@":["id"]},
+  {"id":1, "username":"Dudi", "active":true, "salary":12400, "comments":"abc","last_access_time": "2016-03-01 03:10:00"},
+  {"id":2, "username":"Rudi", "active":true, "salary":12600, "comments":"def","last_access_time": "2016-03-01 05:10:00"}
+]
+
+
+#### Data validation.
+
+
+**@fromQuery@** 
+
+Allows specified query to fetch actual dataset to be validated against expected dataset
+
+
+**users.json**
+```
+[
+  {"@fromQuery@":"SELECT *  FROM users where id <= 2 ORDER BY id"},
+  {"id":1, "username":"Dudi", "active":true, "salary":12400, "comments":"abc","last_access_time": "2016-03-01 03:10:00"},
+  {"id":2, "username":"Rudi", "active":true, "salary":12600, "comments":"def","last_access_time": "2016-03-01 05:10:00"}
+]
+```
+
+
 
 
 

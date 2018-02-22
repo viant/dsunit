@@ -7,23 +7,49 @@ import (
 	"net/http"
 )
 
-var version = "/v1/"
+
+var version = "/v2/"
 var initURI = version + "init"
-var executeURI = version + "execute"
+var registerURI = version + "register"
+var recreateURI = version + "recreate"
+var mappingURI = version + "mapping"
+var scriptURI = version + "script"
+var sqlURI = version + "sql"
 var prepareURI = version + "prepare"
 var expectURI = version + "expect"
+var queryURI = version + "query"
+var sequenceURI = version + "sequence"
 
 var errorHandler = func(router *toolbox.ServiceRouter, responseWriter http.ResponseWriter, httpRequest *http.Request, message string) {
-	err := router.WriteResponse(toolbox.NewJSONEncoderFactory(), &Response{Status: "error", Message: message}, httpRequest, responseWriter)
+	err := router.WriteResponse(toolbox.NewJSONEncoderFactory(), &BaseResponse{Status: "error", Message: message}, httpRequest, responseWriter)
 	if err != nil {
 		log.Fatalf("failed to write response :%v", err)
 	}
 }
 
+
 //StartServer start dsunit server
 func StartServer(port string) {
-	var service = NewServiceLocal("")
+	var service = New()
 	serviceRouter := toolbox.NewServiceRouter(
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        registerURI,
+			Handler:    service.Register,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        recreateURI,
+			Handler:    service.Recreate,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        mappingURI,
+			Handler:    service.AddTableMapping,
+			Parameters: []string{"request"},
+		},
 		toolbox.ServiceRouting{
 			HTTPMethod: "POST",
 			URI:        initURI,
@@ -32,20 +58,38 @@ func StartServer(port string) {
 		},
 		toolbox.ServiceRouting{
 			HTTPMethod: "POST",
-			URI:        executeURI,
-			Handler:    service.ExecuteScripts,
+			URI:        scriptURI,
+			Handler:    service.RunScript,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        sqlURI,
+			Handler:    service.RunSQL,
 			Parameters: []string{"request"},
 		},
 		toolbox.ServiceRouting{
 			HTTPMethod: "POST",
 			URI:        prepareURI,
-			Handler:    service.PrepareDatastore,
+			Handler:    service.Prepare,
 			Parameters: []string{"request"},
 		},
 		toolbox.ServiceRouting{
 			HTTPMethod: "POST",
 			URI:        expectURI,
-			Handler:    service.ExpectDatasets,
+			Handler:    service.Expect,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        queryURI,
+			Handler:    service.Query,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        sequenceURI,
+			Handler:    service.Sequence,
 			Parameters: []string{"request"},
 		},
 	)
@@ -65,3 +109,4 @@ func StartServer(port string) {
 	fmt.Printf("Started dsunit server on port %v\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
+

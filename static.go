@@ -1,72 +1,85 @@
 package dsunit
 
 import (
-	"path"
-	"runtime"
-	"strings"
 	"testing"
-
-	"github.com/viant/toolbox"
 )
 
-var dsUnitService Service
-var baseDirectory string
+var tester = NewTester()
 
-//SetService sets global dsunit service.
-func SetService(service Service) {
-	dsUnitService = service
+//Register registers new datastore connection
+func Register(t *testing.T, request *RegisterRequest) bool {
+	return tester.Register(t, request)
 }
 
-//GetService returns dsunit service.
-func GetService() Service {
-	if dsUnitService == nil {
-		file, _, _ := getCallerInfo(4)
-		baseDirectory = path.Dir(file) + "/"
-		dsUnitService = NewServiceLocal(baseDirectory)
-	}
-	return dsUnitService
+//Register registers new datastore connection, JSON request is fetched from URL
+func RegisterFromURL(t *testing.T, URL string) bool {
+	return tester.RegisterFromURL(t, URL)
 }
 
-//UseRemoteTestServer this method changes service to run all operation remotely using passed in URL.
-func UseRemoteTestServer(serverURL string) {
-	file, _, _ := getCallerInfo(3)
-	baseDirectory := path.Dir(file) + "/"
-	SetService(NewServiceClient(baseDirectory, serverURL))
+//Recreate recreates datastore
+func Recreate(t *testing.T, request *RecreateRequest) bool {
+	return tester.Recreate(t, request)
 }
 
-func getCallerFileAndMethod() (string, string) {
-	file, method, _ := getCallerInfo(3)
-	return file, method
+//Recreate recreates datastore, JSON request is fetched from URL
+func RecreateFromURL(t *testing.T, URL string) bool {
+	return tester.RecreateFromURL(t, URL)
 }
 
-func handleResponse(t *testing.T, response *Response) {
-	if response.hasError() {
-		file, method, line := getCallerInfo(4)
-		_, file = path.Split(file)
-		t.Errorf("\n%v.%v:%v %v", file, method, line, response.Message)
-		t.FailNow()
-	} else {
-		t.Logf(response.Message)
-	}
+//RunSQL runs supplied SQL
+func RunSQL(t *testing.T, request *RunSQLRequest) bool {
+	return tester.RunSQL(t, request)
 }
 
-func getCallerInfo(callerIndex int) (string, string, int) {
-	var callerPointer = make([]uintptr, 10) // at least 1 entry needed
-	runtime.Callers(callerIndex, callerPointer)
-	callerInfo := runtime.FuncForPC(callerPointer[0])
-	file, line := callerInfo.FileLine(callerPointer[0])
-	callerName := callerInfo.Name()
-	dotPosition := strings.LastIndex(callerName, ".")
-	return file, callerName[dotPosition+1:], line
+//RunSQL runs supplied SQL, JSON request is fetched from URL
+func RunSQLFromURL(t *testing.T, URL string) bool {
+	return tester.RunSQLFromURL(t, URL)
+}
+
+//RunScript runs supplied SQL scripts
+func RunScript(t *testing.T, request *RunScriptRequest) bool {
+	return tester.RunScript(t, request)
+}
+
+//RunScript runs supplied SQL scripts, JSON request is fetched from URL
+func RunScriptFromURL(t *testing.T, URL string) bool {
+	return tester.RunScriptFromURL(t, URL)
+}
+
+//Add table mapping
+func AddTableMapping(t *testing.T, request *MappingRequest) bool {
+	return tester.AddTableMapping(t, request)
+}
+
+//Add table mapping, JSON request is fetched from URL
+func AddTableMappingFromURL(t *testing.T, URL string) bool {
+	return tester.AddTableMappingFromURL(t, URL)
+}
+
+//Init datastore, (register, recreated, run sql, add mapping)
+func Init(t *testing.T, request *InitRequest) bool {
+	return tester.Init(t, request)
+}
+
+//Init datastore, (register, recreated, run sql, add mapping), JSON request is fetched from URL
+func InitFromURL(t *testing.T, URL string) bool {
+	return tester.InitFromURL(t, URL)
+}
+
+//Populate database with datasets
+func Prepare(t *testing.T, request *PrepareRequest) bool {
+	return tester.Prepare(t, request)
+}
+
+//Populate database with datasets, JSON request is fetched from URL
+func PrepareFromURL(t *testing.T, URL string) bool {
+	return tester.PrepareFromURL(t, URL)
 }
 
 //PrepareDatastore matches all dataset files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name.
-func PrepareDatastore(t *testing.T, datastore string) {
-	testFile, method, _ := getCallerInfo(3)
-	pathPrefix := removeFileExtension(testFile)
-	service := GetService()
-	response := service.PrepareDatastoreFor(datastore, pathPrefix+"_", method)
-	handleResponse(t, response)
+func PrepareDatastore(t *testing.T, datastore string) bool {
+	return tester.PrepareDatastore(t, datastore)
+
 }
 
 //PrepareDatastoreFor matches all dataset files that are located in baseDirectory with method name and
@@ -80,24 +93,30 @@ func PrepareDatastore(t *testing.T, datastore string) {
 //  read_all_prepare_travelers2.json
 //  read_all_populate_permissions.json
 //
-func PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, method string) {
-	service := GetService()
-	response := service.PrepareDatastoreFor(datastore, baseDirectory, method)
-	handleResponse(t, response)
+func PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, method string) bool {
+	return tester.PrepareDatastoreFor(t, datastore, baseDirectory, method)
 }
 
-//ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name and
-//verifies that all listed dataset values are present in datastore
-func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) {
-	file, method, _ := getCallerInfo(3)
-	pathPrefix := removeFileExtension(file)
-	service := GetService()
-	response := service.ExpectDatasetsFor(datastore, pathPrefix+"_", method, checkPolicy)
-	handleResponse(t, response.Response)
+
+//Verify datastore with supplied expected datasets
+func Expect(t *testing.T, request *ExpectRequest) bool {
+	return tester.Expect(t, request)
 }
 
-//ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name and
-// verifies that all listed dataset values are present in datastore
+//Verify datastore with supplied expected datasets, JSON request is fetched from URL
+func ExpectFromURL(t *testing.T, URL string) bool {
+	return tester.ExpectFromURL(t, URL)
+}
+
+
+//ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name to
+//verify that all listed dataset values are present in datastore
+func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool {
+	return tester.ExpectDatasets(t, datastore, checkPolicy)
+}
+
+//ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name to
+// verify that all listed dataset values are present in datastore
 // Note the matchable dataset files in the base directory have the following naming:
 //
 //  <lower_underscore method name>_expect_<table>.[json|csv]
@@ -107,41 +126,12 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) {
 //  read_all_expect_users.json
 //  read_all_expect_permissions.json
 //
-func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) {
-	service := GetService()
-	response := service.ExpectDatasetsFor(datastore, baseDirectory, method, checkPolicy)
-	handleResponse(t, response.Response)
+func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool {
+	return tester.ExpectDatasetFor(t, datastore, checkPolicy, baseDirectory, method)
 }
 
-//InitDatastoreFromURL initialises datastore from URL, URL needs to point to  InitDatastoreRequest JSON
-//it register datastore, table descriptor, data mapping, and optionally recreate datastore
-func InitDatastoreFromURL(t *testing.T, url string) {
-	service := GetService()
-	response := service.InitFromURL(url)
-	handleResponse(t, response)
-}
 
-//ExecuteScriptFromURL executes script from URL, URL should point to  ExecuteScriptRequest JSON.
-func ExecuteScriptFromURL(t *testing.T, url string) {
-	service := GetService()
-	response := service.ExecuteScriptsFromURL(url)
-	handleResponse(t, response)
-}
+//UseRemoteTestServer enables remove testing mode
+func UseRemoteTestServer(endpoint string) {
 
-//ExpandTestProtocolAsUrlIfNeeded extends input if it start with test:// fragment to currently test file directory as file protocol
-func ExpandTestProtocolAsURLIfNeeded(input string) string {
-	GetService()
-	if strings.HasPrefix(input, TestSchema) {
-		return toolbox.FileSchema + baseDirectory + input[len(TestSchema):]
-	}
-	return input
-}
-
-//ExpandTestProtocolAsPathIfNeeded extends input if it start with test:// fragment to currently test file directory
-func ExpandTestProtocolAsPathIfNeeded(input string) string {
-	GetService()
-	if strings.HasPrefix(input, TestSchema) {
-		return baseDirectory + input[len(TestSchema):]
-	}
-	return input
 }

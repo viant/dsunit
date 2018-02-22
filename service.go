@@ -1,418 +1,604 @@
 package dsunit
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"strings"
-
 	"github.com/viant/dsc"
+	"github.com/viant/dsunit/script"
+	"github.com/viant/toolbox/storage"
+	"io"
 	"github.com/viant/toolbox"
+	"fmt"
+	"github.com/viant/assertly"
+	"github.com/pkg/errors"
+	"github.com/viant/toolbox/data"
 )
 
-type serviceLocal struct {
-	service       Service
-	testManager   DatasetTestManager
-	testDirectory string
+var batchSize = 200
+
+//Service represents test service
+type Service interface {
+	//Registry returns registry of registered database managers
+	Registry() dsc.ManagerRegistry
+
+	//Register registers new datastore connection
+	Register(request *RegisterRequest) *RegisterResponse
+
+	//Recreate remove and creates datastore
+	Recreate(request *RecreateRequest) *RecreateResponse
+
+	//RunSQL runs supplied SQL
+	RunSQL(request *RunSQLRequest) *RunSQLResponse
+
+	//RunScript runs supplied SQL scripts
+	RunScript(request *RunScriptRequest) *RunSQLResponse
+
+	//Add table mapping
+	AddTableMapping(request *MappingRequest) *MappingResponse
+
+	//Init datastore, (register, recreated, run sql, add mapping)
+	Init(request *InitRequest) *InitResponse
+
+	//Populate database with datasets
+	Prepare(request *PrepareRequest) *PrepareResponse
+
+	//Verify datastore with supplied expected datasets
+	Expect(request *ExpectRequest) *ExpectResponse
+
+	//Query returns query from database
+	Query(request *QueryRequest) *QueryResponse
+
+	//Sequence returns sequence for supplied tables
+	Sequence(request *SequenceRequest) *SequenceResponse
+
+	SetContext(context toolbox.Context)
 }
 
-//TestManager return a DatasetTestManager
-func (s *serviceLocal) TestManager() DatasetTestManager {
-	return s.testManager
+
+
+type service struct {
+	registry dsc.ManagerRegistry
+	mapper   *Mapper
+	context  toolbox.Context
 }
 
-func (s *serviceLocal) expandTestSchemaIfNeeded(candidate string) string {
-	if strings.HasPrefix(candidate, TestSchema) {
-		return s.testDirectory + candidate[len(TestSchema):]
-	}
-	return candidate
+func (s *service) Registry() dsc.ManagerRegistry {
+	return s.registry
 }
 
-func (s *serviceLocal) expandTestSchemaURLIfNeeded(candidate string) string {
-	if strings.HasPrefix(candidate, TestSchema) {
-		return toolbox.FileSchema + s.testDirectory + candidate[len(TestSchema):]
-	}
-	return candidate
-}
-
-func (s *serviceLocal) registerDescriptors(dataStoreConfig *DatastoreConfig, manager dsc.Manager) string {
-	result := ""
-	if dataStoreConfig.Descriptors != nil {
-		macroEvaluator := s.testManager.MacroEvaluator()
-		for i, tableDescriptor := range dataStoreConfig.Descriptors {
-			dataStoreConfig.Descriptors[i].SchemaUrl = s.expandTestSchemaURLIfNeeded(tableDescriptor.SchemaUrl)
-			table, err := toolbox.ExpandValue(macroEvaluator, tableDescriptor.Table)
-			if err != nil {
-				panic(fmt.Sprintf("failed to expand macro for table name: %v", tableDescriptor.Table))
-			}
-			dataStoreConfig.Descriptors[i].Table = table
-			manager.TableDescriptorRegistry().Register(dataStoreConfig.Descriptors[i])
-			result = result + "\t\tRegistered table: " + tableDescriptor.Table + "\n"
-		}
-	}
-	return result
-}
-
-func (s *serviceLocal) registerMapping(dataStoreConfig *DatastoreConfig, manager dsc.Manager) string {
-	result := ""
-	if dataStoreConfig.DatasetMapping != nil {
-		for name := range dataStoreConfig.DatasetMapping {
-			datasetMapping := dataStoreConfig.DatasetMapping[name]
-			s.testManager.RegisterDatasetMapping(name, datasetMapping)
-			result = result + "\t\tRegistered mapping: " + name + "\n"
-			//register mapping table descriptor
-			mappingTableDescriptor := manager.TableDescriptorRegistry().Get(datasetMapping.Table)
-			mappingDescriptor := dsc.TableDescriptor{Table: name, PkColumns: mappingTableDescriptor.PkColumns, Autoincrement: mappingTableDescriptor.Autoincrement}
-			manager.TableDescriptorRegistry().Register(&mappingDescriptor)
-		}
-	}
-	return result
-}
-
-func (s *serviceLocal) loadConfigIfNeeded(datastoreConfig *DatastoreConfig) error {
-	if datastoreConfig.ConfigURL != "" {
-		datastoreConfig.ConfigURL = s.expandTestSchemaURLIfNeeded(datastoreConfig.ConfigURL)
-		reader, _, err := toolbox.OpenReaderFromURL(datastoreConfig.ConfigURL)
-		if err != nil {
-			return fmt.Errorf("failed to InitConfig - unable to open url %v due to %v", datastoreConfig.ConfigURL, err)
-
-		}
-		defer reader.Close()
-		err = json.NewDecoder(reader).Decode(&datastoreConfig.Config)
-		if err != nil {
-			return fmt.Errorf("failed to InitConfig - unable to decode url %v due to %v ", datastoreConfig.ConfigURL, err)
-		}
-	}
-	datastoreConfig.Config.Init()
-	return nil
-}
-
-func (s *serviceLocal) expandDatastore(datastoreConfig *DatastoreConfig) error {
-	adminDbName, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.AdminDbName)
-	if err != nil {
-		return fmt.Errorf("failed to InitConfig - unable to expand macro for adminDbName %v, due to %v", datastoreConfig.AdminDbName, err)
-	}
-	targetDatastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastoreConfig.Datastore)
-	if err != nil {
-		return fmt.Errorf("failed to InitConfig - unable to expand macro for targetDatastore %v, due to %v", datastoreConfig.Datastore, err)
-	}
-	datastoreConfig.AdminDbName = adminDbName
-	datastoreConfig.Datastore = targetDatastore
-	return nil
-}
-
-func (s *serviceLocal) initDatastorFromConfig(datastoreConfig *DatastoreConfig) (string, error) {
-	err := s.expandDatastore(datastoreConfig)
-	if err != nil {
-		return "", err
-	}
-	result := "Registered datastore: " + datastoreConfig.Datastore + "\n"
-	err = s.loadConfigIfNeeded(datastoreConfig)
-	if err != nil {
-		return "", err
-	}
-	err = toolbox.ExpandParameters(s.testManager.MacroEvaluator(), datastoreConfig.Config.Parameters)
-	for k, v := range datastoreConfig.Config.Parameters {
-		datastoreConfig.Config.Parameters[k] = s.expandTestSchemaIfNeeded(v)
-	}
-
-	if err != nil {
-		return "", fmt.Errorf("failed to InitConfig - unable to expand config %v due to %v ", datastoreConfig.Config, err)
-	}
-	if datastoreConfig.Config.DriverName == "" {
-		return "", fmt.Errorf("Invalid configuration missing driver %v %v", datastoreConfig.ConfigURL, datastoreConfig.Config)
-	}
-
-	factory, err := dsc.GetManagerFactory(datastoreConfig.Config.DriverName)
-	if err != nil {
-		return "", err
-	}
-	manager, err := factory.Create(datastoreConfig.Config)
-	if err != nil {
-		return "", err
-	}
-	s.testManager.ManagerRegistry().Register(datastoreConfig.Datastore, manager)
-	result = result + s.registerDescriptors(datastoreConfig, manager)
-	result = result + s.registerMapping(datastoreConfig, manager)
-	return result, nil
-}
-
-func (s *serviceLocal) Init(request *InitDatastoreRequest) *Response {
-	message := ""
-	for i := range request.DatastoreConfigs {
-		initMessage, err := s.initDatastorFromConfig(&request.DatastoreConfigs[i])
-		if err != nil {
-			return newErrorResponse(err)
-		}
-		message += initMessage
-	}
-
-	for _, dataStoreConfig := range request.DatastoreConfigs {
-		if dataStoreConfig.ClearDatastore {
-			err := s.testManager.ClearDatastore(dataStoreConfig.AdminDbName, dataStoreConfig.Datastore)
-			if err != nil {
-				return newErrorResponse(dsUnitError{fmt.Sprintf("failed to clear datastores %v, due to %v", dataStoreConfig.Datastore, err)})
-			}
-			message = message + fmt.Sprintf("Clear datastore  %v\n", dataStoreConfig.Datastore)
-		}
-	}
-	if message == "" {
-		return newErrorResponse(dsUnitError{fmt.Sprintf("failed to init datastores, invalid request:%v", request)})
-	}
-	return newOkResponse(message)
-}
-
-func (s *serviceLocal) InitFromURL(url string) *Response {
-	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaURLIfNeeded(url))
-	if err != nil {
-		return newErrorResponse(err)
-	}
-	defer reader.Close()
-	request := &InitDatastoreRequest{}
-	err = json.NewDecoder(reader).Decode(&request)
-	if err != nil {
-		return newErrorResponse(dsUnitError{"failed to init datastores, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
-	}
-	return s.service.Init(request)
-}
-
-func (s *serviceLocal) ExecuteScripts(request *ExecuteScriptRequest) *Response {
-	var message = ""
-	if request.Scripts != nil {
-		for _, script := range request.Scripts {
-			var err error
-			if len(script.Sqls) > 0 || len(script.Body) > 0 {
-				_, err = s.testManager.Execute(&script)
-			} else {
-				_, err = s.testManager.ExecuteFromURL(script.Datastore, s.expandTestSchemaURLIfNeeded(script.Url))
-			}
-			if err != nil {
-				return newErrorResponse(dsUnitError{"failed to execut script on " + script.Datastore + " due to:\n\t" + err.Error()})
-			}
-			message = message + "Executed script " + script.Url + " on " + script.Datastore + "\n"
-		}
-
-	}
-	if message == "" {
-		return newErrorResponse(dsUnitError{fmt.Sprintf("failed to execute scripts, invalid request:%v", request)})
-	}
-	return newOkResponse(message)
-}
-
-func (s *serviceLocal) ExecuteScriptsFromURL(url string) *Response {
-	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaURLIfNeeded(url))
-	if err != nil {
-		return newErrorResponse(err)
-	}
-	defer reader.Close()
-	request := &ExecuteScriptRequest{}
-	err = json.NewDecoder(reader).Decode(request)
-	if err != nil {
-		return newErrorResponse(dsUnitError{"failed to execute scripts, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
-	}
-	for i, script := range request.Scripts {
-		if len(script.Url) > 0 && len(script.Body) == 0 {
-			url := s.expandTestSchemaURLIfNeeded(script.Url)
-			request.Scripts[i].Url = url
-
-			if strings.HasPrefix(url, "file://") {
-				file := url[len(toolbox.FileSchema):]
-				bytes, err := ioutil.ReadFile(file)
-				if err != nil {
-					return newErrorResponse(dsUnitError{"failed to execute script, unable to read file:" + file + " " + err.Error()})
-				}
-
-				request.Scripts[i].Body = string(bytes)
-			}
-		}
-	}
-	return s.service.ExecuteScripts(request)
-}
-
-func (s *serviceLocal) PrepareDatastore(request *PrepareDatastoreRequest) *Response {
-	var totalInserted, totalUpdated, totalDeleted int
-	var run = false
-	message := ""
-
-	for _, datasets := range request.Prepare {
-		datastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datasets.Datastore)
-		if err != nil {
-			return newErrorResponse(dsUnitError{"failed to prepare datastore due to:\n\t" + err.Error()})
-		}
-		datasets.Datastore = datastore
-		message += fmt.Sprintf("Prepared datastore %v with datasets:", datasets.Datastore)
-		run = true
-		inserted, updated, deleted, err := s.testManager.PrepareDatastore(&datasets)
-		if err != nil {
-			return newErrorResponse(dsUnitError{"failed to prepare datastore due to:\n\t" + err.Error()})
-		}
-		totalInserted += inserted
-		totalUpdated += updated
-		totalDeleted += deleted
-		for _, dataset := range datasets.Datasets {
-			message += fmt.Sprintf("%v(%v), ", dataset.Table, len(dataset.Rows))
-		}
-		message += "\n\t"
-	}
-	if run {
-		return newOkResponse(fmt.Sprintf("%vinserted: %v, updated: %v, deleted: %v\n", message, totalInserted, totalUpdated, totalDeleted))
-	}
-	return newErrorResponse(dsUnitError{fmt.Sprintf("failed to prepare datastore, invalid request:%v", request)})
-}
-
-func (s *serviceLocal) PrepareDatastoreFromURL(url string) *Response {
-	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaIfNeeded(url))
-	if err != nil {
-		return newErrorResponse(err)
-	}
-	defer reader.Close()
-	request := &PrepareDatastoreRequest{}
-	err = json.NewDecoder(reader).Decode(&request)
-	if err != nil {
-		return newErrorResponse(dsUnitError{"failed to prepare datastore, unable to decode payload from " + url + " due to:\n\t" + err.Error()})
-	}
-	return s.service.PrepareDatastore(request)
-}
-
-func (s *serviceLocal) PrepareDatastoreFor(datastore string, baseDir string, method string) *Response {
-	datastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastore)
-	if err != nil {
-		return newErrorResponse(err)
-	}
-	datasets, err := s.buildDatasets(datastore, "prepare", baseDir, method)
-	if err != nil {
-		return newErrorResponse(err)
-	}
-	request := &PrepareDatastoreRequest{Prepare: []Datasets{*datasets}}
-	return s.service.PrepareDatastore(request)
-}
-
-func (s *serviceLocal) ExpectDatasets(request *ExpectDatasetRequest) *ExpectResponse {
-	message := ""
-	var hasViolations = false
-	var run = false
-	var violations AssertViolations
+func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 	var err error
-	for _, datasets := range request.Expect {
-		expandedDatastore, er := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datasets.Datastore)
-		if er != nil {
-			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"failed to verify datastore with datasets: " + datasets.Datastore + ", " + er.Error()})}
-		}
-		datasets.Datastore = expandedDatastore
-
-		message += fmt.Sprintf("\n\tVerified datastore %v with datasets:", datasets.Datastore)
-		run = true
-		violations, err = s.testManager.ExpectDatasets(request.CheckPolicy, &datasets)
-		if err != nil {
-			return &ExpectResponse{Response: newErrorResponse(dsUnitError{"failed to verify expected datasets due to:\n\t" + err.Error()})}
-		}
-		for _, dataset := range datasets.Datasets {
-			message += fmt.Sprintf("%v(%v), ", dataset.Table, len(dataset.Rows))
-		}
-		message += "\n\t"
-		if violations.HasViolations() {
-			message = message + violations.String() + "\n"
-			hasViolations = true
+	var response = &RegisterResponse{
+		BaseResponse: NewBaseOkResponse(),
+	}
+	if request.ConfigURL != "" {
+		if request.Config, err = dsc.NewConfigFromURL(request.ConfigURL); err != nil {
+			response.SetError(err)
+			return response
 		}
 	}
-	if hasViolations {
-		return &ExpectResponse{Response: newErrorResponse(dsUnitError{message}), Violations: violations.Violations()}
-	}
-
-	if run {
-		return &ExpectResponse{Response: newOkResponse(fmt.Sprintf("%vPassed", message))}
-	}
-	return &ExpectResponse{Response: newErrorResponse(dsUnitError{fmt.Sprintf("failed to verify expected datasets, invalid request:%v", request)})}
-}
-
-func (s *serviceLocal) ExpectDatasetsFromURL(url string) *ExpectResponse {
-	reader, _, err := toolbox.OpenReaderFromURL(s.expandTestSchemaIfNeeded(url))
-	if err != nil {
-		return &ExpectResponse{Response: newErrorResponse(err)}
-	}
-	defer reader.Close()
-	request := &ExpectDatasetRequest{}
-	err = json.NewDecoder(reader).Decode(&request)
-	if err != nil {
-		return &ExpectResponse{Response: newErrorResponse(dsUnitError{"failed to verify expected datasets, unable to decode payload from " + url + " due to:\n\t" + err.Error()})}
-	}
-	return s.service.ExpectDatasets(request)
-}
-
-func (s *serviceLocal) ExpectDatasetsFor(datastore string, baseDir string, method string, checkPolicy int) *ExpectResponse {
-	datastore, err := toolbox.ExpandValue(s.testManager.MacroEvaluator(), datastore)
-	if err != nil {
-		return &ExpectResponse{Response: newErrorResponse(err)}
-	}
-	datasets, err := s.buildDatasets(datastore, "expect", baseDir, method)
-	if err != nil {
-		return &ExpectResponse{Response: newErrorResponse(err)}
-	}
-	request := &ExpectDatasetRequest{
-		Expect:      []Datasets{*datasets},
-		CheckPolicy: checkPolicy,
-	}
-	return s.service.ExpectDatasets(request)
-}
-
-func (s *serviceLocal) GetTables(datastore string) []string {
-	tables := s.testManager.RegisteredTables(datastore)
-	for i := 0; i+1 < len(tables); i++ {
-		for j := i + 1; j < len(tables); j++ {
-			if len(tables[i]) < len(tables[j]) {
-				temp := tables[i]
-				tables[i] = tables[j]
-				tables[j] = temp
+	config := expandDscConfig(request.Config, request.Datastore)
+	manager, err := dsc.NewManagerFactory().Create(config);
+	if err == nil {
+		s.registry.Register(request.Datastore, manager)
+		if len(request.Tables) > 0 {
+			for _, table := range request.Tables {
+				manager.TableDescriptorRegistry().Register(table)
 			}
 		}
 	}
-	return tables
+	if err != nil {
+		response.SetError(err)
+	}
+	return response
 }
 
-func (s *serviceLocal) getTableForURL(datastore, url string) string {
-	tables := s.GetTables(datastore)
-	for _, table := range tables {
-		if strings.Contains(url, "_"+table+".") {
-			return table
+
+
+//Recreate removes and re-creates datastore
+func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
+	var response = &RecreateResponse{
+		BaseResponse: NewBaseOkResponse(),
+	}
+	if request.AdminDatastore == "" {
+		request.AdminDatastore = request.Datastore
+	}
+	err := RecreateDatastore(request.AdminDatastore, request.Datastore, s.registry)
+	response.SetError(err)
+	return response
+}
+
+
+
+//expandSQLIfNeeded expand content of SQL with context.state key
+func (s *service) expandSQLIfNeeded(request *RunSQLRequest, manager dsc.Manager) []string {
+	if ! request.Expand {
+		return request.SQL
+	}
+	context := s.newContext(manager)
+	state := s.getContextState(context)
+	if state == nil {
+		return request.SQL
+	}
+	result := make([]string, 0)
+	for _, SQL := range request.SQL {
+		result = append(result, state.ExpandAsText(SQL))
+	}
+	return result
+}
+
+
+
+func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
+	var response = &RunSQLResponse{
+		BaseResponse: NewBaseOkResponse(),
+	}
+	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+
+	manager := s.registry.Get(request.Datastore)
+	var SQL = s.expandSQLIfNeeded(request, manager)
+	results, err := manager.ExecuteAll(SQL)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	for _, result := range results {
+		if count, err := result.RowsAffected(); err == nil {
+			response.RowsAffected += int(count)
 		}
 	}
-	panic("failed to match table in url")
+	return response
 }
 
-func (s *serviceLocal) buildDatasets(datastore string, fragment string, baseDirectory string, method string) (*Datasets, error) {
-	datasetFactory := s.testManager.DatasetFactory()
-	tables := s.GetTables(datastore)
-	if len(tables) == 0 {
-		return nil, dsUnitError{"Unable to build dataset - no table register in dataset factory"}
+func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
+	var response = &RunSQLResponse{
+		BaseResponse: NewBaseOkResponse(),
 	}
-	baseDirectory = s.expandTestSchemaIfNeeded(baseDirectory)
+	if len(request.Scripts) == 0 {
+		return response
+	}
+	var SQL = []string{}
+	var err error
+	var storageService storage.Service
+	var storageObject storage.Object
+	for _, resource := range request.Scripts {
+		resource.Init()
+		var reader io.ReadCloser
+		if storageService, err = storage.NewServiceForURL(resource.URL, resource.Credential); err == nil {
+			if storageObject, err = storageService.StorageObject(resource.URL); err == nil {
+				if reader, err = storageService.Download(storageObject); err == nil {
+					defer reader.Close()
+					SQL = append(SQL, script.ParseSQLScript(reader)...)
+				}
+			}
+		}
+		if err != nil {
+			response.SetError(err)
+			return response
+		}
+	}
+	return s.RunSQL(&RunSQLRequest{
+		Expand:    request.Expand,
+		Datastore: request.Datastore,
+		SQL:       SQL,
+	})
+}
 
-	files, err := matchFiles(baseDirectory, method, fragment, tables)
+func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
+	var response = &MappingResponse{
+		BaseResponse: NewBaseOkResponse(),
+		Tables:       make([]string, 0),
+	}
+	if len(request.Mappings) == 0 {
+		return response
+	}
+	for _, mapping := range request.Mappings {
+		s.mapper.Add(mapping)
+		response.Tables = append(response.Tables, mapping.Tables()...)
+	}
+	return response
+}
+
+//Init datastore, (register, recreated, run sql, add mapping)
+func (s *service) Init(request *InitRequest) *InitResponse {
+	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
+	if request.Datastore == "" {
+		response.SetError(errors.New("datastore was empty"))
+		return response
+	}
+	registerRequest := request.RegisterRequest
+	if registerRequest == nil {
+		response.SetError(errors.New("unable recreates - registerRequest datastore was empty"))
+		return response
+	}
+	if registerRequest.Datastore == "" {
+		registerRequest.Datastore = request.Datastore
+	}
+
+	registerRequests := []*RegisterRequest{registerRequest, request.Admin}
+	for _, registerRequest := range registerRequests {
+		if registerRequest == nil {
+			continue
+		}
+		serviceResponse := s.Register(registerRequest)
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+	}
+
+	if request.Recreate {
+		var adminDatastore = registerRequest.Datastore
+		if request.Admin != nil {
+			adminDatastore = request.Admin.Datastore
+		}
+		serviceResponse := s.Recreate(NewRecreateRequest(registerRequest.Datastore, adminDatastore))
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+	}
+
+	if request.RunScriptRequest != nil && len(request.Scripts) > 0 {
+		if request.RunScriptRequest.Datastore == "" {
+			request.RunScriptRequest.Datastore = request.Datastore
+		}
+		serviceResponse := s.RunScript(request.RunScriptRequest)
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+	}
+
+	if request.MappingRequest != nil && len(request.Mappings) > 0 {
+		serviceResponse := s.AddTableMapping(request.MappingRequest)
+		if serviceResponse.Status != StatusOk {
+			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+		response.Tables = serviceResponse.Tables
+	}
+	return response
+}
+
+var stateKey = (*data.Map)(nil)
+
+func (s *service) getContextState(context toolbox.Context) *data.Map {
+	if ! context.Contains(stateKey) {
+		return nil
+	}
+	var state = context.GetOptional(stateKey).(*data.Map)
+	return state
+}
+
+func (s *service) newContext(manager dsc.Manager) toolbox.Context {
+	context := toolbox.NewContext()
+	if s.context != nil {
+		context = s.context.Clone()
+	}
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	context.Replace((*dsc.Manager)(nil), &manager)
+	context.Replace((*dsc.DatastoreDialect)(nil), &dialect)
+	return context
+}
+
+func (s *service) deleteDatasetIfNeeded(dataset *Dataset, table *dsc.TableDescriptor, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
+	if dataset.Records.ShouldDeleteAll() {
+		dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+		sqlResult, err := manager.ExecuteOnConnection(connection, fmt.Sprintf("DELETE FROM %s", table.Table), nil)
+		if err != nil {
+			return err
+		}
+		deleted, _ := sqlResult.RowsAffected()
+		response.Modification[dataset.Table].Deleted = int(deleted)
+		//since deletion has to happen before new entries are added to address new modification, deletion needs to be committed first
+		//for classified as insertable or updatable to work correctly
+		connection.Commit()
+		connection.Begin()
+		dialect.DisableForeignKeyCheck(manager, connection)
+	}
+	return nil
+}
+
+
+func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, context toolbox.Context) (*dsc.TableDescriptor, error) {
+	macroEvaluator := assertly.NewDefaultMacroEvaluator()
+	expandedTable, err := macroEvaluator.Expand(context, dataset.Table)
 	if err != nil {
 		return nil, err
 	}
-	var datasets = make([]*Dataset, 0)
-
-	for _, file := range files {
-		table := s.getTableForURL(datastore, file)
-		datasetPoiner, err := datasetFactory.CreateFromURL(datastore, table, toolbox.FileSchema+file)
-		if err != nil {
-			return nil, err
-		}
-		dataset := datasetPoiner
-		datasets = append(datasets, dataset)
+	var state = s.getContextState(context)
+	tableName := state.ExpandAsText(toolbox.AsString(expandedTable))
+	table := manager.TableDescriptorRegistry().Get(tableName)
+	if table == nil {
+		table = &dsc.TableDescriptor{Table: tableName}
+		manager.TableDescriptorRegistry().Register(table)
 	}
-	return &Datasets{
-		Datastore: datastore,
-		Datasets:  datasets,
-	}, nil
+	var autoincrement = dataset.Records.Autoincrement()
+	var uniqueKeys = dataset.Records.UniqueKeys()
+	var fromQuery = dataset.Records.FromQuery()
+	if ! table.Autoincrement {
+		table.Autoincrement = autoincrement
+	}
+	table.FromQuery = fromQuery
+	if len(table.PkColumns) == 0 {
+		table.PkColumns = uniqueKeys
+	} else if len(uniqueKeys) == 0 {
+		if len(dataset.Records) > 0 {
+			if len(dataset.Records[0]) == 0 {
+				dataset.Records[0] = make(map[string]interface{})
+			}
+			dataset.Records[0][assertly.IndexByDirective] = table.PkColumns
+		}
+	}
+	var columns = dataset.Records.Columns()
+	if len(columns) > 0 {
+		table.Columns = columns
+	}
+	return table, nil
 }
 
-//NewServiceLocal returns new local dsunit service, it takes test directory as argument.
-func NewServiceLocal(testDirectory string) Service {
-	datasetTestManager := NewDatasetTestManager()
-	var localService = &serviceLocal{testManager: datasetTestManager, testDirectory: testDirectory}
-	var result Service = localService
-	localService.service = result
-	return result
+func (s *service) populate(dataset *Dataset, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
+	if s.mapper.Has(dataset.Table) {
+		datasets := s.mapper.Map(dataset)
+		for _, dataset := range datasets {
+			if err = s.populate(dataset, response, context, manager, connection); err != nil {
+				return err
+			}
+		}
+		return
+	}
+	if len(response.Modification) == 0 {
+		response.Modification = make(map[string]*ModificationInfo)
+	}
+	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist",}
+	var modification = response.Modification[dataset.Table]
+	var table *dsc.TableDescriptor
+	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
+		return err
+	}
+	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
+		return err
+	}
+	context.Replace((*Dataset)(nil), dataset)
+	context.Replace((*dsc.TableDescriptor)(nil), table)
+	var records []interface{}
+	if records, err = dataset.Records.Expand(context); err != nil {
+		return err
+	}
+	var dmlBuilder = newDatasetDmlProvider(dsc.NewDmlBuilder(table))
+	if len(table.PkColumns) == 0 { //no keys perform insert
+		modification.Method = "load"
+		modification.Added, err = manager.PersistData(connection, records, table.Table, nil, insertSQLProvider(dmlBuilder)); //TODO add insert sql provider
+		return err
+	}
+
+	modification.Added, modification.Modified, err = manager.PersistAllOnConnection(connection, &records, table.Table, dmlBuilder)
+	return err
+}
+
+func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, manager dsc.Manager, connection dsc.Connection) {
+	err := connection.Begin()
+	if err != nil {
+		response.SetError(err)
+	}
+
+	context := s.newContext(manager)
+	for _, dataset := range request.Datasets {
+		err = s.populate(dataset, response, context, manager, connection)
+		if err != nil {
+			break
+		}
+	}
+	if err == nil {
+		err = connection.Commit()
+	} else {
+		_ = connection.Rollback()
+	}
+	if err != nil {
+		response.SetError(err)
+	}
+}
+
+func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
+	var response = &PrepareResponse{
+		BaseResponse: NewBaseOkResponse(),
+	}
+	if err := request.Validate(); err != nil {
+		response.SetError(err)
+		return response
+	}
+
+	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	var err error
+	var connection dsc.Connection
+	manager := s.registry.Get(request.Datastore)
+	if err = request.Load(); err == nil {
+		if len(request.Datasets) == 0 {
+			response.SetError(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
+			return response
+		}
+		connection, err = manager.ConnectionProvider().Get()
+	}
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	dialect := GetDatastoreDialect(request.Datastore, s.registry)
+	dialect.DisableForeignKeyCheck(manager, connection)
+	defer dialect.EnableForeignKeyCheck(manager, connection)
+	defer connection.Close()
+	s.prepare(request, response, manager, connection)
+	return response
+
+}
+
+func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse, context toolbox.Context, manager dsc.Manager) (err error) {
+	if s.mapper.Has(dataset.Table) {
+		datasets := s.mapper.Map(dataset)
+		for _, dataset := range datasets {
+			if err = s.expect(policy, dataset, response, context, manager); err != nil {
+				return err
+			}
+		}
+		return err
+	}
+
+	var table *dsc.TableDescriptor
+	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
+		return err
+	}
+	context.Replace((*Dataset)(nil), dataset)
+	context.Replace((*dsc.TableDescriptor)(nil), table)
+
+	 expectedRecords, err := dataset.Records.Expand(context);
+	 if err != nil {
+		return err
+	}
+	expected := dataset.Records
+	var columns = dataset.Records.Columns()
+	var mapper = newDatasetRowMapper(columns)
+	var parametrizedSQL *dsc.ParametrizedSQL
+
+	sqlBuilder := dsc.NewQueryBuilder(table, "")
+	var actual = make([]interface{}, 0)
+	var validation = &DatasetValidation{
+		Dataset: dataset.Table,
+	}
+	if policy == FullTableDatasetCheckPolicy || len(table.PkColumns) == 0 { //no keys perform insert
+		parametrizedSQL = sqlBuilder.BuildQueryAll(columns)
+		if err = manager.ReadAll(&actual, parametrizedSQL.SQL, parametrizedSQL.Values, mapper); err != nil {
+			return err
+		}
+	} else {
+		pkValues := buildBatchedPkValues(expected, table.PkColumns)
+		for _, parametrizedSQL = range sqlBuilder.BuildBatchedQueryOnPk(columns, pkValues, batchSize) {
+			var batched = make([]interface{}, 0)
+			err := manager.ReadAll(&batched, parametrizedSQL.SQL, parametrizedSQL.Values, mapper)
+			if err != nil {
+				return err
+			}
+			actual = append(actual, batched...)
+		}
+	}
+
+
+	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
+		response.Validation = append(response.Validation, validation)
+		response.FailedCount += validation.Validation.FailedCount
+		response.PassedCount += validation.Validation.PassedCount
+		response.Message += "\n" + dataset.Table + "\n" + validation.Report()
+	}
+	return err
+}
+
+func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
+	var response = &ExpectResponse{
+		BaseResponse: NewBaseOkResponse(),
+	}
+	if err := request.Validate(); err != nil {
+		response.SetError(err)
+		return response
+	}
+
+	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	manager := s.registry.Get(request.Datastore)
+	context := s.newContext(manager)
+	var err error
+
+
+
+	if err = request.Load(); err == nil {
+		if len(request.Datasets) == 0 {
+			response.SetError(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
+			return response
+		}
+		for _, dataset := range request.Datasets {
+			if err = s.expect(request.CheckPolicy, dataset, response, context, manager); err != nil {
+				break
+			}
+		}
+
+	}
+
+	response.SetError(err)
+	return response
+}
+
+//Query returns query from database
+func (s *service) Query(request *QueryRequest) *QueryResponse {
+	var response = &QueryResponse{
+		BaseResponse: NewBaseOkResponse(),
+		Records:      make([]map[string]interface{}, 0),
+	}
+	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	manager := s.registry.Get(request.Datastore)
+	macroEvaluator := assertly.NewDefaultMacroEvaluator()
+	context := toolbox.NewContext()
+	SQL, err := macroEvaluator.Expand(context, request.SQL)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+
+	err = manager.ReadAll(&response.Records, toolbox.AsString(SQL), nil, nil)
+	response.SetError(err)
+	return response
+}
+
+//Sequence returns sequence for supplied tables
+func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
+	var response = &SequenceResponse{
+		BaseResponse: NewBaseOkResponse(),
+		Sequences:    make(map[string]int),
+	}
+	if len(request.Tables) == 0 {
+		response.SetError(errors.New("tables were empty"))
+	}
+	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	manager := s.registry.Get(request.Datastore)
+	dialect := GetDatastoreDialect(request.Datastore, s.registry)
+	for _, table := range request.Tables {
+		if sequence, err := dialect.GetSequence(manager, table); err == nil {
+			response.Sequences[table] = int(sequence)
+		}
+	}
+	return response
+}
+
+func (s *service) SetContext(context toolbox.Context) {
+	s.context = context
+}
+
+//New creates new dsunit service
+func New() Service {
+	return &service{
+		registry: dsc.NewManagerRegistry(),
+		mapper:   NewMapper(),
+	}
+}
+
+//GetDatastoreDialect return GetDatastoreDialect for supplied datastore and registry.
+func GetDatastoreDialect(datastore string, registry dsc.ManagerRegistry) dsc.DatastoreDialect {
+	manager := registry.Get(datastore)
+	dbConfig := manager.Config()
+	return dsc.GetDatastoreDialect(dbConfig.DriverName)
+}
+
+//RecreateDatastore recreates target datastore from supplied admin datastore and registry
+func RecreateDatastore(adminDatastore, targetDatastore string, registry dsc.ManagerRegistry) error {
+	dialect := GetDatastoreDialect(adminDatastore, registry)
+	adminManager := registry.Get(adminDatastore)
+	if !dialect.CanDropDatastore(adminManager) {
+		return recreateTables(registry, targetDatastore)
+	}
+	return recreateDatastore(adminManager, registry, targetDatastore)
 }

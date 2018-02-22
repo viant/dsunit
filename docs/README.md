@@ -30,19 +30,12 @@ import (
 
 func TestSetup(t *testing.T) {
 
-    dsunit.InitDatastoresFromUrl(t, "test://test/datastore_init.json")
+    dsunit.InitDatastoresFromUrl(t, "test/datastore_init.json")
     // ...
     
 }
 ```
 
-
-### test uri schema 
- `test://` - is special fragment that will be dynamically expanded to the directory, where your test file is located.
-
-Some datastore like SQL databases may need to run an SQL script to create schema after clearing datastore. The script may contain multiple statements, terminated by a semicolon (`;`). For store procedure it is possible to change delimiter from ';' to any other delimiter by using 'DELIMITER ;;' instruction, in this case ';;' is statement terminator.
-
-Datastore schema can be loaded from local file system of from central source code repository. i.e.
 
 
 ## Dataset auto discovery
@@ -113,12 +106,12 @@ In this case auto-discovery matches all dataset files that are located in test d
 
 func TestPersistAll(t *.testing.T) {
     ...
-    dsunit.PrepareDatastoreFor(t, "bar_test", "test://test/", "PersistAll")
+    dsunit.PrepareDatastoreFor(t, "bar_test", "test/", "PersistAll")
   
 
   	//business logic comes here
   
-  	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy,"test://test/", "PersistAll")
+  	dsunit.ExpectDatasetFor(t, "bar_test", dsunit.SnapshotDatasetCheckPolicy,"test/", "PersistAll")
 
 }  
 ```
@@ -148,36 +141,6 @@ type DatasetMapping struct {
 ```
 
 
-
-## Macros
-
-The macro is an expression with parameters that expands original text value. 
-The general format of macro: &lt;ds:MACRO_NAME [json formated array of parameters]>
-
-The following macro are build-in:
-
-
-| Name | Parameters | Description | Example | 
-| --- | --- | --- | --- |
-| sql | SQL expression | Returns value of SQL expression | &lt;ds:sql["SELECT CURRENT_DATE()"]> |
-| seq | name of sequence/table for autoicrement| Returns value of Sequence| &lt;ds:seq["users"]> |
-| env | name env variable| Returns value env variable| &lt;ds:env["user"]> |
-| nil |n/a| Returns nil value| &lt;ds:nil> |
-| cast | type name| Returns value env variable| &lt;ds:cast["int", "123"]> |
-| current_timestamp | n/a | Returns time.Now() | &lt;ds:current_timestamp> |
-
-
-
-
-## Predicates
-
-Predicate allows expected value to be evaluated with actual dataset value using custom predicate logic.
-
-
-| Name | Parameters | Description | Example | 
-| --- | --- | --- | --- |
-| between | from, to values | Evaluate actual value with between predicate | &lt;ds:between[1.888889, 1.88889]> |
-| within_sec | base time, delta, optional date format | Evaluate if actual time is within delta of the base time | &lt;ds:within_sec["now", 6, "yyyyMMdd HH:mm:ss"]> |
 
 
 ## Local and Remote Datastore unit mode

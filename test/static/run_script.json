@@ -1,0 +1,4 @@
+{
+  "Datastore":"static",
+  "Scripts":[{"URL":"test/tester/schema.ddl"}]
+}

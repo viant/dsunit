@@ -1,0 +1,6 @@
+{
+  "Datastore":"tester",
+  "SQL":[
+    "DROP TABLE IF EXISTS abc"
+  ]
+}
