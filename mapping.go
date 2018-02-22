@@ -1,5 +1,7 @@
 package dsunit
 
+
+
 //Mapping represents mapping
 type Mapping struct {
 	*MappingTable
@@ -34,6 +36,9 @@ func (m *Mapping) Tables() []string {
 
 
 func addTables(tables *[]string, mapping *MappingTable) {
+	if mapping == nil {
+		return
+	}
 	*tables = append(*tables, mapping.Table)
 	if len(mapping.Associations) == 0 {
 		return

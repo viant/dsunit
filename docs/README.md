@@ -30,7 +30,7 @@ import (
 
 func TestSetup(t *testing.T) {
 
-    dsunit.InitDatastoresFromUrl(t, "test/datastore_init.json")
+    dsunit.InitDatastoresFromUrl(t, init.json)
     // ...
     
 }

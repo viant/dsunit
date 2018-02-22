@@ -142,7 +142,6 @@ func TestService_FromQueryValidation(t *testing.T) {
 			}
 		}
 
-
 		response := service.Expect(&dsunit.ExpectRequest{
 			DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data", "db1_query_expect_", ""),
 		})

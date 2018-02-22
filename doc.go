@@ -10,7 +10,7 @@ No mocking, but actual test against various datastores likes sql RDBMS, Aerospik
 
 Usage:
 
-    dsunit.InitFromURL(t, "test/datastore_init.json")
+    dsunit.InitFromURL(t, "test/init.json")
     dsunit.PrepareFromURL(t, "test/use_case1/data.json")
 
 

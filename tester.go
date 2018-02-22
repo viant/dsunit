@@ -288,6 +288,7 @@ func (s *localTester) ExpectDatasets(t *testing.T, datastore string, checkPolicy
 //  read_all_expect_permissions.json
 //
 func (s *localTester) ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory, method string) bool {
+	method = convertToLowerUnderscore(method)
 	request := &ExpectRequest{
 		DatasetResource: NewDatasetResource(datastore, baseDirectory, fmt.Sprintf("%v_expect_", method), ""),
 	}

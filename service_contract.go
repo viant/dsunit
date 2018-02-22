@@ -156,6 +156,14 @@ type MappingRequest struct {
 	Mappings []*Mapping `required:"true" description:"virtual table mapping"`
 }
 
+func (r *MappingRequest) Validate() error {
+	if len(r.Mappings) == 0 {
+		return errors.New("mappings were empty")
+	}
+	return nil
+}
+
+
 //NewMappingRequest creates new mapping request
 func NewMappingRequest(mappings ... *Mapping) *MappingRequest {
 	return &MappingRequest{
