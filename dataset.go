@@ -141,7 +141,7 @@ func (r *Records) Columns() []string {
 type DatastoreDatasets struct {
 	Datastore string `required:"true" description:"register datastore"`
 	Datasets  []*Dataset `description:"collection of dataset per table"`
-	Data map[string][]map[string]interface{} `description:"map, where each pair represent table name, and records"`
+	Data map[string][]map[string]interface{} `description:"map, where each pair represent table name and its records (backward compatibility)"`
 }
 
 
