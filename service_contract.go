@@ -102,7 +102,7 @@ type RecreateResponse struct {
 //RunSQLRequest represents run SQL request
 type RunSQLRequest struct {
 	Datastore string `required:"true" description:"registered datastore name"`
-	Expand bool  `description:"substitute $ expression with content of context.state"`
+	Expand    bool   `description:"substitute $ expression with content of context.state"`
 	SQL       []string
 }
 
@@ -131,7 +131,7 @@ type RunSQLResponse struct {
 //RunScriptRequest represents run SQL Script request
 type RunScriptRequest struct {
 	Datastore string `required:"true" description:"registered datastore name"`
-	Expand bool  `description:"substitute $ expression with content of context.state"`
+	Expand    bool   `description:"substitute $ expression with content of context.state"`
 	Scripts   []*url.Resource
 }
 
@@ -157,12 +157,14 @@ type MappingRequest struct {
 }
 
 func (r *MappingRequest) Validate() error {
+	if r == nil {
+		return nil
+	}
 	if len(r.Mappings) == 0 {
 		return errors.New("mappings were empty")
 	}
 	return nil
 }
-
 
 //NewMappingRequest creates new mapping request
 func NewMappingRequest(mappings ... *Mapping) *MappingRequest {
@@ -195,6 +197,38 @@ type InitRequest struct {
 	*RunScriptRequest
 }
 
+func (r *InitRequest) Init() (err error) {
+	if r.RegisterRequest != nil {
+		if r.RegisterRequest.Datastore == "" {
+			r.RegisterRequest.Datastore = r.Datastore
+		}
+
+		if r.RegisterRequest.Config == nil && r.RegisterRequest.ConfigURL != "" {
+			r.Config, err = dsc.NewConfigFromURL(r.RegisterRequest.ConfigURL)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if r.RunScriptRequest != nil {
+		if r.RunScriptRequest.Datastore == "" {
+			r.RunScriptRequest.Datastore = r.Datastore
+		}
+	}
+
+	return nil
+}
+
+func (r *InitRequest) Validate() error {
+	if r.RegisterRequest == nil {
+		return errors.New("datastore was empty")
+	}
+	if r.RegisterRequest.Config == nil {
+		return errors.New("datastore config empty")
+	}
+	return nil
+}
+
 //NewInitRequest creates a new database init request
 func NewInitRequest(datastore string, recreate bool, register, admin *RegisterRequest, mapping *MappingRequest, script *RunScriptRequest) *InitRequest {
 	return &InitRequest{
@@ -223,7 +257,7 @@ type InitResponse struct {
 
 //PrepareRequest represents a request to populate datastore with data resource
 type PrepareRequest struct {
-	Expand bool  `description:"substitute $ expression with content of context.state"`
+	Expand bool      `description:"substitute $ expression with content of context.state"`
 	*DatasetResource `required:"true" description:"datasets resource"`
 }
 
@@ -265,7 +299,7 @@ type ModificationInfo struct {
 //PrepareResponse represents a prepare response
 type PrepareResponse struct {
 	*BaseResponse
-	Expand bool  `description:"substitute $ expression with content of context.state"`
+	Expand       bool                         `description:"substitute $ expression with content of context.state"`
 	Modification map[string]*ModificationInfo `description:"modification info by subject"`
 }
 

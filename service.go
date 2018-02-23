@@ -52,8 +52,6 @@ type Service interface {
 	SetContext(context toolbox.Context)
 }
 
-
-
 type service struct {
 	registry dsc.ManagerRegistry
 	mapper   *Mapper
@@ -75,7 +73,11 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 			return response
 		}
 	}
-	config := expandDscConfig(request.Config, request.Datastore)
+	config, err := expandDscConfig(request.Config, request.Datastore)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
 	manager, err := dsc.NewManagerFactory().Create(config);
 	if err == nil {
 		s.registry.Register(request.Datastore, manager)
@@ -91,8 +93,6 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 	return response
 }
 
-
-
 //Recreate removes and re-creates datastore
 func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
 	var response = &RecreateResponse{
@@ -105,8 +105,6 @@ func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
 	response.SetError(err)
 	return response
 }
-
-
 
 //expandSQLIfNeeded expand content of SQL with context.state key
 func (s *service) expandSQLIfNeeded(request *RunSQLRequest, manager dsc.Manager) []string {
@@ -124,8 +122,6 @@ func (s *service) expandSQLIfNeeded(request *RunSQLRequest, manager dsc.Manager)
 	}
 	return result
 }
-
-
 
 func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{
@@ -300,7 +296,6 @@ func (s *service) deleteDatasetIfNeeded(dataset *Dataset, table *dsc.TableDescri
 	return nil
 }
 
-
 func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, context toolbox.Context) (*dsc.TableDescriptor, error) {
 	macroEvaluator := assertly.NewDefaultMacroEvaluator()
 	expandedTable, err := macroEvaluator.Expand(context, dataset.Table)
@@ -326,9 +321,15 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	} else if len(uniqueKeys) == 0 {
 		if len(dataset.Records) > 0 {
 			if len(dataset.Records[0]) == 0 {
-				dataset.Records[0] = make(map[string]interface{})
+				dataset.Records =
+					append([]map[string]interface{}{{
+						assertly.IndexByDirective: table.PkColumns,
+					},
+					}, dataset.Records...)
+
+			} else {
+				dataset.Records[0][assertly.IndexByDirective] = table.PkColumns
 			}
-			dataset.Records[0][assertly.IndexByDirective] = table.PkColumns
 		}
 	}
 	var columns = dataset.Records.Columns()
@@ -357,6 +358,7 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
 		return err
 	}
+
 	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
 		return err
 	}
@@ -453,8 +455,8 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	context.Replace((*Dataset)(nil), dataset)
 	context.Replace((*dsc.TableDescriptor)(nil), table)
 
-	 expectedRecords, err := dataset.Records.Expand(context);
-	 if err != nil {
+	expectedRecords, err := dataset.Records.Expand(context);
+	if err != nil {
 		return err
 	}
 	expected := dataset.Records
@@ -484,7 +486,6 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 		}
 	}
 
-
 	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
@@ -509,8 +510,6 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	manager := s.registry.Get(request.Datastore)
 	context := s.newContext(manager)
 	var err error
-
-
 
 	if err = request.Load(); err == nil {
 		if len(request.Datasets) == 0 {
