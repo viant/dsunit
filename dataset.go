@@ -1,18 +1,18 @@
 package dsunit
 
 import (
-	"github.com/viant/toolbox/url"
-	"github.com/viant/toolbox/storage"
+	"bytes"
+	"encoding/json"
 	"github.com/pkg/errors"
+	"github.com/viant/assertly"
+	"github.com/viant/dsunit/sv"
+	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/storage"
+	"github.com/viant/toolbox/url"
 	"io"
 	"io/ioutil"
-	"github.com/viant/toolbox"
-	"encoding/json"
-	"bytes"
-	"github.com/viant/dsunit/sv"
-	"github.com/viant/assertly"
-	"strings"
 	"sort"
+	"strings"
 )
 
 const (
@@ -27,7 +27,7 @@ type Dataset struct {
 }
 
 //NewDataset creates a new dataset for supplied table and records.
-func NewDataset(table string, records ... map[string]interface{}) *Dataset {
+func NewDataset(table string, records ...map[string]interface{}) *Dataset {
 	return &Dataset{
 		Table:   table,
 		Records: records,
@@ -41,7 +41,7 @@ type Records []map[string]interface{}
 func (r *Records) Expand(context toolbox.Context, includeDirectives bool) (result []interface{}, err error) {
 	result = make([]interface{}, 0)
 	var evaluator = assertly.NewDefaultMacroEvaluator()
-	for _, candidate := range (*r) {
+	for _, candidate := range *r {
 		record := Record(candidate)
 		recordValues := make(map[string]interface{})
 		var keys = record.Columns()
@@ -139,21 +139,18 @@ func (r *Records) Columns() []string {
 
 //DatastoreDatasets represents a collection of datastore datasets
 type DatastoreDatasets struct {
-	Datastore string `required:"true" description:"register datastore"`
-	Datasets  []*Dataset `description:"collection of dataset per table"`
-	Data map[string][]map[string]interface{} `description:"map, where each pair represent table name and records (backwad compatiblity)"`
+	Datastore string                              `required:"true" description:"register datastore"`
+	Datasets  []*Dataset                          `description:"collection of dataset per table"`
+	Data      map[string][]map[string]interface{} `description:"map, where each pair represent table name and records (backwad compatiblity)"`
 }
-
-
 
 //DatasetResource represents a dataset resource
 type DatasetResource struct {
 	*url.Resource      ` description:"data file location, csv, json, ndjson formats are supported"`
 	*DatastoreDatasets `required:"true" description:"datastore datasets"`
-	Prefix  string     ` description:"location data file prefix"`  //apply prefix
-	Postfix string     ` description:"location data file postgix"` //apply suffix
+	Prefix             string ` description:"location data file prefix"`  //apply prefix
+	Postfix            string ` description:"location data file postgix"` //apply suffix
 }
-
 
 func (r *DatasetResource) loadDataset() (err error) {
 	if r.Resource.URL == "" {
@@ -189,7 +186,7 @@ func (r *DatasetResource) Load() (err error) {
 		r.Datasets = make([]*Dataset, 0)
 	}
 	if r.Resource != nil {
-		if err = r.loadDataset();err != nil {
+		if err = r.loadDataset(); err != nil {
 			return err
 		}
 	}
@@ -200,7 +197,6 @@ func (r *DatasetResource) Load() (err error) {
 	}
 	return nil
 }
-
 
 func (r *DatasetResource) load(service storage.Service, object storage.Object) (err error) {
 	if len(r.Datasets) == 0 {
@@ -250,7 +246,7 @@ func (r *DatasetResource) loadJSON(datafile *DatafileInfo, data []byte) error {
 		}
 
 	}
-	err := json.NewDecoder(bytes.NewReader(data)).Decode(&dataSet.Records);
+	err := json.NewDecoder(bytes.NewReader(data)).Decode(&dataSet.Records)
 	if err != nil {
 		return err
 	}
@@ -280,11 +276,11 @@ func (r *DatasetResource) loadSeparatedData(delimiter string, datafile *Datafile
 }
 
 func NewDatasetResource(datastore string, URL, prefix, postfix string, datasets ...*Dataset) *DatasetResource {
-	var result =  &DatasetResource{
+	var result = &DatasetResource{
 		Resource: url.NewResource(URL),
 		DatastoreDatasets: &DatastoreDatasets{
 			Datastore: datastore,
-			Datasets:datasets,
+			Datasets:  datasets,
 		},
 		Prefix:  prefix,
 		Postfix: postfix,

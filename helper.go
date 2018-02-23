@@ -1,15 +1,13 @@
 package dsunit
 
 import (
+	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
-	"fmt"
-	"strings"
-	"runtime"
 	"path"
+	"runtime"
+	"strings"
 )
-
-
 
 func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 	manager := registry.Get(datastore)
@@ -59,7 +57,7 @@ func dropDatastoreIfNeeded(manager dsc.Manager, dialect dsc.DatastoreDialect, da
 }
 
 func directiveScan(records []map[string]interface{}, recordHandler func(record Record)) {
-	var count = 2;
+	var count = 2
 	if count > len(records) {
 		count = len(records)
 	}
@@ -68,9 +66,7 @@ func directiveScan(records []map[string]interface{}, recordHandler func(record R
 	}
 }
 
-
-
-func insertSQLProvider(provider *datasetDmlProvider)  func(item interface{}) *dsc.ParametrizedSQL {
+func insertSQLProvider(provider *datasetDmlProvider) func(item interface{}) *dsc.ParametrizedSQL {
 	return func(item interface{}) *dsc.ParametrizedSQL {
 		return provider.Get(dsc.SQLTypeInsert, item)
 	}
@@ -87,8 +83,7 @@ func validateDatastores(registery dsc.ManagerRegistry, response *BaseResponse, d
 	return true
 }
 
-
-func expandDscConfig(config *dsc.Config, datastore string)  (*dsc.Config, error) {
+func expandDscConfig(config *dsc.Config, datastore string) (*dsc.Config, error) {
 	if len(config.Parameters) == 0 {
 		config.Parameters = make(map[string]string)
 	}
@@ -97,12 +92,11 @@ func expandDscConfig(config *dsc.Config, datastore string)  (*dsc.Config, error)
 	return config, err
 }
 
-
 func buildBatchedPkValues(records Records, pkColumns []string) [][]interface{} {
-	var result= make([][]interface{}, 0)
+	var result = make([][]interface{}, 0)
 	for _, record := range records {
-		var pkRecord= make([]interface{}, 0)
-		for _, pkColumn := range pkColumns  {
+		var pkRecord = make([]interface{}, 0)
+		for _, pkColumn := range pkColumns {
 			pkRecord = append(pkRecord, record[pkColumn])
 		}
 		result = append(result, pkRecord)
@@ -110,8 +104,7 @@ func buildBatchedPkValues(records Records, pkColumns []string) [][]interface{} {
 	return result
 }
 
-
-func hasMatch(target string, candidates ... string) bool {
+func hasMatch(target string, candidates ...string) bool {
 	for _, candidate := range candidates {
 		if strings.HasSuffix(target, candidate) {
 			return true
@@ -125,7 +118,7 @@ func discoverCaller(offset, maxDepth int, ignoreFiles ...string) (string, string
 	var caller *runtime.Func
 	var filename string
 	var line int
-	for  i := offset;i<maxDepth;i++ {
+	for i := offset; i < maxDepth; i++ {
 		runtime.Callers(i, callerPointer)
 		caller = runtime.FuncForPC(callerPointer[0])
 		filename, line = caller.FileLine(callerPointer[0])
@@ -139,13 +132,11 @@ func discoverCaller(offset, maxDepth int, ignoreFiles ...string) (string, string
 	return filename, callerName[dotPosition+1:], line
 }
 
-
-
 func convertToLowerUnderscore(upperCamelCase string) string {
 	if len(upperCamelCase) == 0 {
 		return ""
 	}
-	upperCount := 0;
+	upperCount := 0
 	result := strings.ToLower(upperCamelCase[0:1])
 	for i := 1; i < len(upperCamelCase); i++ {
 		aChar := upperCamelCase[i : i+1]
@@ -157,7 +148,7 @@ func convertToLowerUnderscore(upperCamelCase string) string {
 			upperCount = 0
 		}
 
-		if isUpperCase && !(aChar >= "0" && aChar <= "9")  && aChar != "_" && upperCount == 1 {
+		if isUpperCase && !(aChar >= "0" && aChar <= "9") && aChar != "_" && upperCount == 1 {
 			result = result + "_" + strings.ToLower(aChar)
 		} else {
 			result = result + strings.ToLower(aChar)
@@ -166,9 +157,8 @@ func convertToLowerUnderscore(upperCamelCase string) string {
 	return result
 }
 
-
 func discoverBaseURLAndPrefix(operation string) (string, string) {
-	testfile, method, _ := discoverCaller(2,10,  "tester.go", "helper.go","static.go")
+	testfile, method, _ := discoverCaller(2, 10, "tester.go", "helper.go", "static.go")
 	parent, name := path.Split(testfile)
 	name = string(name[:len(name)-3]) //remove .go
 	var lastSegment = strings.LastIndex(method, "_")
@@ -176,5 +166,5 @@ func discoverBaseURLAndPrefix(operation string) (string, string) {
 		method = string(method[lastSegment+1:])
 	}
 	method = convertToLowerUnderscore(method)
-	return parent, fmt.Sprintf(name + "_%v_%v_", method, operation)
+	return parent, fmt.Sprintf(name+"_%v_%v_", method, operation)
 }

@@ -6,9 +6,3 @@ const (
 	//SnapshotDatasetCheckPolicy policy will drive comparison of subset of  actual datastore data that is is listed in expected dataset
 	SnapshotDatasetCheckPolicy = 1
 )
-
-
-
-
-
-

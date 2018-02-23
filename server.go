@@ -7,7 +7,6 @@ import (
 	"net/http"
 )
 
-
 var version = "/v2/"
 var initURI = version + "init"
 var registerURI = version + "register"
@@ -26,7 +25,6 @@ var errorHandler = func(router *toolbox.ServiceRouter, responseWriter http.Respo
 		log.Fatalf("failed to write response :%v", err)
 	}
 }
-
 
 //StartServer start dsunit server
 func StartServer(port string) {
@@ -109,4 +107,3 @@ func StartServer(port string) {
 	fmt.Printf("Started dsunit server on port %v\n", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
-

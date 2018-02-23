@@ -97,7 +97,6 @@ func PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, m
 	return tester.PrepareDatastoreFor(t, datastore, baseDirectory, method)
 }
 
-
 //Verify datastore with supplied expected datasets
 func Expect(t *testing.T, request *ExpectRequest) bool {
 	return tester.Expect(t, request)
@@ -107,7 +106,6 @@ func Expect(t *testing.T, request *ExpectRequest) bool {
 func ExpectFromURL(t *testing.T, URL string) bool {
 	return tester.ExpectFromURL(t, URL)
 }
-
 
 //ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name to
 //verify that all listed dataset values are present in datastore
@@ -129,7 +127,6 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool {
 func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool {
 	return tester.ExpectDatasetFor(t, datastore, checkPolicy, baseDirectory, method)
 }
-
 
 //UseRemoteTestServer enables remove testing mode
 func UseRemoteTestServer(endpoint string) {

@@ -1,8 +1,8 @@
 package dsunit
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestNewDatafileInfo(t *testing.T) {
@@ -24,6 +24,5 @@ func TestNewDatafileInfo(t *testing.T) {
 			assert.Equal(t, "_s", info.Postfix)
 		}
 	}
-
 
 }

@@ -1,11 +1,11 @@
 package dsunit
 
 import (
-	"github.com/viant/dsc"
-	"github.com/viant/toolbox/url"
-	"github.com/viant/assertly"
 	"errors"
 	"fmt"
+	"github.com/viant/assertly"
+	"github.com/viant/dsc"
+	"github.com/viant/toolbox/url"
 )
 
 //StatusOk represents ok status
@@ -52,7 +52,7 @@ type RegisterRequest struct {
 }
 
 //NewRegisterRequest create new register request
-func NewRegisterRequest(datastore string, config *dsc.Config, tables ... *dsc.TableDescriptor) *RegisterRequest {
+func NewRegisterRequest(datastore string, config *dsc.Config, tables ...*dsc.TableDescriptor) *RegisterRequest {
 	return &RegisterRequest{
 		Datastore: datastore,
 		Config:    config,
@@ -108,7 +108,7 @@ type RunSQLRequest struct {
 }
 
 //NewRunSQLRequest creates new run SQL request
-func NewRunSQLRequest(datastore string, SQL ... string) *RunSQLRequest {
+func NewRunSQLRequest(datastore string, SQL ...string) *RunSQLRequest {
 	return &RunSQLRequest{
 		Datastore: datastore,
 		SQL:       SQL,
@@ -157,7 +157,6 @@ type MappingRequest struct {
 	Mappings []*Mapping `required:"true" description:"virtual table mapping"`
 }
 
-
 //Init init request
 func (r *MappingRequest) Init() (err error) {
 	if len(r.Mappings) == 0 {
@@ -176,8 +175,6 @@ func (r *MappingRequest) Init() (err error) {
 	return err
 }
 
-
-
 func (r *MappingRequest) Validate() error {
 	if r == nil {
 		return nil
@@ -194,7 +191,7 @@ func (r *MappingRequest) Validate() error {
 }
 
 //NewMappingRequest creates new mapping request
-func NewMappingRequest(mappings ... *Mapping) *MappingRequest {
+func NewMappingRequest(mappings ...*Mapping) *MappingRequest {
 	return &MappingRequest{
 		Mappings: mappings,
 	}
@@ -208,25 +205,18 @@ func NewMappingRequestFromURL(URL string) (*MappingRequest, error) {
 	return result, err
 }
 
-
-
-
-
-
 //MappingResponse represents mapping response
 type MappingResponse struct {
 	*BaseResponse
 	Tables []string
 }
 
-
-
 //InitRequest represents datastore init request, it actual aggregates, registraction, recreation, mapping and run script request
 type InitRequest struct {
 	Datastore string
 	Recreate  bool
 	*RegisterRequest
-	Admin     *RegisterRequest
+	Admin *RegisterRequest
 	*MappingRequest
 	*RunScriptRequest
 }
@@ -291,7 +281,7 @@ type InitResponse struct {
 
 //PrepareRequest represents a request to populate datastore with data resource
 type PrepareRequest struct {
-	Expand bool      `description:"substitute $ expression with content of context.state"`
+	Expand           bool `description:"substitute $ expression with content of context.state"`
 	*DatasetResource `required:"true" description:"datasets resource"`
 }
 
@@ -390,7 +380,7 @@ type SequenceRequest struct {
 	Tables    []string
 }
 
-func NewSequenceRequest(datastore string, tables ... string) *SequenceRequest {
+func NewSequenceRequest(datastore string, tables ...string) *SequenceRequest {
 	return &SequenceRequest{
 		Datastore: datastore,
 		Tables:    tables,

@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-
 func TestTableMapping(t *testing.T) {
 	dsunit.InitFromURL(t, "test/static/init.json")
 	dsunit.PrepareDatastoreFor(t, "static", "test/static/data", "mapping")
@@ -30,6 +29,3 @@ func TestTableMappingRemote(t *testing.T) {
 	tester.ExpectDatasetFor(t, "static", dsunit.SnapshotDatasetCheckPolicy, "test/static/data", "mapping")
 
 }
-
-
-

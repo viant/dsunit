@@ -1,17 +1,17 @@
 package dsunit
 
 import (
+	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"strings"
-	"fmt"
 )
 
 type sequence struct {
 	seq map[string]int64
 }
 
-type sequenceValueProvider struct{
+type sequenceValueProvider struct {
 	match string
 }
 
@@ -21,7 +21,7 @@ func (p *sequenceValueProvider) countMatched(dataset *Dataset) int64 {
 	if len(pkColumns) == 0 {
 		for _, record := range dataset.Records {
 			for _, v := range record {
-				if value, ok := v.(string);ok {
+				if value, ok := v.(string); ok {
 					if strings.Contains(value, p.match) {
 						result++
 					}
@@ -74,9 +74,8 @@ func (p *sequenceValueProvider) Get(context toolbox.Context, arguments ...interf
 	return result, nil
 }
 
-
 func newSequenceValueProvider(exprMatch string) toolbox.ValueProvider {
-	var result toolbox.ValueProvider = &sequenceValueProvider{match:exprMatch}
+	var result toolbox.ValueProvider = &sequenceValueProvider{match: exprMatch}
 	return result
 }
 

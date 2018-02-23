@@ -1,15 +1,12 @@
 package dsunit
 
 import (
-	"testing"
-	"path"
 	"fmt"
+	"path"
+	"testing"
 )
 
-
-
 var LogF = fmt.Printf
-
 
 type Tester interface {
 	//Register registers new datastore connection
@@ -92,12 +89,7 @@ type Tester interface {
 	//  read_all_expect_permissions.json
 	//
 	ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool
-
-
-
 }
-
-
 
 type localTester struct {
 	service Service
@@ -125,8 +117,6 @@ func handleResponse(t *testing.T, response *BaseResponse) bool {
 	}
 	return true
 }
-
-
 
 //Register registers new datastore connection
 func (s *localTester) Register(t *testing.T, request *RegisterRequest) bool {
@@ -220,9 +210,6 @@ func (s *localTester) PrepareFromURL(t *testing.T, URL string) bool {
 	return s.Prepare(t, request)
 }
 
-
-
-
 //PrepareDatastore matches all dataset files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name.
 func (s *localTester) PrepareDatastore(t *testing.T, datastore string) bool {
 	URL, prefix := discoverBaseURLAndPrefix("prepare")
@@ -254,7 +241,7 @@ func (s *localTester) PrepareDatastoreFor(t *testing.T, datastore, baseDirectory
 //Verify datastore with supplied expected datasets
 func (s *localTester) Expect(t *testing.T, request *ExpectRequest) bool {
 	response := s.service.Expect(request)
-	var result =  handleResponse(t, response.BaseResponse)
+	var result = handleResponse(t, response.BaseResponse)
 	return result
 }
 
@@ -270,7 +257,7 @@ func (s *localTester) ExpectFromURL(t *testing.T, URL string) bool {
 func (s *localTester) ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool {
 	URL, prefix := discoverBaseURLAndPrefix("expect")
 	request := &ExpectRequest{
-		CheckPolicy:checkPolicy,
+		CheckPolicy:     checkPolicy,
 		DatasetResource: NewDatasetResource(datastore, URL, prefix, ""),
 	}
 	return s.Expect(t, request)
@@ -300,14 +287,7 @@ func NewTester() Tester {
 	return &localTester{service: New()}
 }
 
-
 //NewRemoveTester creates a new remove tester
 func NewRemoveTester(endpoint string) Tester {
 	return &localTester{service: NewServiceClient(endpoint)}
 }
-
-
-
-
-
-

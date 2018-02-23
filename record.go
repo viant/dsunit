@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-
 type Record map[string]interface{}
 
 //Value returns raw column value for this row.
@@ -24,22 +23,20 @@ func (r Record) ValueAsString(column string) string {
 
 //IsEmpty return true if empty
 func (r *Record) IsEmpty() bool {
-	return len(r.Columns()) ==0
+	return len(r.Columns()) == 0
 }
-
 
 //Columns returns column names.
 func (r *Record) Columns() []string {
 	var result = make([]string, 0)
-	for k := range (*r) {
-		if k == "" || strings.HasPrefix(k, "@") && strings.Count(k, "@")  > 1 {
+	for k := range *r {
+		if k == "" || strings.HasPrefix(k, "@") && strings.Count(k, "@") > 1 {
 			continue
 		}
 		result = append(result, k)
 	}
 	return result
 }
-
 
 //SetValue sets column value on this row.
 func (r *Record) SetValue(column string, value interface{}) {
@@ -65,9 +62,8 @@ func (r *Record) AsMap() map[string]interface{} {
 
 //String return row content as string JSON.
 func (r *Record) String() string {
-	if result, err := toolbox.AsJSONText(r.AsMap())	;err == nil {
+	if result, err := toolbox.AsJSONText(r.AsMap()); err == nil {
 		return result
 	}
 	return fmt.Sprintf("%v", (*r))
 }
-

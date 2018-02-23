@@ -1,9 +1,9 @@
 package dsunit_test
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsunit"
+	"testing"
 )
 
 func TestService_Map(t *testing.T) {

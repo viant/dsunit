@@ -1,15 +1,15 @@
 package dsunit
 
 import (
+	"fmt"
+	"github.com/pkg/errors"
+	"github.com/viant/assertly"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit/script"
+	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/data"
 	"github.com/viant/toolbox/storage"
 	"io"
-	"github.com/viant/toolbox"
-	"fmt"
-	"github.com/viant/assertly"
-	"github.com/pkg/errors"
-	"github.com/viant/toolbox/data"
 )
 
 var batchSize = 200
@@ -78,7 +78,7 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 		response.SetError(err)
 		return response
 	}
-	manager, err := dsc.NewManagerFactory().Create(config);
+	manager, err := dsc.NewManagerFactory().Create(config)
 	if err == nil {
 		s.registry.Register(request.Datastore, manager)
 		if len(request.Tables) > 0 {
@@ -108,7 +108,7 @@ func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
 
 //expandSQLIfNeeded expand content of SQL with context.state key
 func (s *service) expandSQLIfNeeded(request *RunSQLRequest, manager dsc.Manager) []string {
-	if ! request.Expand {
+	if !request.Expand {
 		return request.SQL
 	}
 	context := s.newContext(manager)
@@ -127,7 +127,7 @@ func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{
 		BaseResponse: NewBaseOkResponse(),
 	}
-	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
 
@@ -260,7 +260,7 @@ func (s *service) Init(request *InitRequest) *InitResponse {
 var stateKey = (*data.Map)(nil)
 
 func (s *service) getContextState(context toolbox.Context) *data.Map {
-	if ! context.Contains(stateKey) {
+	if !context.Contains(stateKey) {
 		return nil
 	}
 	var state = context.GetOptional(stateKey).(*data.Map)
@@ -312,7 +312,7 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	var autoincrement = dataset.Records.Autoincrement()
 	var uniqueKeys = dataset.Records.UniqueKeys()
 	var fromQuery = dataset.Records.FromQuery()
-	if ! table.Autoincrement {
+	if !table.Autoincrement {
 		table.Autoincrement = autoincrement
 	}
 	table.FromQuery = fromQuery
@@ -352,13 +352,12 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	if len(response.Modification) == 0 {
 		response.Modification = make(map[string]*ModificationInfo)
 	}
-	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist",}
+	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist"}
 	var modification = response.Modification[dataset.Table]
 	var table *dsc.TableDescriptor
 	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
 		return err
 	}
-
 
 	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
 		return err
@@ -372,7 +371,7 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	var dmlBuilder = newDatasetDmlProvider(dsc.NewDmlBuilder(table))
 	if len(table.PkColumns) == 0 { //no keys perform insert
 		modification.Method = "load"
-		modification.Added, err = manager.PersistData(connection, records, table.Table, nil, insertSQLProvider(dmlBuilder)); //TODO add insert sql provider
+		modification.Added, err = manager.PersistData(connection, records, table.Table, nil, insertSQLProvider(dmlBuilder)) //TODO add insert sql provider
 		return err
 	}
 
@@ -412,7 +411,7 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 		return response
 	}
 
-	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
 	var err error
@@ -456,7 +455,7 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	context.Replace((*Dataset)(nil), dataset)
 	context.Replace((*dsc.TableDescriptor)(nil), table)
 
-	expectedRecords, err := dataset.Records.Expand(context, true);
+	expectedRecords, err := dataset.Records.Expand(context, true)
 	if err != nil {
 		return err
 	}
@@ -486,10 +485,10 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 			actual = append(actual, batched...)
 		}
 	}
-	//
-	//aa,_:= toolbox.AsJSONText(actual)
-	//ee,_:= toolbox.AsJSONText(expectedRecords)
-	//fmt.Printf("%v %v\n", aa, ee)
+
+	aa, _ := toolbox.AsJSONText(actual)
+	ee, _ := toolbox.AsJSONText(expectedRecords)
+	fmt.Printf("%v %v\n", aa, ee)
 
 	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)
@@ -509,7 +508,7 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 		return response
 	}
 
-	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
 	manager := s.registry.Get(request.Datastore)
@@ -539,7 +538,7 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 		BaseResponse: NewBaseOkResponse(),
 		Records:      make([]map[string]interface{}, 0),
 	}
-	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
 	manager := s.registry.Get(request.Datastore)
@@ -565,7 +564,7 @@ func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
 	if len(request.Tables) == 0 {
 		response.SetError(errors.New("tables were empty"))
 	}
-	if ! validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
 	manager := s.registry.Get(request.Datastore)

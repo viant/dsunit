@@ -1,8 +1,8 @@
 package dsunit
 
 import (
-	"github.com/viant/toolbox"
 	"github.com/viant/dsc"
+	"github.com/viant/toolbox"
 )
 
 type serviceClient struct {

@@ -1,13 +1,13 @@
 package dsunit_test
 
 import (
-	"testing"
-	"github.com/viant/dsunit"
-	"github.com/viant/assertly"
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/assertly"
+	"github.com/viant/dsunit"
 	"github.com/viant/toolbox"
 	"path"
 	"strings"
+	"testing"
 )
 
 func TestNewDataset(t *testing.T) {
@@ -18,9 +18,7 @@ func TestNewDataset(t *testing.T) {
 				assertly.IndexByDirective:     []string{"id"},
 				dsunit.AutoincrementDirective: "id",
 			},
-			map[string]interface{}{
-
-			},
+			map[string]interface{}{},
 			map[string]interface{}{
 				"id":       1,
 				"username": "Dudi",
@@ -34,7 +32,7 @@ func TestNewDataset(t *testing.T) {
 				"username": "Bogi",
 				"active":   false,
 				"email":    "a@as.ws",
-			}, )
+			})
 
 		assert.Equal(t, "table1", dataset.Table)
 		assert.True(t, dataset.Records.Autoincrement())
@@ -71,7 +69,7 @@ func TestNewDataset(t *testing.T) {
 				"username": "Bogi",
 				"active":   false,
 				"email":    "a@as.ws",
-			}, )
+			})
 
 		assert.Equal(t, "table1", dataset.Table)
 		assert.False(t, dataset.Records.Autoincrement())
@@ -89,7 +87,7 @@ func TestNewDatasetResource_Load(t *testing.T) {
 	if assert.Nil(t, datasetResource.Load()) {
 		assert.EqualValues(t, 4, len(datasetResource.Datasets))
 		for _, dataset := range datasetResource.Datasets {
-			context :=toolbox.NewContext()
+			context := toolbox.NewContext()
 			records, err := dataset.Records.Expand(context, false)
 			assert.Nil(t, err)
 			assert.EqualValues(t, 3, len(records))

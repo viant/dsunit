@@ -41,7 +41,7 @@ func (s *Mapper) transform(table *MappingTable, virtualRecord map[string]interfa
 	}
 	if existingRecord, has := tableKeys[uniqueKey]; has {
 		for k, v := range record {
-			if _, has:=existingRecord[k]; !has {
+			if _, has := existingRecord[k]; !has {
 				existingRecord[k] = v
 
 			}
@@ -61,7 +61,7 @@ func (s *Mapper) Add(mapping *Mapping) {
 }
 
 func (s *Mapper) Has(table string) bool {
-	_, ok := s.mappings[table];
+	_, ok := s.mappings[table]
 	return ok
 }
 
@@ -70,7 +70,7 @@ func (s *Mapper) Map(dataset *Dataset) []*Dataset {
 	var tableKeys = make(map[string]map[string]interface{})
 
 	mapping, ok := s.mappings[dataset.Table]
-	if ! ok {
+	if !ok {
 		return nil
 	}
 
