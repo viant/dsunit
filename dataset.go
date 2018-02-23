@@ -140,8 +140,11 @@ func (r *Records) Columns() []string {
 //DatastoreDatasets represents a collection of datastore datasets
 type DatastoreDatasets struct {
 	Datastore string `required:"true" description:"register datastore"`
-	Datasets  []*Dataset
+	Datasets  []*Dataset `description:"collection of dataset per table"`
+	Data map[string][]map[string]interface{} `description:"map, where each pair represent table name, and records"`
 }
+
+
 
 //DatasetResource represents a dataset resource
 type DatasetResource struct {
@@ -151,15 +154,13 @@ type DatasetResource struct {
 	Postfix string     ` description:"location data file postgix"` //apply suffix
 }
 
-//Loads datasets from specified resource
-func (r *DatasetResource) Load() (err error) {
 
-	if r.Resource == nil || r.Resource.URL == "" {
-		err = errors.New("resource was empty")
-		return err
+func (r *DatasetResource) loadDataset() (err error) {
+	if r.Resource.URL == "" {
+		return errors.New("resource was empty")
 	}
-	r.Resource.Init()
 
+	r.Resource.Init()
 	var storageService storage.Service
 	storageService, err = storage.NewServiceForURL(r.URL, r.Credential)
 	if err != nil {
@@ -179,8 +180,27 @@ func (r *DatasetResource) Load() (err error) {
 			return err
 		}
 	}
+	return err
+}
+
+//Loads dataset from specified resource or data map
+func (r *DatasetResource) Load() (err error) {
+	if len(r.Datasets) == 0 {
+		r.Datasets = make([]*Dataset, 0)
+	}
+	if r.Resource != nil {
+		if err = r.loadDataset();err != nil {
+			return err
+		}
+	}
+	if len(r.Data) > 0 {
+		for k, v := range r.Data {
+			r.Datasets = append(r.Datasets, NewDataset(k, v...))
+		}
+	}
 	return nil
 }
+
 
 func (r *DatasetResource) load(service storage.Service, object storage.Object) (err error) {
 	if len(r.Datasets) == 0 {

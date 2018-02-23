@@ -5,6 +5,7 @@ import (
 	"github.com/viant/toolbox/url"
 	"github.com/viant/assertly"
 	"errors"
+	"fmt"
 )
 
 //StatusOk represents ok status
@@ -156,12 +157,38 @@ type MappingRequest struct {
 	Mappings []*Mapping `required:"true" description:"virtual table mapping"`
 }
 
+
+//Init init request
+func (r *MappingRequest) Init() (err error) {
+	if len(r.Mappings) == 0 {
+		return nil
+	}
+	for _, mapping := range r.Mappings {
+		if mapping.Resource != nil && mapping.URL != "" && mapping.Table == "" {
+			if err = mapping.Init(); err == nil {
+				err = mapping.JSONDecode(mapping)
+			}
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+
+
 func (r *MappingRequest) Validate() error {
 	if r == nil {
 		return nil
 	}
 	if len(r.Mappings) == 0 {
 		return errors.New("mappings were empty")
+	}
+	for i, mapping := range r.Mappings {
+		if mapping.Name == "" {
+			return fmt.Errorf("mappings[%v].name were empty", i)
+		}
 	}
 	return nil
 }
@@ -181,11 +208,18 @@ func NewMappingRequestFromURL(URL string) (*MappingRequest, error) {
 	return result, err
 }
 
+
+
+
+
+
 //MappingResponse represents mapping response
 type MappingResponse struct {
 	*BaseResponse
 	Tables []string
 }
+
+
 
 //InitRequest represents datastore init request, it actual aggregates, registraction, recreation, mapping and run script request
 type InitRequest struct {

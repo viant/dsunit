@@ -1,9 +1,10 @@
 package dsunit
 
-
+import "github.com/viant/toolbox/url"
 
 //Mapping represents mapping
 type Mapping struct {
+	*url.Resource
 	*MappingTable
 	Name string `required:"true" description:"mapping name (i.e view name)"`
 }
