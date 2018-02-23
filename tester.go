@@ -9,6 +9,8 @@ import (
 var LogF = fmt.Printf
 
 type Tester interface {
+
+
 	//Register registers new datastore connection
 	Register(t *testing.T, request *RegisterRequest) bool
 
