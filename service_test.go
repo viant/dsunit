@@ -90,14 +90,14 @@ func TestService_Expect(t *testing.T) {
 	}
 	{
 		response := service.Prepare(&dsunit.PrepareRequest{
-			DatasetResource:dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+			DatasetResource:dsunit.NewDatasetResource("db1", "test/db1/data", "db1_prepare_", ""),
 		})
 		if ! assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
 			return
 		}
 	}
 	response := service.Expect(&dsunit.ExpectRequest{
-		DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data/	", "db1_expect_", ""),
+		DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data", "db1_expect_", ""),
 	})
 
 	if !assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
