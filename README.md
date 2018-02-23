@@ -149,11 +149,16 @@ the following directive come handy.
 
 Allows specifying autoincrement field    
 
+
+
+```json
 [
   {"@autoincrement@":"id"},
   {"id":1, "username":"Dudi", "active":true, "salary":12400, "comments":"abc","last_access_time": "2016-03-01 03:10:00"},
   {"id":2, "username":"Rudi", "active":true, "salary":12600, "comments":"def","last_access_time": "2016-03-01 05:10:00"}
 ]
+
+```
 
 **@indexBy@**
 
@@ -161,12 +166,16 @@ Allows specifying autoincrement field
 
 Allows specifying pk fields
 
+
+```json
+
 [
   {"@indexBy@":["id"]},
   {"id":1, "username":"Dudi", "active":true, "salary":12400, "comments":"abc","last_access_time": "2016-03-01 03:10:00"},
   {"id":2, "username":"Rudi", "active":true, "salary":12600, "comments":"def","last_access_time": "2016-03-01 05:10:00"}
 ]
 
+```
 
 #### Data validation.
 
@@ -177,7 +186,8 @@ Allows specified query to fetch actual dataset to be validated against expected 
 
 
 **users.json**
-```
+
+```json
 [
   {"@fromQuery@":"SELECT *  FROM users where id <= 2 ORDER BY id"},
   {"id":1, "username":"Dudi", "active":true, "salary":12400, "comments":"abc","last_access_time": "2016-03-01 03:10:00"},
