@@ -43,7 +43,7 @@ func TestNewDataset(t *testing.T) {
 		assert.Equal(t, []string{"active", "comments", "email", "id", "username"}, dataset.Records.Columns())
 
 		context := toolbox.NewContext()
-		records, err := dataset.Records.Expand(context)
+		records, err := dataset.Records.Expand(context, false)
 		if assert.Nil(t, err) {
 			assert.Equal(t, 2, len(records))
 			assert.EqualValues(t, map[string]interface{}{
@@ -90,7 +90,7 @@ func TestNewDatasetResource_Load(t *testing.T) {
 		assert.EqualValues(t, 4, len(datasetResource.Datasets))
 		for _, dataset := range datasetResource.Datasets {
 			context :=toolbox.NewContext()
-			records, err := dataset.Records.Expand(context)
+			records, err := dataset.Records.Expand(context, false)
 			assert.Nil(t, err)
 			assert.EqualValues(t, 3, len(records))
 			assert.True(t, strings.HasPrefix(dataset.Table, "user"), dataset.Table)

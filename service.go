@@ -359,13 +359,14 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 		return err
 	}
 
+
 	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
 		return err
 	}
 	context.Replace((*Dataset)(nil), dataset)
 	context.Replace((*dsc.TableDescriptor)(nil), table)
 	var records []interface{}
-	if records, err = dataset.Records.Expand(context); err != nil {
+	if records, err = dataset.Records.Expand(context, false); err != nil {
 		return err
 	}
 	var dmlBuilder = newDatasetDmlProvider(dsc.NewDmlBuilder(table))
@@ -455,7 +456,7 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	context.Replace((*Dataset)(nil), dataset)
 	context.Replace((*dsc.TableDescriptor)(nil), table)
 
-	expectedRecords, err := dataset.Records.Expand(context);
+	expectedRecords, err := dataset.Records.Expand(context, true);
 	if err != nil {
 		return err
 	}

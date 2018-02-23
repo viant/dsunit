@@ -38,13 +38,17 @@ func NewDataset(table string, records ... map[string]interface{}) *Dataset {
 type Records []map[string]interface{}
 
 //Records returns non empty records //directive a filtered out
-func (r *Records) Expand(context toolbox.Context) (result []interface{}, err error) {
+func (r *Records) Expand(context toolbox.Context, includeDirectives bool) (result []interface{}, err error) {
 	result = make([]interface{}, 0)
 	var evaluator = assertly.NewDefaultMacroEvaluator()
 	for _, candidate := range (*r) {
 		record := Record(candidate)
 		recordValues := make(map[string]interface{})
-		for _, k := range record.Columns() {
+		var keys = record.Columns()
+		if includeDirectives {
+			keys = toolbox.MapKeysToStringSlice(record)
+		}
+		for _, k := range keys {
 			v := record[k]
 			recordValues[k] = v
 			if text, ok := v.(string); ok {
@@ -63,7 +67,7 @@ func (r *Records) Expand(context toolbox.Context) (result []interface{}, err err
 
 //ShouldDeleteAll checks if dataset contains empty record (indicator to delete all)
 func (r *Records) ShouldDeleteAll() bool {
-	var result = false
+	var result = len(*r) == 0
 	directiveScan(*r, func(record Record) {
 		if record == nil || len(record) == 0 {
 			result = true
