@@ -1,0 +1,22 @@
+{
+  "Datastore": "mydb",
+  "Config": {
+    "DriverName": "postgres",
+    "Descriptor": "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable",
+    "Credential":"config/secret.json"
+  },
+  "Admin":{
+    "Datastore": "postgres",
+    "Config": {
+      "DriverName": "postgres",
+      "Descriptor": "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname] sslmode=disable",
+      "Credential":"config/secret.json"
+    }
+  },
+  "Recreate": true,
+  "Scripts": [
+    {
+      "URL": "config/schema.ddl"
+    }
+  ]
+}

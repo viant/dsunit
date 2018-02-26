@@ -10,7 +10,6 @@ var LogF = fmt.Printf
 
 type Tester interface {
 
-
 	//Register registers new datastore connection
 	Register(t *testing.T, request *RegisterRequest) bool
 
@@ -56,7 +55,7 @@ type Tester interface {
 	//PrepareDatastore matches all dataset files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name.
 	PrepareDatastore(t *testing.T, datastore string) bool
 
-	//PrepareDatastoreFor matches all dataset files that are located in baseDirectory with method name and
+	//PrepareFor matches all dataset files that are located in baseDirectory with method name and
 	// populate datastore with all listed dataset
 	// Note the matchable dataset files in the base directory have the following naming:
 	//
@@ -67,7 +66,7 @@ type Tester interface {
 	//  read_all_prepare_travelers2.json
 	//  read_all_populate_permissions.json
 	//
-	PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, method string) bool
+	PrepareFor(t *testing.T, datastore string, baseDirectory string, method string) bool
 
 	//Verify datastore with supplied expected datasets
 	Expect(t *testing.T, request *ExpectRequest) bool
@@ -79,7 +78,7 @@ type Tester interface {
 	//verify that all listed dataset values are present in datastore
 	ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool
 
-	//ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name to
+	//ExpectFor matches all dataset files that are located in baseDirectory with method name to
 	// verify that all listed dataset values are present in datastore
 	// Note the matchable dataset files in the base directory have the following naming:
 	//
@@ -90,7 +89,7 @@ type Tester interface {
 	//  read_all_expect_users.json
 	//  read_all_expect_permissions.json
 	//
-	ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool
+	ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool
 }
 
 type localTester struct {
@@ -221,7 +220,7 @@ func (s *localTester) PrepareDatastore(t *testing.T, datastore string) bool {
 	return s.Prepare(t, request)
 }
 
-//PrepareDatastoreFor matches all dataset files that are located in baseDirectory with method name and
+//PrepareFor matches all dataset files that are located in baseDirectory with method name and
 // populate datastore with all listed dataset
 // Note the matchable dataset files in the base directory have the following naming:
 //
@@ -232,7 +231,7 @@ func (s *localTester) PrepareDatastore(t *testing.T, datastore string) bool {
 //  read_all_prepare_travelers2.json
 //  read_all_populate_permissions.json
 //
-func (s *localTester) PrepareDatastoreFor(t *testing.T, datastore, baseDirectory, method string) bool {
+func (s *localTester) PrepareFor(t *testing.T, datastore, baseDirectory, method string) bool {
 	method = convertToLowerUnderscore(method)
 	request := &PrepareRequest{
 		DatasetResource: NewDatasetResource(datastore, baseDirectory, fmt.Sprintf("%v_prepare_", method), ""),
@@ -265,7 +264,7 @@ func (s *localTester) ExpectDatasets(t *testing.T, datastore string, checkPolicy
 	return s.Expect(t, request)
 }
 
-//ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name to
+//ExpectFor matches all dataset files that are located in baseDirectory with method name to
 // verify that all listed dataset values are present in datastore
 // Note the matchable dataset files in the base directory have the following naming:
 //
@@ -276,7 +275,7 @@ func (s *localTester) ExpectDatasets(t *testing.T, datastore string, checkPolicy
 //  read_all_expect_users.json
 //  read_all_expect_permissions.json
 //
-func (s *localTester) ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory, method string) bool {
+func (s *localTester) ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory, method string) bool {
 	method = convertToLowerUnderscore(method)
 	request := &ExpectRequest{
 		DatasetResource: NewDatasetResource(datastore, baseDirectory, fmt.Sprintf("%v_expect_", method), ""),

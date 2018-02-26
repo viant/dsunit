@@ -82,7 +82,7 @@ func PrepareDatastore(t *testing.T, datastore string) bool {
 
 }
 
-//PrepareDatastoreFor matches all dataset files that are located in baseDirectory with method name and
+//PrepareFor matches all dataset files that are located in baseDirectory with method name and
 // populate datastore with all listed dataset
 // Note the matchable dataset files in the base directory have the following naming:
 //
@@ -93,8 +93,8 @@ func PrepareDatastore(t *testing.T, datastore string) bool {
 //  read_all_prepare_travelers2.json
 //  read_all_populate_permissions.json
 //
-func PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, method string) bool {
-	return tester.PrepareDatastoreFor(t, datastore, baseDirectory, method)
+func PrepareFor(t *testing.T, datastore string, baseDirectory string, method string) bool {
+	return tester.PrepareFor(t, datastore, baseDirectory, method)
 }
 
 //Verify datastore with supplied expected datasets
@@ -113,7 +113,7 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool {
 	return tester.ExpectDatasets(t, datastore, checkPolicy)
 }
 
-//ExpectDatasetFor matches all dataset files that are located in baseDirectory with method name to
+//ExpectFor matches all dataset files that are located in baseDirectory with method name to
 // verify that all listed dataset values are present in datastore
 // Note the matchable dataset files in the base directory have the following naming:
 //
@@ -124,8 +124,8 @@ func ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool {
 //  read_all_expect_users.json
 //  read_all_expect_permissions.json
 //
-func ExpectDatasetFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool {
-	return tester.ExpectDatasetFor(t, datastore, checkPolicy, baseDirectory, method)
+func ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool {
+	return tester.ExpectFor(t, datastore, checkPolicy, baseDirectory, method)
 }
 
 //UseRemoteTestServer enables remove testing mode

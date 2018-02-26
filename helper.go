@@ -48,7 +48,13 @@ func recreateDatastore(manager dsc.Manager, registry dsc.ManagerRegistry, datast
 func dropDatastoreIfNeeded(manager dsc.Manager, dialect dsc.DatastoreDialect, datastore string) (err error) {
 	var datastores []string
 	if datastores, err = dialect.GetDatastores(manager); err == nil {
-		hasDatastore := toolbox.HasSliceAnyElements(datastores, datastore)
+		hasDatastore := false
+		for _, candidate := range datastores {
+			if strings.ToUpper(candidate) == strings.ToUpper(datastore) {
+				hasDatastore = true
+				break
+			}
+		}
 		if hasDatastore {
 			err = dialect.DropDatastore(manager, datastore)
 		}
@@ -85,7 +91,7 @@ func validateDatastores(registery dsc.ManagerRegistry, response *BaseResponse, d
 
 func expandDscConfig(config *dsc.Config, datastore string) (*dsc.Config, error) {
 	if len(config.Parameters) == 0 {
-		config.Parameters = make(map[string]string)
+		config.Parameters = make(map[string]interface{})
 	}
 	config.Parameters["dbname"] = datastore
 	err := config.Init()

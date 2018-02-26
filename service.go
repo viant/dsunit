@@ -486,9 +486,9 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 		}
 	}
 
-	aa, _ := toolbox.AsJSONText(actual)
-	ee, _ := toolbox.AsJSONText(expectedRecords)
-	fmt.Printf("%v %v\n", aa, ee)
+	//actualJSON, _ := toolbox.AsJSONText(actual)
+	//expectedJSON, _ := toolbox.AsJSONText(expectedRecords)
+	//fmt.Printf("%v %v\n", actualJSON, expectedJSON)
 
 	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)

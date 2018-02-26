@@ -96,11 +96,11 @@ func TestSetup(t *testing.T) {
 | Prepare(t *testing.T, request *PrepareRequest) bool | populate databstore with provided data |  [PrepareRequest](https://github.com/viant/dsunit/blob/master/service_contract.go#L293) | [MappingResponse](https://github.com/viant/dsunit/blob/master/service_contract.go#L323)  |
 | PrepareFromURL(t *testing.T, URL string) bool | as above, where  JSON request is fetched from URL/relative path  |  [PrepareRequest](https://github.com/viant/dsunit/blob/master/service_contract.go#L293) | [MappingResponse](https://github.com/viant/dsunit/blob/master/service_contract.go#L323)  |
 | PrepareDatastore(t *testing.T, datastore string) bool | match to populate all data files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name |  n/a | n/a  |
-| PrepareDatastoreFor(t *testing.T, datastore string, baseDirectory string, method string) bool |  match to populate all data files that are located in baseDirectory with method name |  n/a | n/a  |
+| PrepareFor(t *testing.T, datastore string, baseDirectory string, method string) bool |  match to populate all data files that are located in baseDirectory with method name |  n/a | n/a  |
 | Expect(t *testing.T, request *ExpectRequest) bool | verify databstore with provided data |  [ExpectRequest](https://github.com/viant/dsunit/blob/master/service_contract.go#L340) | [MappingResponse](https://github.com/viant/dsunit/blob/master/service_contract.go#L380)  |
 | ExpectFromURL(t *testing.T, URL string) bool | as above, where JSON request is fetched from URL/relative path |  [ExpectRequest](https://github.com/viant/dsunit/blob/master/service_contract.go#L340) | [MappingResponse](https://github.com/viant/dsunit/blob/master/service_contract.go#L380)  |
 | ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool | match to verify all data files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name |  n/a | n/a  |
-| ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool |   match to verify all dataset files that are located in the same directory as the test file with method name  |  n/a | n/a  |
+| ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool |   match to verify all dataset files that are located in the same directory as the test file with method name  |  n/a | n/a  |
 
 
 
@@ -209,9 +209,19 @@ API documentation is available in the [`docs`](docs/README.md) directory.
 
 
 <a name="examples"></a>
-# Examples
 
-[Simple CRUD app with dsunit](https://github.com/viant/dsc/tree/master/examples)
+This project provide a various datasore **dsunit** integration examples (some with docker vi endly).
+
+* [Aerospike](example/aerospike/)
+* [Big Query](example/bigquery/)
+* [MySQL](example/mysql)
+* [Oracle](example/ora)
+* [Postgres](example/pg)
+
+
+**External projects:**:
+ 
+* [Simple CRUD app with dsunit](https://github.com/viant/dsc/tree/master/examples)
 
 
 <a name="License"></a>

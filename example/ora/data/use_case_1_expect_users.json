@@ -1,0 +1,6 @@
+[
+  {"@caseSensitive@":false, "@timeFormat@":"yyyy-MM-dd HH:mm:ss"},
+  { "id":"<ds:seq[\"USERS\"]>", "username":"Dudi", "active":true, "salary":12400, "comments":"abc","modified": "2016-03-01 03:10:00"},
+  { "id":"<ds:seq[\"USERS\"]>", "username":"Rudi", "active":true, "salary":12600, "comments":"def","modified": "2016-03-01 05:10:00"},
+  { "id":"<ds:seq[\"USERS\"]>", "username":"Vudi", "active":true, "salary":12800, "comments":"dsunit test","modified": "2016-03-01 08:43:00"}
+]

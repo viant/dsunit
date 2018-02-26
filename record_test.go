@@ -5,6 +5,7 @@ import (
 	"github.com/viant/dsunit"
 	"github.com/viant/toolbox"
 	"testing"
+	"sort"
 )
 
 func TestRecord_AsMap(t *testing.T) {
@@ -17,6 +18,8 @@ func TestRecord_AsMap(t *testing.T) {
 
 func TestRecord_Columns(t *testing.T) {
 	var record = dsunit.Record(toolbox.Pairs("k1", 1, "k2", 3, "@directive@", "abc"))
+	sort.Strings(record.Columns())
+
 	assert.Equal(t, []string{"k1", "k2"}, record.Columns())
 }
 

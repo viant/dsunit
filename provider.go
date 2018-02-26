@@ -17,24 +17,18 @@ type sequenceValueProvider struct {
 
 func (p *sequenceValueProvider) countMatched(dataset *Dataset) int64 {
 	var result = 0
+	var keyColumn = ""
 	pkColumns := dataset.Records.UniqueKeys()
-	if len(pkColumns) == 0 {
-		for _, record := range dataset.Records {
-			for _, v := range record {
-				if value, ok := v.(string); ok {
-					if strings.Contains(value, p.match) {
-						result++
-					}
-				}
-			}
-		}
-		return int64(result)
+	if len(pkColumns) > 0 {
+		keyColumn = pkColumns[0]
 	}
 	for _, record := range dataset.Records {
-		for _, pkColumn := range pkColumns {
-			value := record[pkColumn]
-			if textValue, ok := value.(string); ok {
-				if strings.Contains(textValue, p.match) {
+		for k, v := range record {
+			if keyColumn != "" && strings.ToUpper(keyColumn) != strings.ToUpper(k) {
+				continue
+			}
+			if value, ok := v.(string); ok {
+				if strings.Contains(value, p.match) {
 					result++
 				}
 			}

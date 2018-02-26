@@ -18,8 +18,8 @@ func TestTester_FromURL(t *testing.T) {
 	tester.InitFromURL(t, "test/tester/init.json")
 	tester.PrepareFromURL(t, "test/tester/prepare.json")
 	tester.ExpectFromURL(t, "test/tester/expect.json")
-	tester.PrepareDatastoreFor(t, "tester", "test/tester/data", "use_case_1")
-	tester.ExpectDatasetFor(t, "tester", dsunit.FullTableDatasetCheckPolicy, "test/tester/data", "use_case_1")
+	tester.PrepareFor(t, "tester", "test/tester/data", "use_case_1")
+	tester.ExpectFor(t, "tester", dsunit.FullTableDatasetCheckPolicy, "test/tester/data", "use_case_1")
 
 }
 

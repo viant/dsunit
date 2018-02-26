@@ -216,7 +216,7 @@ type InitRequest struct {
 	Datastore string
 	Recreate  bool
 	*RegisterRequest
-	Admin     *RegisterRequest
+	Admin *RegisterRequest
 	*MappingRequest
 	*RunScriptRequest
 }
@@ -281,7 +281,7 @@ type InitResponse struct {
 
 //PrepareRequest represents a request to populate datastore with data resource
 type PrepareRequest struct {
-	Expand bool      `description:"substitute $ expression with content of context.state"`
+	Expand           bool `description:"substitute $ expression with content of context.state"`
 	*DatasetResource `required:"true" description:"datasets resource"`
 }
 

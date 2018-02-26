@@ -10,9 +10,9 @@ import (
 
 func TestTableMapping(t *testing.T) {
 	dsunit.InitFromURL(t, "test/static/init.json")
-	dsunit.PrepareDatastoreFor(t, "static", "test/static/data", "mapping")
+	dsunit.PrepareFor(t, "static", "test/static/data", "mapping")
 	//business test logic comes here
-	dsunit.ExpectDatasetFor(t, "static", dsunit.SnapshotDatasetCheckPolicy, "test/static/data", "mapping")
+	dsunit.ExpectFor(t, "static", dsunit.SnapshotDatasetCheckPolicy, "test/static/data", "mapping")
 
 }
 
@@ -24,8 +24,8 @@ func TestTableMappingRemote(t *testing.T) {
 	time.Sleep(time.Second)
 	tester := dsunit.NewRemoveTester("http://127.0.0.1:8877")
 	tester.InitFromURL(t, "test/static/init.json")
-	tester.PrepareDatastoreFor(t, "static", "test/static/data", "mapping")
+	tester.PrepareFor(t, "static", "test/static/data", "mapping")
 	//business test logic comes here
-	tester.ExpectDatasetFor(t, "static", dsunit.SnapshotDatasetCheckPolicy, "test/static/data", "mapping")
+	tester.ExpectFor(t, "static", dsunit.SnapshotDatasetCheckPolicy, "test/static/data", "mapping")
 
 }

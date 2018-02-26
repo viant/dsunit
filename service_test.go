@@ -22,7 +22,7 @@ func getTestService(dbname string, baseDirectory string, SQLScripts ...string) (
 			&dsc.Config{
 				DriverName: "sqlite3",
 				Descriptor: "[url]",
-				Parameters: map[string]string{
+				Parameters: map[string]interface{}{
 					"url": filename,
 				},
 			}))
