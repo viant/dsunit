@@ -139,9 +139,12 @@ func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 		return response
 	}
 	for _, result := range results {
-		if count, err := result.RowsAffected(); err == nil {
-			response.RowsAffected += int(count)
+		count, err := result.RowsAffected();
+		if err != nil {
+			response.SetError(err)
+			return response
 		}
+		response.RowsAffected += int(count)
 	}
 	return response
 }
