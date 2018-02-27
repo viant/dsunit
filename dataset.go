@@ -198,6 +198,10 @@ func (r *DatasetResource) Load() (err error) {
 	return nil
 }
 
+func (r *DatasetResource) Init() error {
+	return nil
+}
+
 func (r *DatasetResource) load(service storage.Service, object storage.Object) (err error) {
 	if len(r.Datasets) == 0 {
 		r.Datasets = make([]*Dataset, 0)
