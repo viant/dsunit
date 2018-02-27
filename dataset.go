@@ -185,7 +185,7 @@ func (r *DatasetResource) Load() (err error) {
 	if len(r.Datasets) == 0 {
 		r.Datasets = make([]*Dataset, 0)
 	}
-	if r.Resource != nil {
+	if r.Resource != nil && r.Resource.URL != "" {
 		if err = r.loadDataset(); err != nil {
 			return err
 		}
