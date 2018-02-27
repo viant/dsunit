@@ -4,14 +4,27 @@ import (
 	"io"
 	"bufio"
 	"strings"
+	"io/ioutil"
+	"bytes"
 )
 
 var delimiterKeyword = "delimiter"
 
+
+
+
+
 //parseSQLScript parses sql script and breaks it down to submittable sql statements
 func ParseSQLScript(reader io.Reader) []string {
 	var result = make([]string, 0)
-	scanner := bufio.NewScanner(reader)
+	content, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return result
+	}
+
+	var mySQLMode = strings.Contains(strings.ToUpper(string(content)) , "\nDELIMITER")
+
+	scanner := bufio.NewScanner(bytes.NewReader(content))
 	var command, delimiter = "", ";"
 	var pending = ""
 	var blockDepth = 0;
@@ -33,11 +46,12 @@ func ParseSQLScript(reader io.Reader) []string {
 		}
 
 		if !inInSingleQuote && !isInDoubleQuote {
-
-			if strings.Contains(strings.ToLower(line), "begin") {
-				blockDepth++
-				command += line + "\n"
-				continue
+			if ! mySQLMode {
+				if strings.Contains(strings.ToLower(line), "begin") {
+					blockDepth++
+					command += line + "\n"
+					continue
+				}
 			}
 
 			if blockDepth > 0 {
@@ -56,6 +70,7 @@ func ParseSQLScript(reader io.Reader) []string {
 
 				continue
 			}
+
 		}
 
 
