@@ -13,7 +13,6 @@ var delimiterKeyword = "delimiter"
 
 
 
-
 //parseSQLScript parses sql script and breaks it down to submittable sql statements
 func ParseSQLScript(reader io.Reader) []string {
 	var result = make([]string, 0)
@@ -21,14 +20,11 @@ func ParseSQLScript(reader io.Reader) []string {
 	if err != nil {
 		return result
 	}
-
-	var mySQLMode = strings.Contains(strings.ToUpper(string(content)) , "\nDELIMITER")
-
+	var mySQLMode = strings.Contains(strings.ToUpper(string(content)), "\nDELIMITER")
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	var command, delimiter = "", ";"
 	var pending = ""
 	var blockDepth = 0;
-	var inInSingleQuote, isInDoubleQuote bool = false, false
 	for scanner.Scan() {
 		line := strings.Trim(scanner.Text(), " \t")
 		if len(line) == 0 || strings.HasPrefix(line, "--") || (strings.HasPrefix(line, "/*") && strings.HasSuffix(line, "*/")) {
@@ -39,43 +35,38 @@ func ParseSQLScript(reader io.Reader) []string {
 			result = append(result, pending+"\n")
 		}
 
+		if ! mySQLMode {
+			if strings.Contains(strings.ToLower(line), "begin") {
+				blockDepth++
+				command += line + "\n"
+				continue
+			}
+		}
+		if blockDepth > 0 {
+			endBlockPosition := strings.LastIndex(strings.ToLower(line), "end")
+			if endBlockPosition != -1 {
+				var endBlock = strings.TrimSpace(line[endBlockPosition+3:]) == delimiter
+				if endBlock {
+					blockDepth--
+				}
+			}
+			command += line + "\n"
+			if blockDepth == 0 {
+				result = append(result, command)
+				command = ""
+			}
+
+			continue
+		}
+
+		var inInSingleQuote, isInDoubleQuote bool = false, false
 		positionOfDelimiter := strings.Index(strings.ToLower(line), delimiterKeyword)
 		if positionOfDelimiter != -1 {
 			delimiter = strings.Trim(line[positionOfDelimiter+len(delimiterKeyword):], " \t")
 			continue
 		}
-
-		if !inInSingleQuote && !isInDoubleQuote {
-			if ! mySQLMode {
-				if strings.Contains(strings.ToLower(line), "begin") {
-					blockDepth++
-					command += line + "\n"
-					continue
-				}
-			}
-
-			if blockDepth > 0 {
-				endBlockPosition := strings.LastIndex(strings.ToLower(line), "end")
-				if endBlockPosition != -1 {
-					var endBlock = strings.TrimSpace(line[endBlockPosition+3:]) == delimiter
-					if endBlock {
-						blockDepth--
-					}
-				}
-				command += line +"\n"
-				if blockDepth == 0 {
-					result = append(result, command)
-					command = ""
-				}
-
-				continue
-			}
-
-		}
-
-
 		for i := 0; i < len(line); i++ {
-			aChar := line[i: i+1]
+			aChar := line[i : i+1]
 
 			if aChar == "'" && i > 0 && line[i-1:i] != "\\" {
 				inInSingleQuote = !inInSingleQuote
@@ -87,21 +78,25 @@ func ParseSQLScript(reader io.Reader) []string {
 
 			hasDelimiter, indexIncrease := hasDelimiter(line, delimiter, i)
 
-			if hasDelimiter && !inInSingleQuote && !isInDoubleQuote && blockDepth == 0 {
+			if hasDelimiter && !inInSingleQuote && !isInDoubleQuote {
 
 				i = i + indexIncrease
 				command = strings.Trim(command, " \t\"")
+
 				commans := normalizeCommand(command)
+
 				result = append(result, commans...)
 				command = ""
 			} else {
-				command += aChar
+				command = command + aChar
 			}
 		}
-		command +=  "\n"
+		command = command + "\n"
 	}
 	return result
 }
+
+
 
 func normalizeCommand(command string) []string {
 	lowerCommand := strings.ToLower(command)
