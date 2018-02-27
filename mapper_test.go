@@ -18,6 +18,7 @@ func TestService_Map(t *testing.T) {
 				{
 					Name:       "ID",
 					Required:   true,
+					Unique:     true,
 					FromColumn: "ORDER_ID",
 				},
 				{
@@ -34,6 +35,7 @@ func TestService_Map(t *testing.T) {
 						{
 							Name:       "ID",
 							Required:   true,
+							Unique:     true,
 							FromColumn: "LINE_ITEM_ID",
 						},
 						{

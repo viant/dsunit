@@ -11,8 +11,9 @@ type Mapping struct {
 
 //MappingTable represents a table mapping, mapping allow to route data defined in only one table to many tables.
 type MappingTable struct {
-	Table        string           `required:"true"`
-	Columns      []*MappingColumn `required:"true"`
+	Table   string           `required:"true"`
+	Columns []*MappingColumn `required:"true"`
+
 	Associations []*MappingTable
 }
 
@@ -22,6 +23,7 @@ type MappingColumn struct {
 	DefaultValue string
 	FromColumn   string `description:"if specified it defined value source for this column"`
 	Required     bool   `description:"table record will be mapped if values for all required columns are present"`
+	Unique       bool   `description:"flag key/s that are unique"`
 }
 
 //Tables returns tables of this mapping
