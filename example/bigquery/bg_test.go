@@ -16,7 +16,7 @@ Prerequisites:
 
 
 
-func TestDsunit_MySQL(t *testing.T) {
+func TestDsunit_BigQuery(t *testing.T) {
 
 	if dsunit.InitFromURL(t, "config/init.json") {
 		if ! dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {

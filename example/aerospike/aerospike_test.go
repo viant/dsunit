@@ -44,7 +44,7 @@ func tearDown(t *testing.T) {
 	}
 }
 
-func TestDsunit_Postgres(t *testing.T) {
+func TestDsunit_Aerospike(t *testing.T) {
 	setup(t)
 	defer tearDown(t)
 	if dsunit.InitFromURL(t, "config/init.json") {
@@ -62,7 +62,7 @@ func TestDsunit_Postgres(t *testing.T) {
 
 
 func runSomeBusinessLogic() error {
-	config, err := dsc.NewConfigWithParameters("aerospike", "tcp(127.0.0.1:3000)/[namespace]", "", map[string]string{
+	config, err := dsc.NewConfigWithParameters("aerospike", "tcp(127.0.0.1:3000)/[namespace]", "", map[string]interface{}{
 		"namespace":"test",
 		"host":"127.0.0.1",
 	});
@@ -107,7 +107,7 @@ func startAerospike() error {
 	}
 	//it takes some time to docker container to fully start
 
-	config, err := dsc.NewConfigWithParameters("aerospike", "tcp(127.0.0.1:3000)/[namespace]", "", map[string]string{
+	config, err := dsc.NewConfigWithParameters("aerospike", "tcp(127.0.0.1:3000)/[namespace]", "", map[string]interface{}{
 		"namespace":"test",
 		"host":"127.0.0.1",
 	});

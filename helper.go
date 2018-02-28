@@ -5,7 +5,6 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"path"
-	"runtime"
 	"strings"
 )
 
@@ -110,33 +109,6 @@ func buildBatchedPkValues(records Records, pkColumns []string) [][]interface{} {
 	return result
 }
 
-func hasMatch(target string, candidates ...string) bool {
-	for _, candidate := range candidates {
-		if strings.HasSuffix(target, candidate) {
-			return true
-		}
-	}
-	return false
-}
-
-func discoverCaller(offset, maxDepth int, ignoreFiles ...string) (string, string, int) {
-	var callerPointer = make([]uintptr, maxDepth) // at least 1 entry needed
-	var caller *runtime.Func
-	var filename string
-	var line int
-	for i := offset; i < maxDepth; i++ {
-		runtime.Callers(i, callerPointer)
-		caller = runtime.FuncForPC(callerPointer[0])
-		filename, line = caller.FileLine(callerPointer[0])
-		if hasMatch(filename, ignoreFiles...) {
-			continue
-		}
-		break
-	}
-	callerName := caller.Name()
-	dotPosition := strings.LastIndex(callerName, ".")
-	return filename, callerName[dotPosition+1:], line
-}
 
 func convertToLowerUnderscore(upperCamelCase string) string {
 	if len(upperCamelCase) == 0 {
@@ -164,7 +136,7 @@ func convertToLowerUnderscore(upperCamelCase string) string {
 }
 
 func discoverBaseURLAndPrefix(operation string) (string, string) {
-	testfile, method, _ := discoverCaller(2, 10, "tester.go", "helper.go", "static.go")
+	testfile, method, _ := toolbox.DiscoverCaller(2, 10, "tester.go", "helper.go", "static.go")
 	parent, name := path.Split(testfile)
 	name = string(name[:len(name)-3]) //remove .go
 	var lastSegment = strings.LastIndex(method, "_")

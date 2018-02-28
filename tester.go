@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"testing"
+	"github.com/viant/toolbox"
 )
 
 var LogF = fmt.Printf
@@ -98,23 +99,20 @@ type localTester struct {
 
 func handleError(t *testing.T, err error) {
 	if err != nil {
-		file, method, line := discoverCaller(2, 10, "static.go", "tester.go", "helper.go")
+		file, method, line := toolbox.DiscoverCaller(2, 10, "stack_helper.go", "static.go", "tester.go", "helper.go")
 		_, file = path.Split(file)
-		t.Errorf("\n%v.%v:%v %v", file, method, line, err)
+		fmt.Printf("%v:%v (%v)\n%v\n", file, line, method, err)
 		t.FailNow()
 	}
 }
 
 func handleResponse(t *testing.T, response *BaseResponse) bool {
-	file, method, line := discoverCaller(3, 10, "static.go", "tester.go", "helper.go")
+	file, method, line := toolbox.DiscoverCaller(3, 10, "stack_helper.go","static.go", "tester.go", "helper.go")
 	_, file = path.Split(file)
 	if response.Status != StatusOk {
 		LogF("%v:%v (%v)\n%v\n", file, line, method, response.Message)
 		t.Fail()
 		return false
-	}
-	if response.Message != "" {
-		LogF("%v:%v (%v)%v\n", file, line, method, response.Message)
 	}
 	return true
 }
