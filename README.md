@@ -209,14 +209,18 @@ API documentation is available in the [`docs`](docs/README.md) directory.
 
 
 <a name="examples"></a>
-
+## Examples
 This project provide a various datasore **dsunit** integration examples (some with docker vi endly).
 
-* [Aerospike](example/aerospike/)
+### RDBMS
 * [Big Query](example/bigquery/)
 * [MySQL](example/mysql)
 * [Oracle](example/ora)
 * [Postgres](example/pg)
+
+## NoSQL
+* [Aerospike](example/aerospike/)
+* [MongoDB](example/mongo)
 
 
 **External projects:**:

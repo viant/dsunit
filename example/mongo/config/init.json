@@ -1,0 +1,12 @@
+{
+  "Datastore": "mydb",
+  "Config": {
+    "DriverName": "mgc",
+    "Parameters": {
+      "dbname": "mydb",
+      "host": "127.0.0.1",
+      "keyColumnName": "id"
+    }
+  },
+  "Recreate": true
+}
