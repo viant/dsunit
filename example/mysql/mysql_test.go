@@ -1,37 +1,32 @@
 package mysql
 
 import (
-	"github.com/viant/endly"
+	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/viant/toolbox/url"
-	"testing"
+	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
-	"fmt"
-	"github.com/stretchr/testify/assert"
-	"time"
-	"strings"
+	"github.com/viant/endly"
 	"github.com/viant/toolbox"
-	"path"
+	"github.com/viant/toolbox/url"
 	"os"
+	"path"
+	"strings"
+	"testing"
+	"time"
 )
-
 
 /*
 Prerequisites:
 1.docker service running
 2. localhost credentials  to conneect to the localhost vi SSH
 	or generate ~/.secret/localhost.json with  endly -c=localhost option
-  */
-
+*/
 
 //Global variables for all test integrating with endly.
 var endlyManager = endly.NewManager()
 var endlyContext = endlyManager.NewContext(toolbox.NewContext())
 var localhostCredential = path.Join(os.Getenv("HOME"), ".secret/localhost.json")
-
-
-
 
 func mySQLSetup(t *testing.T) {
 	err := startMySQL()
@@ -53,11 +48,11 @@ func TestDsunit_MySQL(t *testing.T) {
 	mySQLSetup(t)
 	defer mySQLTearDown(t)
 	if dsunit.InitFromURL(t, "config/init.json") {
-		if ! dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
+		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
 		}
 		err := mySQLRunSomeBusinessLogic()
-		if ! assert.Nil(t, err) {
+		if !assert.Nil(t, err) {
 			return
 		}
 		dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
@@ -65,7 +60,7 @@ func TestDsunit_MySQL(t *testing.T) {
 }
 
 func mySQLRunSomeBusinessLogic() error {
-	config, err := dsc.NewConfigWithParameters("mysql","[username]:[password]@tcp(127.0.0.1:3306)/mydb?parseTime=true", mysqlCredential, nil);
+	config, err := dsc.NewConfigWithParameters("mysql", "[username]:[password]@tcp(127.0.0.1:3306)/mydb?parseTime=true", mysqlCredential, nil)
 	if err != nil {
 		return err
 	}
@@ -113,7 +108,7 @@ func startMySQL() error {
 		return err
 	}
 	//it takes some time to docker container to fully start
-	config, err := dsc.NewConfigWithParameters("mysql","[username]:[password]@tcp(127.0.0.1:3306)/mysql?parseTime=true", mysqlCredential, nil);
+	config, err := dsc.NewConfigWithParameters("mysql", "[username]:[password]@tcp(127.0.0.1:3306)/mysql?parseTime=true", mysqlCredential, nil)
 	if err != nil {
 		return err
 	}
@@ -130,7 +125,7 @@ func startMySQL() error {
 			time.Sleep(2 * time.Second)
 			break
 		}
-		if ! strings.Contains(err.Error(), "EOF") &&  ! strings.Contains(err.Error(), "bad connection") {
+		if !strings.Contains(err.Error(), "EOF") && !strings.Contains(err.Error(), "bad connection") {
 			return err
 		}
 		time.Sleep(5 * time.Second)

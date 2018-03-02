@@ -63,15 +63,16 @@ func (s *service) Registry() dsc.ManagerRegistry {
 }
 
 func (s *service) Register(request *RegisterRequest) *RegisterResponse {
-	var err error
 	var response = &RegisterResponse{
 		BaseResponse: NewBaseOkResponse(),
 	}
-	if request.ConfigURL != "" {
-		if request.Config, err = dsc.NewConfigFromURL(request.ConfigURL); err != nil {
-			response.SetError(err)
-			return response
-		}
+	var err = request.Init()
+	if err == nil {
+		err = request.Validate()
+	}
+	if err != nil {
+		response.SetError(err)
+		return response
 	}
 	config, err := expandDscConfig(request.Config, request.Datastore)
 	if err != nil {
@@ -139,7 +140,7 @@ func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 		return response
 	}
 	for _, result := range results {
-		count, err := result.RowsAffected();
+		count, err := result.RowsAffected()
 		if err != nil {
 			response.SetError(err)
 			return response
@@ -409,15 +410,17 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 	var response = &PrepareResponse{
 		BaseResponse: NewBaseOkResponse(),
 	}
-	if err := request.Validate(); err != nil {
+	err := request.Init()
+	if err == nil {
+		err = request.Validate()
+	}
+	if err != nil {
 		response.SetError(err)
 		return response
 	}
-
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
-	var err error
 	var connection dsc.Connection
 	manager := s.registry.Get(request.Datastore)
 	if err = request.Load(); err == nil {
@@ -506,7 +509,11 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	var response = &ExpectResponse{
 		BaseResponse: NewBaseOkResponse(),
 	}
-	if err := request.Validate(); err != nil {
+	err := request.Init()
+	if err == nil {
+		err = request.Validate()
+	}
+	if err != nil {
 		response.SetError(err)
 		return response
 	}
@@ -516,7 +523,6 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	}
 	manager := s.registry.Get(request.Datastore)
 	context := s.newContext(manager)
-	var err error
 
 	if err = request.Load(); err == nil {
 		if len(request.Datasets) == 0 {

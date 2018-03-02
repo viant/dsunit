@@ -89,6 +89,7 @@ func validateDatastores(registery dsc.ManagerRegistry, response *BaseResponse, d
 }
 
 func expandDscConfig(config *dsc.Config, datastore string) (*dsc.Config, error) {
+
 	if len(config.Parameters) == 0 {
 		config.Parameters = make(map[string]interface{})
 	}
@@ -108,7 +109,6 @@ func buildBatchedPkValues(records Records, pkColumns []string) [][]interface{} {
 	}
 	return result
 }
-
 
 func convertToLowerUnderscore(upperCamelCase string) string {
 	if len(upperCamelCase) == 0 {

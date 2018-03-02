@@ -1,18 +1,18 @@
 package aerospike
 
 import (
-	"github.com/viant/endly"
-	"github.com/viant/toolbox"
-	"path"
-	"os"
-	"github.com/viant/dsunit"
+	"fmt"
+	_ "github.com/adrianwit/mgc"
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
-	_ "github.com/adrianwit/mgc"
-	"fmt"
-	"time"
-	"testing"
+	"github.com/viant/dsunit"
+	"github.com/viant/endly"
+	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
+	"os"
+	"path"
+	"testing"
+	"time"
 )
 
 /*
@@ -20,7 +20,7 @@ Prerequisites:
 1.docker service running
 2. localhost credentials  to conneect to the localhost vi SSH
 	or generate ~/.secret/localhost.json with  endly -c=localhost option
-  */
+*/
 
 //Global variables for all test integrating with endly.
 var endlyManager = endly.NewManager()
@@ -49,11 +49,11 @@ func TestDsunit_Mongo(t *testing.T) {
 	//dsc.Logf = dsc.StdoutLogger
 
 	if dsunit.InitFromURL(t, "config/init.json") {
-		if ! dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
+		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
 		}
 		err := runSomeBusinessLogic()
-		if ! assert.Nil(t, err) {
+		if !assert.Nil(t, err) {
 			return
 		}
 		dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
@@ -62,10 +62,10 @@ func TestDsunit_Mongo(t *testing.T) {
 
 func getConfig() (*dsc.Config, error) {
 	return dsc.NewConfigWithParameters("mgc", "", "", map[string]interface{}{
-		"dbname": "mydb",
-		"host": "127.0.0.1",
+		"dbname":        "mydb",
+		"host":          "127.0.0.1",
 		"keyColumnName": "id",
-	});
+	})
 }
 
 func runSomeBusinessLogic() error {
@@ -90,7 +90,6 @@ func runSomeBusinessLogic() error {
 	}
 	return nil
 }
-
 
 func startMongo() error {
 

@@ -1,36 +1,32 @@
 package example
 
 import (
-	"github.com/viant/endly"
+	"fmt"
 	_ "github.com/lib/pq"
-	"github.com/viant/toolbox/url"
-	"testing"
+	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
-	"fmt"
-	"github.com/stretchr/testify/assert"
-	"time"
-	"strings"
+	"github.com/viant/endly"
 	"github.com/viant/toolbox"
-	"path"
+	"github.com/viant/toolbox/url"
 	"os"
+	"path"
+	"strings"
+	"testing"
+	"time"
 )
-
 
 /*
 Prerequisites:
 1.docker service running
 2. localhost credentials  to conneect to the localhost vi SSH
 	or generate ~/.secret/localhost.json with  endly -c=localhost option
-  */
-
+*/
 
 //Global variables for all test integrating with endly.
 var endlyManager = endly.NewManager()
 var endlyContext = endlyManager.NewContext(toolbox.NewContext())
 var localhostCredential = path.Join(os.Getenv("HOME"), ".secret/localhost.json")
-
-
 
 func setup(t *testing.T) {
 	err := startPostgres()
@@ -52,11 +48,11 @@ func TestDsunit_Postgres(t *testing.T) {
 	setup(t)
 	defer tearDown(t)
 	if dsunit.InitFromURL(t, "config/init.json") {
-		if ! dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
+		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
 		}
 		err := runSomeBusinessLogic()
-		if ! assert.Nil(t, err) {
+		if !assert.Nil(t, err) {
 			return
 		}
 		dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
@@ -64,7 +60,7 @@ func TestDsunit_Postgres(t *testing.T) {
 }
 
 func runSomeBusinessLogic() error {
-	config, err := dsc.NewConfigWithParameters("postgres", "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=mydb sslmode=disable", pgCredential, nil);
+	config, err := dsc.NewConfigWithParameters("postgres", "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=mydb sslmode=disable", pgCredential, nil)
 	if err != nil {
 		return err
 	}
@@ -111,7 +107,7 @@ func startPostgres() error {
 	}
 	//it takes some time to docker container to fully start
 
-	config, err := dsc.NewConfigWithParameters("postgres", "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=postgres sslmode=disable", pgCredential, nil);
+	config, err := dsc.NewConfigWithParameters("postgres", "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=postgres sslmode=disable", pgCredential, nil)
 	if err != nil {
 		return err
 	}
@@ -128,7 +124,7 @@ func startPostgres() error {
 			time.Sleep(2 * time.Second)
 			break
 		}
-		if ! strings.Contains(err.Error(), "EOF") {
+		if !strings.Contains(err.Error(), "EOF") {
 			return err
 		}
 		time.Sleep(2 * time.Second)

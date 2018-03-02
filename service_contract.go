@@ -51,6 +51,27 @@ type RegisterRequest struct {
 	Tables    []*dsc.TableDescriptor `description:"optional table descriptors"`
 }
 
+func (r *RegisterRequest) Init() (err error) {
+	if r.ConfigURL != "" {
+		if r.Config, err = dsc.NewConfigFromURL(r.ConfigURL); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *RegisterRequest) Validate() error {
+	if r.Datastore == "" {
+		return errors.New("datastore was empty")
+	}
+
+	if r.Config == nil {
+		return errors.New("config was empty")
+	}
+
+	return nil
+}
+
 //NewRegisterRequest create new register request
 func NewRegisterRequest(datastore string, config *dsc.Config, tables ...*dsc.TableDescriptor) *RegisterRequest {
 	return &RegisterRequest{
@@ -287,11 +308,14 @@ type PrepareRequest struct {
 
 //Validate checks if request is valid
 func (r *PrepareRequest) Validate() error {
-	if r.Resource == nil {
-		return errors.New("url was empty")
+	if r.DatasetResource == nil {
+		return errors.New("dataset resource was empty")
 	}
 	if r.DatastoreDatasets == nil {
 		return errors.New("datastore was empty")
+	}
+	if r.Resource == nil {
+		return errors.New("url was empty")
 	}
 	return nil
 }
@@ -335,6 +359,9 @@ type ExpectRequest struct {
 
 //Validate checks if request is valid
 func (r *ExpectRequest) Validate() error {
+	if r.DatasetResource == nil {
+		return errors.New("dataset resource was empty")
+	}
 	if r.Resource == nil {
 		return errors.New("url was empty")
 	}

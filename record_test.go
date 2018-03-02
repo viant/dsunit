@@ -4,8 +4,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsunit"
 	"github.com/viant/toolbox"
-	"testing"
 	"sort"
+	"testing"
 )
 
 func TestRecord_AsMap(t *testing.T) {
