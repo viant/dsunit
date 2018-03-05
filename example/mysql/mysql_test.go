@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"github.com/viant/endly/system/docker"
 )
 
 /*
@@ -86,7 +87,7 @@ var mysqlCredential = url.NewResource("config/secret.json").URL
 
 func startMySQL() error {
 
-	_, err := endlyManager.Run(endlyContext, &endly.DockerRunRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "mysql:5.6",
 		MappedPort: map[string]string{
@@ -134,8 +135,8 @@ func startMySQL() error {
 }
 
 func stopMySQL() error {
-	_, err := endlyManager.Run(endlyContext, &endly.DockerContainerStopRequest{
-		&endly.DockerContainerBaseRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.ContainerStopRequest{
+		&docker.ContainerBaseRequest{
 			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 			Name:   "mysql_dsunit",
 		},

@@ -13,6 +13,7 @@ import (
 	"path"
 	"testing"
 	"time"
+	"github.com/viant/endly/system/docker"
 )
 
 /*
@@ -93,7 +94,7 @@ func runSomeBusinessLogic() error {
 
 func startMongo() error {
 
-	_, err := endlyManager.Run(endlyContext, &endly.DockerRunRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "mongo:latest",
 		MappedPort: map[string]string{
@@ -122,8 +123,8 @@ func startMongo() error {
 }
 
 func stopMongo() error {
-	_, err := endlyManager.Run(endlyContext, &endly.DockerContainerStopRequest{
-		&endly.DockerContainerBaseRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.ContainerStopRequest{
+		&docker.ContainerBaseRequest{
 			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 			Name:   "mongo_dsunit",
 		},

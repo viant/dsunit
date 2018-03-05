@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"github.com/viant/endly/system/docker"
 )
 
 /*
@@ -87,7 +88,7 @@ func runSomeBusinessLogic() error {
 
 func startAerospike() error {
 
-	_, err := endlyManager.Run(endlyContext, &endly.DockerRunRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "aerospike/aerospike-server:latest",
 		MappedPort: map[string]string{
@@ -133,8 +134,8 @@ func startAerospike() error {
 }
 
 func stopAerospike() error {
-	_, err := endlyManager.Run(endlyContext, &endly.DockerContainerStopRequest{
-		&endly.DockerContainerBaseRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.ContainerStopRequest{
+		&docker.ContainerBaseRequest{
 			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 			Name:   "aerospike_dsunit",
 		},

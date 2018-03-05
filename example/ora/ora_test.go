@@ -14,6 +14,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"github.com/viant/endly/system/docker"
 )
 
 /*
@@ -33,7 +34,7 @@ var endlyContext = endlyManager.NewContext(toolbox.NewContext())
 var localhostCredential = path.Join(os.Getenv("HOME"), ".secret/localhost.json")
 
 func init() {
-	//	os.Setenv("ORACLE_HOME", "/opt/oracle/instantclient_12_1")
+	os.Setenv("ORACLE_HOME", "/opt/oracle/instantclient_12_1")
 	os.Setenv("TNS_ADMIN", "/opt/oracle/instantclient_12_1/admin")
 }
 
@@ -55,8 +56,8 @@ func tearDown(t *testing.T) {
 }
 
 func TestDsunit_Oracle(t *testing.T) {
-	//setup(t)
-	//defer tearDown(t)
+	setup(t)
+	defer tearDown(t)
 	if dsunit.InitFromURL(t, "config/init.json") {
 		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
@@ -94,7 +95,7 @@ func runSomeBusinessLogic() error {
 
 func startOracle() error {
 
-	_, err := endlyManager.Run(endlyContext, &endly.DockerRunRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "wnameless/oracle-xe-11g:latest",
 		Env: map[string]string{
@@ -125,22 +126,26 @@ func startOracle() error {
 	for i := 0; i < 60; i++ {
 		var record = make(map[string]interface{})
 		_, err = dscManager.ReadSingle(&record, "SELECT 1 AS name FROM dual", nil, nil)
-		fmt.Printf("--- %v\n", err)
 		if err == nil {
 			time.Sleep(2 * time.Second)
 			break
 		}
-		if !strings.Contains(err.Error(), "TNS:connection closed") {
+		//wait for docker service to fully start
+		if !(strings.Contains(err.Error(), "TNS:connection closed") ||
+			strings.Contains(err.Error(), "ORA-12537") ||
+			strings.Contains(err.Error(), "ORA-12514") ||
+			strings.Contains(err.Error(), "ORA-01033") ||
+			strings.Contains(err.Error(), "bad connection")) {
 			return err
 		}
-		time.Sleep(2 * time.Second)
+		time.Sleep(4 * time.Second)
 	}
 	return err
 }
 
 func stopOracle() error {
-	_, err := endlyManager.Run(endlyContext, &endly.DockerContainerStopRequest{
-		&endly.DockerContainerBaseRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.ContainerStopRequest{
+		&docker.ContainerBaseRequest{
 			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 			Name:   "ora_dsunit",
 		},
