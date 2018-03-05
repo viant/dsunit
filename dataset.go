@@ -139,17 +139,18 @@ func (r *Records) Columns() []string {
 
 //DatastoreDatasets represents a collection of datastore datasets
 type DatastoreDatasets struct {
-	Datastore string                              `required:"true" description:"register datastore"`
-	Datasets  []*Dataset                          `description:"collection of dataset per table"`
-	Data      map[string][]map[string]interface{} `description:"map, where each pair represent table name and records (backwad compatiblity)"`
+	Datastore string     `required:"true" description:"register datastore"`
+	Datasets  []*Dataset `description:"collection of dataset per table"`
+	Data map[string][]map[string]interface{} `description:"map, where each pair represent table name and records (backwad compatiblity)"`
 }
 
 //DatasetResource represents a dataset resource
 type DatasetResource struct {
 	*url.Resource      ` description:"data file location, csv, json, ndjson formats are supported"`
 	*DatastoreDatasets `required:"true" description:"datastore datasets"`
-	Prefix             string ` description:"location data file prefix"`  //apply prefix
-	Postfix            string ` description:"location data file postgix"` //apply suffix
+	Prefix  string     ` description:"location data file prefix"`  //apply prefix
+	Postfix string     ` description:"location data file postgix"` //apply suffix
+	loaded  bool//flag to indicate load is called
 }
 
 func (r *DatasetResource) loadDataset() (err error) {
@@ -182,6 +183,12 @@ func (r *DatasetResource) loadDataset() (err error) {
 
 //Loads dataset from specified resource or data map
 func (r *DatasetResource) Load() (err error) {
+	if r.loaded {
+		return nil
+	}
+	defer func(){
+		r.loaded = true
+	}()
 	if len(r.Datasets) == 0 {
 		r.Datasets = make([]*Dataset, 0)
 	}
