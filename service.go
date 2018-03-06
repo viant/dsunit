@@ -128,6 +128,7 @@ func (s *service) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{
 		BaseResponse: NewBaseOkResponse(),
 	}
+
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
@@ -189,6 +190,14 @@ func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
 		BaseResponse: NewBaseOkResponse(),
 		Tables:       make([]string, 0),
 	}
+	err := request.Init()
+	if err == nil {
+		err = request.Validate()
+	}
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
 	if len(request.Mappings) == 0 {
 		return response
 	}
@@ -202,15 +211,15 @@ func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
 //Init datastore, (register, recreated, run sql, add mapping)
 func (s *service) Init(request *InitRequest) *InitResponse {
 	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
-	if request.Datastore == "" {
-		response.SetError(errors.New("datastore was empty"))
+	err := request.Init()
+	if err == nil {
+		err = request.Validate()
+	}
+	if err != nil {
+		response.SetError(err)
 		return response
 	}
 	registerRequest := request.RegisterRequest
-	if registerRequest == nil {
-		response.SetError(errors.New("unable recreates - registerRequest datastore was empty"))
-		return response
-	}
 	if registerRequest.Datastore == "" {
 		registerRequest.Datastore = request.Datastore
 	}

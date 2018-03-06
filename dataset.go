@@ -186,9 +186,7 @@ func (r *DatasetResource) Load() (err error) {
 	if r.loaded {
 		return nil
 	}
-	defer func(){
-		r.loaded = true
-	}()
+	r.loaded = true
 	if len(r.Datasets) == 0 {
 		r.Datasets = make([]*Dataset, 0)
 	}

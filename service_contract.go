@@ -184,7 +184,7 @@ func (r *MappingRequest) Init() (err error) {
 		return nil
 	}
 	for _, mapping := range r.Mappings {
-		if (mapping.Resource != nil && mapping.URL != "") || mapping.MappingTable == nil {
+		if (mapping.Resource != nil && mapping.URL != "") || mapping.Name == "" {
 			if err = mapping.Init(); err == nil {
 				err = mapping.JSONDecode(mapping)
 			}
@@ -265,11 +265,14 @@ func (r *InitRequest) Init() (err error) {
 }
 
 func (r *InitRequest) Validate() error {
-	if r.RegisterRequest == nil {
+	if r.Datastore == "" {
 		return errors.New("datastore was empty")
 	}
+	if r.RegisterRequest == nil {
+		return errors.New("register reqeust was empty")
+	}
 	if r.RegisterRequest.Config == nil {
-		return errors.New("datastore config empty")
+		return errors.New("register request config was empty")
 	}
 	return nil
 }
