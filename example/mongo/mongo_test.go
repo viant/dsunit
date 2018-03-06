@@ -24,7 +24,7 @@ Prerequisites:
 */
 
 //Global variables for all test integrating with endly.
-var endlyManager = endly.NewManager()
+var endlyManager = endly.New()
 var endlyContext = endlyManager.NewContext(toolbox.NewContext())
 var localhostCredential = path.Join(os.Getenv("HOME"), ".secret/localhost.json")
 
