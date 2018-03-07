@@ -102,7 +102,7 @@ func startOracle() error {
 			"ORACLE_ALLOW_REMOTE": "true",
 		},
 		Name: "ora_dsunit",
-		MappedPort: map[string]string{
+		Ports: map[string]string{
 			"1521": "1521",
 		},
 	})

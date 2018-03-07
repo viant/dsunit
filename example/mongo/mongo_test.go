@@ -97,7 +97,7 @@ func startMongo() error {
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "mongo:latest",
-		MappedPort: map[string]string{
+		Ports: map[string]string{
 			"27017": "27017",
 		},
 		Name: "mongo_dsunit",

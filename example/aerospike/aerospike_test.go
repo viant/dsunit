@@ -91,7 +91,7 @@ func startAerospike() error {
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "aerospike/aerospike-server:latest",
-		MappedPort: map[string]string{
+		Ports: map[string]string{
 			"3000": "3000",
 			"3001": "3001",
 			"3002": "3002",

@@ -99,7 +99,7 @@ func startPostgres() error {
 			"***pg***": pgCredential,
 		},
 		Name: "pg_dsunit",
-		MappedPort: map[string]string{
+		Ports: map[string]string{
 			"5432": "5432",
 		},
 	})

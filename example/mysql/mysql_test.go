@@ -90,7 +90,7 @@ func startMySQL() error {
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "mysql:5.6",
-		MappedPort: map[string]string{
+		Ports: map[string]string{
 			"3306": "3306",
 		},
 		Env: map[string]string{
