@@ -94,10 +94,10 @@ func startMySQL() error {
 			"3306": "3306",
 		},
 		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "***mysql***",
+			"MYSQL_ROOT_PASSWORD": "**mysql**",
 		},
-		Credentials: map[string]string{
-			"***mysql***": mysqlCredential,
+		Secrets: map[string]string{
+			"**mysql**": mysqlCredential,
 		},
 
 		Mount: map[string]string{

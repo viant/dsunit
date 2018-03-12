@@ -91,12 +91,11 @@ func startPostgres() error {
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "postgres:9.6-alpine",
 		Env: map[string]string{
-			"POSTGRES_PASSWORD": "***pg***",
-			"POSTGRES_USER":     "###pg###",
+			"POSTGRES_PASSWORD": "**pg**",
+			"POSTGRES_USER":     "##pg##",
 		},
-		Credentials: map[string]string{
-			"###pg###": pgCredential,
-			"***pg***": pgCredential,
+		Secrets: map[string]string{
+			"pg": pgCredential,
 		},
 		Name: "pg_dsunit",
 		Ports: map[string]string{
