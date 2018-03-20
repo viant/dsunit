@@ -7,13 +7,13 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"github.com/viant/endly"
+	"github.com/viant/endly/system/docker"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
 	"os"
 	"path"
 	"testing"
 	"time"
-	"github.com/viant/endly/system/docker"
 )
 
 /*
@@ -118,13 +118,13 @@ func startMongo() error {
 	}
 	defer dscManager.ConnectionProvider().Close()
 	//wait for docker to fully start
-	time.Sleep(5 * time.Second)
+
 	return err
 }
 
 func stopMongo() error {
-	_, err := endlyManager.Run(endlyContext, &docker.ContainerStopRequest{
-		&docker.ContainerBaseRequest{
+	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
+		&docker.BaseRequest{
 			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 			Name:   "mongo_dsunit",
 		},

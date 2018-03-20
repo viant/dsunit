@@ -84,7 +84,7 @@ func NewRegisterRequest(datastore string, config *dsc.Config, tables ...*dsc.Tab
 func NewRegisterRequestFromURL(URL string) (*RegisterRequest, error) {
 	var result = &RegisterRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 }
 
@@ -111,7 +111,7 @@ func NewRecreateRequest(datastore, adminDatastore string) *RecreateRequest {
 func NewRecreateRequestFromURL(URL string) (*RecreateRequest, error) {
 	var result = &RecreateRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 
 }
@@ -140,7 +140,7 @@ func NewRunSQLRequest(datastore string, SQL ...string) *RunSQLRequest {
 func NewRunSQLRequestFromURL(URL string) (*RunSQLRequest, error) {
 	var result = &RunSQLRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 }
 
@@ -169,7 +169,7 @@ func NewRunScriptRequest(datastore string, scripts ...*url.Resource) *RunScriptR
 func NewRunScriptRequestFromURL(URL string) (*RunScriptRequest, error) {
 	var result = &RunScriptRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 }
 
@@ -186,7 +186,7 @@ func (r *MappingRequest) Init() (err error) {
 	for _, mapping := range r.Mappings {
 		if (mapping.Resource != nil && mapping.URL != "") || mapping.Name == "" {
 			if err = mapping.Init(); err == nil {
-				err = mapping.JSONDecode(mapping)
+				err = mapping.Decode(mapping)
 			}
 			if err != nil {
 				return err
@@ -222,7 +222,7 @@ func NewMappingRequest(mappings ...*Mapping) *MappingRequest {
 func NewMappingRequestFromURL(URL string) (*MappingRequest, error) {
 	var result = &MappingRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 }
 
@@ -293,7 +293,7 @@ func NewInitRequest(datastore string, recreate bool, register, admin *RegisterRe
 func NewInitRequestFromURL(URL string) (*InitRequest, error) {
 	var result = &InitRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 }
 
@@ -334,7 +334,7 @@ func NewPrepareRequest(resource *DatasetResource) *PrepareRequest {
 func NewPrepareRequestFromURL(URL string) (*PrepareRequest, error) {
 	var result = &PrepareRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 }
 
@@ -386,7 +386,7 @@ func NewExpectRequest(checkPolicy int, resource *DatasetResource) *ExpectRequest
 func NewExpectRequestFromURL(URL string) (*ExpectRequest, error) {
 	var result = &ExpectRequest{}
 	resource := url.NewResource(URL)
-	err := resource.JSONDecode(result)
+	err := resource.Decode(result)
 	return result, err
 }
 
@@ -425,8 +425,9 @@ type SequenceResponse struct {
 
 //QueryRequest represents get sequences request
 type QueryRequest struct {
-	Datastore string
-	SQL       string
+	Datastore   string
+	SQL         string
+	IgnoreError bool
 }
 
 func NewQueryRequest(datastore, SQL string) *QueryRequest {

@@ -165,7 +165,7 @@ func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
 	for _, resource := range request.Scripts {
 		resource.Init()
 		var reader io.ReadCloser
-		if storageService, err = storage.NewServiceForURL(resource.URL, resource.Credential); err == nil {
+		if storageService, err = storage.NewServiceForURL(resource.URL, resource.Credentials); err == nil {
 			if storageObject, err = storageService.StorageObject(resource.URL); err == nil {
 				if reader, err = storageService.Download(storageObject); err == nil {
 					defer reader.Close()

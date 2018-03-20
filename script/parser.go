@@ -1,17 +1,14 @@
 package script
 
 import (
-	"io"
 	"bufio"
-	"strings"
-	"io/ioutil"
 	"bytes"
+	"io"
+	"io/ioutil"
+	"strings"
 )
 
 var delimiterKeyword = "delimiter"
-
-
-
 
 //parseSQLScript parses sql script and breaks it down to submittable sql statements
 func ParseSQLScript(reader io.Reader) []string {
@@ -24,7 +21,7 @@ func ParseSQLScript(reader io.Reader) []string {
 	scanner := bufio.NewScanner(bytes.NewReader(content))
 	var command, delimiter = "", ";"
 	var pending = ""
-	var blockDepth = 0;
+	var blockDepth = 0
 	for scanner.Scan() {
 		line := strings.Trim(scanner.Text(), " \t")
 		if len(line) == 0 || strings.HasPrefix(line, "--") || (strings.HasPrefix(line, "/*") && strings.HasSuffix(line, "*/")) {
@@ -35,7 +32,7 @@ func ParseSQLScript(reader io.Reader) []string {
 			result = append(result, pending+"\n")
 		}
 
-		if ! mySQLMode {
+		if !mySQLMode {
 			if strings.Contains(strings.ToLower(line), "begin") {
 				blockDepth++
 				command += line + "\n"
@@ -95,8 +92,6 @@ func ParseSQLScript(reader io.Reader) []string {
 	}
 	return result
 }
-
-
 
 func normalizeCommand(command string) []string {
 	lowerCommand := strings.ToLower(command)

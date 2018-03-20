@@ -2,9 +2,9 @@ package script_test
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/dsunit/script"
 	"strings"
 	"testing"
-	"github.com/viant/dsunit/script"
 )
 
 //parseSQLScript parses sql script and breaks it down to submittable sql statements

@@ -1,8 +1,8 @@
 package sv
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestParseColumnarData(t *testing.T) {
@@ -16,25 +16,25 @@ func TestParseColumnarData(t *testing.T) {
 	if assert.Nil(t, err) {
 		assert.Equal(t, 3, len(records))
 		assert.EqualValues(t, map[string]interface{}{
-			"id":1,
-			"name":"222",
-			"delays":3,
-			"active":true,
-			"income":1232.3,
+			"id":     1,
+			"name":   "222",
+			"delays": 3,
+			"active": true,
+			"income": 1232.3,
 		}, records[0])
 		assert.EqualValues(t, map[string]interface{}{
-			"id":2,
-			"name":`A\"bc`,
-			"delays":8,
-			"active":false,
-			"income":3.0,
+			"id":     2,
+			"name":   `A\"bc`,
+			"delays": 8,
+			"active": false,
+			"income": 3.0,
 		}, records[1])
 		assert.EqualValues(t, map[string]interface{}{
-			"id":3,
-			"name":`Xb,c`,
-			"delays":8,
-			"active":false,
-			"income":0.33,
+			"id":     3,
+			"name":   `Xb,c`,
+			"delays": 8,
+			"active": false,
+			"income": 0.33,
 		}, records[2])
 	}
 }
