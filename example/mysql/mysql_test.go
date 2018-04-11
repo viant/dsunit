@@ -61,7 +61,7 @@ func TestDsunit_MySQL(t *testing.T) {
 }
 
 func mySQLRunSomeBusinessLogic() error {
-	config, err := dsc.NewConfigWithParameters("mysql", "[username]:[password]@tcp(127.0.0.1:3306)/mydb?parseTime=true", mysqlCredential, nil)
+	config, err := dsc.NewConfigWithParameters("mysql", "[username]:[password]@tcp(127.0.0.1:3306)/mydb?parseTime=true", mysqlCredentials, nil)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func mySQLRunSomeBusinessLogic() error {
 	return nil
 }
 
-var mysqlCredential = url.NewResource("config/secret.json").URL
+var mysqlCredentials = url.NewResource("config/secret.json").URL
 
 func startMySQL() error {
 
@@ -97,7 +97,7 @@ func startMySQL() error {
 			"MYSQL_ROOT_PASSWORD": "**mysql**",
 		},
 		Secrets: map[string]string{
-			"**mysql**": mysqlCredential,
+			"**mysql**": mysqlCredentials,
 		},
 
 		Mount: map[string]string{
@@ -109,7 +109,7 @@ func startMySQL() error {
 		return err
 	}
 	//it takes some time to docker container to fully start
-	config, err := dsc.NewConfigWithParameters("mysql", "[username]:[password]@tcp(127.0.0.1:3306)/mysql?parseTime=true", mysqlCredential, nil)
+	config, err := dsc.NewConfigWithParameters("mysql", "[username]:[password]@tcp(127.0.0.1:3306)/mysql?parseTime=true", mysqlCredentials, nil)
 	if err != nil {
 		return err
 	}

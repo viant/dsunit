@@ -22,6 +22,11 @@ Prerequisites:
 1.docker service running
 2. localhost credentials  to conneect to the localhost vi SSH
 	or generate ~/.secret/localhost.json with  endly -c=localhost option
+
+	export CGO_CFLAGS=-I/opt/oracle/instantclient_12_1/sdk/include/
+	export CGO_LDFLAGS=/opt/oracle/instantclient_12_1/lib/
+
+
 3. Oracle instance client SDK.(client and sdk)
 	Instant Client Package - Basic: All files required to run OCI, OCCI, and JDBC-OCI applications
 	Instant Client Package - SDK: Additional header files and an example makefile for developing Oracle applications with Instant Client

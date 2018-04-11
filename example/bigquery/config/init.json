@@ -3,7 +3,7 @@
   "Config": {
     "DriverName": "bigquery",
     "Descriptor": "bq/[datasetId]",
-    "Credential": "config/secret.json",
+    "Credentials": "config/secret.json",
     "Parameters": {
       "projectId": "myproject",
       "datasetId": "mydataset",

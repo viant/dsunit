@@ -56,6 +56,7 @@ func (r *RegisterRequest) Init() (err error) {
 		if r.Config, err = dsc.NewConfigFromURL(r.ConfigURL); err != nil {
 			return err
 		}
+
 	}
 	return nil
 }

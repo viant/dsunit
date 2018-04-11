@@ -78,9 +78,10 @@ func insertSQLProvider(provider *datasetDmlProvider) func(item interface{}) *dsc
 }
 
 //validateDatastores check if registry has all supplied datastore
-func validateDatastores(registery dsc.ManagerRegistry, response *BaseResponse, datastores ...string) bool {
+func validateDatastores(registry dsc.ManagerRegistry, response *BaseResponse, datastores ...string) bool {
 	for _, datastore := range datastores {
-		if registery.Get(datastore) == nil {
+		if registry.Get(datastore) == nil {
+			fmt.Printf("NO Datastore: !%v! %p\n", datastore, registry)
 			response.SetError(fmt.Errorf("unknown datastore: %v", datastore))
 			return false
 		}
@@ -89,7 +90,6 @@ func validateDatastores(registery dsc.ManagerRegistry, response *BaseResponse, d
 }
 
 func expandDscConfig(config *dsc.Config, datastore string) (*dsc.Config, error) {
-
 	if len(config.Parameters) == 0 {
 		config.Parameters = make(map[string]interface{})
 	}

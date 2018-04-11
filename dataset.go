@@ -183,6 +183,9 @@ func (r *DatasetResource) loadDataset() (err error) {
 
 //Loads dataset from specified resource or data map
 func (r *DatasetResource) Load() (err error) {
+	if r == nil {
+		return errors.New("dataset resource was empty")
+	}
 	if r.loaded {
 		return nil
 	}
