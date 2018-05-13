@@ -9,6 +9,8 @@ import (
 )
 
 func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
+
+
 	manager := registry.Get(datastore)
 	dialect := GetDatastoreDialect(datastore, registry)
 	tables, err := dialect.GetTables(manager, datastore)
@@ -19,18 +21,19 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 	toolbox.SliceToMap(tables, existingTables, toolbox.CopyStringValueProvider, toolbox.TrueValueProvider)
 	tableRegistry := manager.TableDescriptorRegistry()
 	for _, table := range tableRegistry.Tables() {
+		descriptor := tableRegistry.Get(table)
+		if ! descriptor.HasSchema() {
+			continue
+		}
 		if _, found := existingTables[table]; found {
 			err := dialect.DropTable(manager, datastore, table)
 			if err != nil {
 				return err
 			}
 		}
-		descriptor := tableRegistry.Get(table)
-		if descriptor.HasSchema() {
-			err := dialect.CreateTable(manager, datastore, table, "")
-			if err != nil {
-				return err
-			}
+		err := dialect.CreateTable(manager, datastore, table, "")
+		if err != nil {
+			return err
 		}
 	}
 	return nil
@@ -81,7 +84,6 @@ func insertSQLProvider(provider *datasetDmlProvider) func(item interface{}) *dsc
 func validateDatastores(registry dsc.ManagerRegistry, response *BaseResponse, datastores ...string) bool {
 	for _, datastore := range datastores {
 		if registry.Get(datastore) == nil {
-			fmt.Printf("NO Datastore: !%v! %p\n", datastore, registry)
 			response.SetError(fmt.Errorf("unknown datastore: %v", datastore))
 			return false
 		}
@@ -117,7 +119,7 @@ func convertToLowerUnderscore(upperCamelCase string) string {
 	upperCount := 0
 	result := strings.ToLower(upperCamelCase[0:1])
 	for i := 1; i < len(upperCamelCase); i++ {
-		aChar := upperCamelCase[i : i+1]
+		aChar := upperCamelCase[i: i+1]
 
 		isUpperCase := strings.ToUpper(aChar) == aChar
 		if isUpperCase {

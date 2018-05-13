@@ -85,6 +85,7 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 		if len(request.Tables) > 0 {
 			for _, table := range request.Tables {
 				manager.TableDescriptorRegistry().Register(table)
+				fmt.Printf("Registering: %v\n", table)
 			}
 		}
 	}
@@ -365,6 +366,8 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	if len(response.Modification) == 0 {
 		response.Modification = make(map[string]*ModificationInfo)
 	}
+
+
 	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist"}
 	var modification = response.Modification[dataset.Table]
 	var table *dsc.TableDescriptor
@@ -621,5 +624,9 @@ func RecreateDatastore(adminDatastore, targetDatastore string, registry dsc.Mana
 	if !dialect.CanDropDatastore(adminManager) {
 		return recreateTables(registry, targetDatastore)
 	}
-	return recreateDatastore(adminManager, registry, targetDatastore)
+	var err error
+	if err = recreateDatastore(adminManager, registry, targetDatastore);err == nil {
+		err = recreateTables(registry, targetDatastore)
+	}
+	return err
 }
