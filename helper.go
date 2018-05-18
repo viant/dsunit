@@ -9,13 +9,15 @@ import (
 )
 
 func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
-
-
 	manager := registry.Get(datastore)
 	dialect := GetDatastoreDialect(datastore, registry)
-	tables, err := dialect.GetTables(manager, datastore)
-	if err != nil {
-		return err
+	var tables = []string{}
+	var err error
+	if  hasDatastore(manager, dialect, datastore) {
+		tables, err = dialect.GetTables(manager, datastore)
+		if err != nil {
+			return err
+		}
 	}
 	var existingTables = make(map[string]bool)
 	toolbox.SliceToMap(tables, existingTables, toolbox.CopyStringValueProvider, toolbox.TrueValueProvider)
@@ -41,27 +43,30 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 
 func recreateDatastore(manager dsc.Manager, registry dsc.ManagerRegistry, datastore string) (err error) {
 	dialect := GetDatastoreDialect(datastore, registry)
-	if err = dropDatastoreIfNeeded(manager, dialect, datastore); err != nil {
-		return err
-	}
+		if err = dropDatastoreIfNeeded(manager, dialect, datastore); err != nil {
+			return err
+		}
+
 	return dialect.CreateDatastore(manager, datastore)
 }
 
-func dropDatastoreIfNeeded(manager dsc.Manager, dialect dsc.DatastoreDialect, datastore string) (err error) {
-	var datastores []string
-	if datastores, err = dialect.GetDatastores(manager); err == nil {
-		hasDatastore := false
+
+func hasDatastore(manager dsc.Manager, dialect dsc.DatastoreDialect, datastore string) bool {
+	if datastores, err := dialect.GetDatastores(manager); err == nil {
 		for _, candidate := range datastores {
-			if strings.ToUpper(candidate) == strings.ToUpper(datastore) {
-				hasDatastore = true
-				break
+			if candidate == datastore {
+				return true
 			}
 		}
-		if hasDatastore {
-			err = dialect.DropDatastore(manager, datastore)
-		}
 	}
-	return err
+	return false
+}
+
+func dropDatastoreIfNeeded(manager dsc.Manager, dialect dsc.DatastoreDialect, datastore string) (err error) {
+	if ! hasDatastore(manager, dialect, datastore) {
+		return
+	}
+	return dialect.DropDatastore(manager, datastore)
 }
 
 func directiveScan(records []map[string]interface{}, recordHandler func(record Record)) {
