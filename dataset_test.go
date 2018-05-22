@@ -75,7 +75,8 @@ func TestNewDataset(t *testing.T) {
 		assert.False(t, dataset.Records.Autoincrement())
 		assert.Equal(t, []string{"id"}, dataset.Records.UniqueKeys())
 		assert.Equal(t, []string{"active", "email", "id", "username"}, dataset.Records.Columns())
-		assert.EqualValues(t, "SELECT * FROM table1", dataset.Records.FromQuery())
+		var query, _  = dataset.Records.FromQuery()
+		assert.EqualValues(t, "SELECT * FROM table1", query)
 
 	}
 }

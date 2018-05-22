@@ -18,6 +18,7 @@ import (
 const (
 	AutoincrementDirective = "@autoincrement@"
 	FromQueryDirective     = "@fromQuery@"
+	FromQueryAliasDirective     = "@fromQueryAlias@"
 )
 
 //Records represent data records
@@ -94,16 +95,20 @@ func (r *Records) UniqueKeys() []string {
 }
 
 //FromQuery returns value for @FromQuery@ directive
-func (r *Records) FromQuery() string {
-	var result string
+func (r *Records) FromQuery() (string, string) {
+	var fromQuery string
+	var alias string
 	directiveScan(*r, func(record Record) {
 		for k, v := range record {
 			if k == FromQueryDirective {
-				result = toolbox.AsString(v)
+				fromQuery = toolbox.AsString(v)
+			}
+			if k == FromQueryAliasDirective{
+				alias = toolbox.AsString(v)
 			}
 		}
 	})
-	return result
+	return fromQuery, alias
 }
 
 //PrimaryKey returns primary key directive if matched in the following order: @Autoincrement@, @IndexBy@
@@ -283,6 +288,7 @@ func (r *DatasetResource) loadSeparatedData(delimiter string, datafile *Datafile
 		Table:   datafile.Name,
 		Records: records,
 	}
+
 	r.Datasets = append(r.Datasets, dataSet)
 	return nil
 }
