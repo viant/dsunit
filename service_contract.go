@@ -395,6 +395,8 @@ func NewExpectRequestFromURL(URL string) (*ExpectRequest, error) {
 type DatasetValidation struct {
 	Dataset string
 	*assertly.Validation
+	Expected interface{}
+	Actual interface{}
 }
 
 //ExpectResponse represents verification response

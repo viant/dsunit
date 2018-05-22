@@ -85,7 +85,6 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 		if len(request.Tables) > 0 {
 			for _, table := range request.Tables {
 				manager.TableDescriptorRegistry().Register(table)
-				fmt.Printf("Registering: %v\n", table)
 			}
 		}
 	}
@@ -325,11 +324,12 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	}
 	var autoincrement = dataset.Records.Autoincrement()
 	var uniqueKeys = dataset.Records.UniqueKeys()
-	var fromQuery = dataset.Records.FromQuery()
+	var fromQuery, fromQueryAlias = dataset.Records.FromQuery()
 	if !table.Autoincrement {
 		table.Autoincrement = autoincrement
 	}
 	table.FromQuery = fromQuery
+	table.FromQueryAlias = fromQueryAlias
 	if len(table.PkColumns) == 0 {
 		table.PkColumns = uniqueKeys
 	} else if len(uniqueKeys) == 0 {
@@ -479,7 +479,12 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	}
 	expected := dataset.Records
 	var columns = dataset.Records.Columns()
-	var mapper = newDatasetRowMapper(columns)
+
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	datastore, _ := dialect.GetCurrentDatastore(manager)
+	types, _:=dialect.GetColumns(manager, datastore, table.Table)
+
+	var mapper = newDatasetRowMapper(columns, types)
 	var parametrizedSQL *dsc.ParametrizedSQL
 
 	sqlBuilder := dsc.NewQueryBuilder(table, "")
@@ -504,10 +509,8 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 		}
 	}
 
-	//actualJSON, _ := toolbox.AsJSONText(actual)
-	//expectedJSON, _ := toolbox.AsJSONText(expectedRecords)
-	//fmt.Printf("%v %v\n", actualJSON, expectedJSON)
-
+	validation.Expected = expectedRecords
+	validation.Actual = actual
 	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
