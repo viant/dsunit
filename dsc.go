@@ -56,7 +56,7 @@ func newDatasetDmlProvider(dmlBuilder *dsc.DmlBuilder) *datasetDmlProvider {
 
 type datasetRowMapper struct {
 	dsc.Scanner
-	types map[string]dsc.Column
+	valueProviders   []func()interface{}
 	columns          []string
 	columnToIndexMap map[string]int
 }
@@ -74,32 +74,55 @@ func (m *datasetRowMapper) Map(scanner dsc.Scanner) (interface{}, error) {
 	return &values, nil
 }
 
+func (m *datasetRowMapper) buildProviders(types map[string]dsc.Column) []func()interface{} {
+	valueProvider  :=[]func()interface{}{}
+	if len(types) == 0 || len(m.columns) == 0 {
+		return valueProvider
+	}
+	for _, column := range m.columns {
+		if info , ok := types[column];ok {
+			dbTypeName := info.DatabaseTypeName()
+			switch strings.ToUpper(dbTypeName) {
+			case "VARCHAR", "VARCHAR2", "CHAR", "STRING":
+				valueProvider = append(valueProvider, func() interface{} {
+					var value = ""
+					return  &value
+				})
+
+			case "DATE", "DATETIME", "TIMESTAMP":
+				valueProvider = append(valueProvider, func() interface{} {
+					var value *time.Time
+					return &value
+				})
+			case "INT", "BIGINT", "TINYINT", "INT64":
+				valueProvider = append(valueProvider, func() interface{} {
+					var value  = 0
+					return &value
+				})
+			case "FLOAT", "FLOAT64", "DECIMAL", "NUMERIC":
+				valueProvider = append(valueProvider, func() interface{} {
+					var value  = 0.0
+					return &value
+				})
+			default:
+				valueProvider = append(valueProvider, func() interface{} {
+					var value  interface{}
+					return &value
+				})
+			}
+		}
+	}
+	return valueProvider
+}
+
+
 func (m *datasetRowMapper) ColumnValues()([]interface{}, error) {
-	if len(m.types) == 0 || len(m.columns) == 0 {
+	if len(m.valueProviders) == 0 {
 		return nil, errors.New("not supported")
 	}
 	var result = make([]interface{}, len(m.columns))
-	for i, column := range m.columns {
-		if info , ok := m.types[column];ok {
-			dbTypeName := info.DatabaseTypeName()
-			switch strings.ToUpper(dbTypeName) {
-				case "VARCHAR", "VARCHAR2", "CHAR", "STRING":
-					var text = ""
-					result[i] = &text
-				case "DATE", "DATETIME", "TIMESTAMP":
-					var ts *time.Time
-					result[i] = &ts
-				case "INT", "BIGINT", "TINYINT", "INT64":
-					var n = 0
-					result[i] = &n
-				case "FLOAT", "FLOAT64", "DECIMAL", "NUMERIC":
-					var f = 0.0
-					result[i] = &f
-			default:
-				var iface interface{}
-				result[i] = &iface
-			}
-		}
+	for i, provider := range m.valueProviders {
+		result[i] = provider()
 	}
 	return result, nil
 }
@@ -112,12 +135,14 @@ func newDatasetRowMapper(columns []string, types[]dsc.Column) dsc.RecordMapper {
 	var result = &datasetRowMapper{
 		columns:          columns,
 		columnToIndexMap: columnToIndexMap,
-		types: make(map[string]dsc.Column),
+
 	}
 	if len(types) > 0 {
+		indexTypes:= make(map[string]dsc.Column)
 		for _, column:= range types {
-			result.types[column.Name()] = column
+			indexTypes[column.Name()] = column
 		}
+		result.valueProviders = result.buildProviders(indexTypes)
 	}
 	return result
 }
