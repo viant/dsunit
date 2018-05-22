@@ -396,7 +396,7 @@ type DatasetValidation struct {
 	Dataset string
 	*assertly.Validation
 	Expected interface{}
-	Actual interface{}
+	Actual   interface{}
 }
 
 //ExpectResponse represents verification response

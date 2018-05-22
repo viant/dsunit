@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	AutoincrementDirective = "@autoincrement@"
-	FromQueryDirective     = "@fromQuery@"
-	FromQueryAliasDirective     = "@fromQueryAlias@"
+	AutoincrementDirective  = "@autoincrement@"
+	FromQueryDirective      = "@fromQuery@"
+	FromQueryAliasDirective = "@fromQueryAlias@"
 )
 
 //Records represent data records
@@ -103,7 +103,7 @@ func (r *Records) FromQuery() (string, string) {
 			if k == FromQueryDirective {
 				fromQuery = toolbox.AsString(v)
 			}
-			if k == FromQueryAliasDirective{
+			if k == FromQueryAliasDirective {
 				alias = toolbox.AsString(v)
 			}
 		}

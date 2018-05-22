@@ -13,7 +13,7 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 	dialect := GetDatastoreDialect(datastore, registry)
 	var tables = []string{}
 	var err error
-	if  hasDatastore(manager, dialect, datastore) {
+	if hasDatastore(manager, dialect, datastore) {
 		tables, err = dialect.GetTables(manager, datastore)
 		if err != nil {
 			return err
@@ -24,7 +24,7 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 	tableRegistry := manager.TableDescriptorRegistry()
 	for _, table := range tableRegistry.Tables() {
 		descriptor := tableRegistry.Get(table)
-		if ! descriptor.HasSchema() {
+		if !descriptor.HasSchema() {
 			continue
 		}
 		if _, found := existingTables[table]; found {
@@ -43,13 +43,12 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 
 func recreateDatastore(manager dsc.Manager, registry dsc.ManagerRegistry, datastore string) (err error) {
 	dialect := GetDatastoreDialect(datastore, registry)
-		if err = dropDatastoreIfNeeded(manager, dialect, datastore); err != nil {
-			return err
-		}
+	if err = dropDatastoreIfNeeded(manager, dialect, datastore); err != nil {
+		return err
+	}
 
 	return dialect.CreateDatastore(manager, datastore)
 }
-
 
 func hasDatastore(manager dsc.Manager, dialect dsc.DatastoreDialect, datastore string) bool {
 	if datastores, err := dialect.GetDatastores(manager); err == nil {
@@ -63,7 +62,7 @@ func hasDatastore(manager dsc.Manager, dialect dsc.DatastoreDialect, datastore s
 }
 
 func dropDatastoreIfNeeded(manager dsc.Manager, dialect dsc.DatastoreDialect, datastore string) (err error) {
-	if ! hasDatastore(manager, dialect, datastore) {
+	if !hasDatastore(manager, dialect, datastore) {
 		return
 	}
 	return dialect.DropDatastore(manager, datastore)
@@ -124,7 +123,7 @@ func convertToLowerUnderscore(upperCamelCase string) string {
 	upperCount := 0
 	result := strings.ToLower(upperCamelCase[0:1])
 	for i := 1; i < len(upperCamelCase); i++ {
-		aChar := upperCamelCase[i: i+1]
+		aChar := upperCamelCase[i : i+1]
 
 		isUpperCase := strings.ToUpper(aChar) == aChar
 		if isUpperCase {

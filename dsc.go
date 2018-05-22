@@ -1,9 +1,9 @@
 package dsunit
 
 import (
+	"github.com/pkg/errors"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
-	"github.com/pkg/errors"
 	"strings"
 	"time"
 )
@@ -52,17 +52,15 @@ func newDatasetDmlProvider(dmlBuilder *dsc.DmlBuilder) *datasetDmlProvider {
 	return &datasetDmlProvider{dmlBuilder}
 }
 
-
-
 type datasetRowMapper struct {
 	dsc.Scanner
-	valueProviders   []func()interface{}
+	valueProviders   []func(slice []interface{}, index int)
 	columns          []string
 	columnToIndexMap map[string]int
 }
 
 func (m *datasetRowMapper) Map(scanner dsc.Scanner) (interface{}, error) {
-	m.Scanner  = scanner
+	m.Scanner = scanner
 	columnValues, columns, err := dsc.ScanRow(m)
 	if err != nil {
 		return nil, err
@@ -74,40 +72,41 @@ func (m *datasetRowMapper) Map(scanner dsc.Scanner) (interface{}, error) {
 	return &values, nil
 }
 
-func (m *datasetRowMapper) buildProviders(types map[string]dsc.Column) []func()interface{} {
-	valueProvider  :=[]func()interface{}{}
+func (m *datasetRowMapper) buildProviders(types map[string]dsc.Column) []func(slice []interface{}, index int) {
+	valueProvider := []func(slice []interface{}, index int){}
+
 	if len(types) == 0 || len(m.columns) == 0 {
 		return valueProvider
 	}
+
 	for _, column := range m.columns {
-		if info , ok := types[column];ok {
+		if info, ok := types[column]; ok {
 			dbTypeName := info.DatabaseTypeName()
 			switch strings.ToUpper(dbTypeName) {
-			case "VARCHAR", "VARCHAR2", "CHAR", "STRING":
-				valueProvider = append(valueProvider, func() interface{} {
-					var value = ""
-					return  &value
+			case "VARCHAR", "VARCHAR2", "CHAR", "STRING", "TEXT":
+				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+					var value *string
+					slice[index] = &value
 				})
-
 			case "DATE", "DATETIME", "TIMESTAMP":
-				valueProvider = append(valueProvider, func() interface{} {
+				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
 					var value *time.Time
-					return &value
+					slice[index] = &value
 				})
 			case "INT", "BIGINT", "TINYINT", "INT64":
-				valueProvider = append(valueProvider, func() interface{} {
-					var value  = 0
-					return &value
+				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+					var value *int
+					slice[index] = &value
 				})
 			case "FLOAT", "FLOAT64", "DECIMAL", "NUMERIC":
-				valueProvider = append(valueProvider, func() interface{} {
-					var value  = 0.0
-					return &value
+				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+					var value *float64
+					slice[index] = &value
 				})
 			default:
-				valueProvider = append(valueProvider, func() interface{} {
-					var value  interface{}
-					return &value
+				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+					var value interface{}
+					slice[index] = &value
 				})
 			}
 		}
@@ -115,19 +114,18 @@ func (m *datasetRowMapper) buildProviders(types map[string]dsc.Column) []func()i
 	return valueProvider
 }
 
-
-func (m *datasetRowMapper) ColumnValues()([]interface{}, error) {
+func (m *datasetRowMapper) ColumnValues() ([]interface{}, error) {
 	if len(m.valueProviders) == 0 {
 		return nil, errors.New("not supported")
 	}
 	var result = make([]interface{}, len(m.columns))
 	for i, provider := range m.valueProviders {
-		result[i] = provider()
+		provider(result, i)
 	}
 	return result, nil
 }
 
-func newDatasetRowMapper(columns []string, types[]dsc.Column) dsc.RecordMapper {
+func newDatasetRowMapper(columns []string, types []dsc.Column) dsc.RecordMapper {
 	var columnToIndexMap = make(map[string]int)
 	for index, column := range columns {
 		columnToIndexMap[column] = index
@@ -135,11 +133,10 @@ func newDatasetRowMapper(columns []string, types[]dsc.Column) dsc.RecordMapper {
 	var result = &datasetRowMapper{
 		columns:          columns,
 		columnToIndexMap: columnToIndexMap,
-
 	}
 	if len(types) > 0 {
-		indexTypes:= make(map[string]dsc.Column)
-		for _, column:= range types {
+		indexTypes := make(map[string]dsc.Column)
+		for _, column := range types {
 			indexTypes[column.Name()] = column
 		}
 		result.valueProviders = result.buildProviders(indexTypes)

@@ -367,7 +367,6 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 		response.Modification = make(map[string]*ModificationInfo)
 	}
 
-
 	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist"}
 	var modification = response.Modification[dataset.Table]
 	var table *dsc.TableDescriptor
@@ -482,7 +481,7 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	datastore, _ := dialect.GetCurrentDatastore(manager)
-	types, _:=dialect.GetColumns(manager, datastore, table.Table)
+	types, _ := dialect.GetColumns(manager, datastore, table.Table)
 
 	var mapper = newDatasetRowMapper(columns, types)
 	var parametrizedSQL *dsc.ParametrizedSQL
@@ -628,7 +627,7 @@ func RecreateDatastore(adminDatastore, targetDatastore string, registry dsc.Mana
 		return recreateTables(registry, targetDatastore)
 	}
 	var err error
-	if err = recreateDatastore(adminManager, registry, targetDatastore);err == nil {
+	if err = recreateDatastore(adminManager, registry, targetDatastore); err == nil {
 		err = recreateTables(registry, targetDatastore)
 	}
 	return err
