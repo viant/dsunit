@@ -481,8 +481,12 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	datastore, _ := dialect.GetCurrentDatastore(manager)
-	types, _ := dialect.GetColumns(manager, datastore, table.Table)
 
+	var types []dsc.Column
+
+	if table.FromQuery == "" {
+		types, _ = dialect.GetColumns(manager, datastore, table.Table)
+	}
 	var mapper = newDatasetRowMapper(columns, types)
 	var parametrizedSQL *dsc.ParametrizedSQL
 
