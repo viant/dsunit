@@ -93,7 +93,7 @@ func (m *datasetRowMapper) buildProviders(types map[string]dsc.Column) []func(sl
 					var value *time.Time
 					slice[index] = &value
 				})
-			case "INT", "BIGINT", "TINYINT", "INT64":
+			case "INT", "INTEGER", "BIGINT", "TINYINT", "INT64":
 				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
 					var value *int
 					slice[index] = &value
