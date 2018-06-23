@@ -119,8 +119,7 @@ func TestPersistAll(t *.testing.T) {
 <a name="mapping">&nbsp;</a>
 ## Dataset transformation with multi table mapping
 
-Dealing with large data model can be a huge testing bottleneck.  Imagine your application uses a dozen tables, 
-that needs to be seeded with data per each test use case.
+Imagine your application uses a dozen tables,  that needs to be seeded with data per each test use case.
 In reality, most of these tables may have many default value, and if only handful column (except IDs) have specific values for test use cases. 
 Table mapping allows you to use one virtual table with virtual columns that are mapped to actual table/column.
 
