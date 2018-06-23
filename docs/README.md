@@ -116,30 +116,145 @@ func TestPersistAll(t *.testing.T) {
 }  
 ```
 
-## Dataset transformation
+<a name="mapping">&nbsp;</a>
+## Dataset transformation with multi table mapping
 
-Dataset transformation allows routing from one dataset, to many datasets using DatasetMapping
-DatasetMapping is defined as part of DatastoreConfig and mapping is register at the initialization stage.
+Dealing with large data model can be a huge testing bottleneck.  Imagine your application uses a dozen tables, 
+that needs to be seeded with data per each test use case.
+In reality, most of these tables may have many default value, and if only handful column (except IDs) have specific values for test use cases. 
+Table mapping allows you to use one virtual table with virtual columns that are mapped to actual table/column.
 
-```go
+Imagine there is v_table mapping to 4 tables defined as follow:
 
-
-type DatasetColumn struct {
-	Name         string
-	DefaultValue string
-	FromColumn   string
-	Required     bool
+```json
+{
+  "Name": "v_table",
+  "Table": "table1",
+  "Columns": [
+    {
+      "Name": "id",
+      "FromColumn": "table1_id",
+      "Required": true,
+      "Unique": true
+    },
+    {
+      "Name": "name"
+    },
+    {
+      "Name": "enabled",
+      "DefaultValue": "1"
+    },
+    {
+      "Name": "cost",
+      "DefaultValue": "<ds:nil>"
+    }
+  ],
+  "Associations": [
+    {
+      "Table": "table2",
+      "Columns": [
+        {
+          "Name": "id",
+          "Required": true,
+          "FromColumn": "table2_id",
+          "Unique": true
+        },
+        {
+          "Name": "name",
+          "FromColumn": "table2_name"
+        }
+      ],
+      "Associations": [
+        {
+          "Table": "table3",
+          "Columns": [
+            {
+              "Name": "table2_id",
+              "Required": true,
+              "Unique": true
+            },
+            {
+              "Name": "table3_id",
+              "Required": true,
+              "Unique": true
+            }
+          ]
+        },
+        {
+          "Table": "table4",
+          "Columns": [
+            {
+              "Name": "table2_id",
+              "Required": true,
+              "Unique": true
+            },
+            {
+              "Name": "table4_id",
+              "Required": true,
+              "Unique": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
 
+``` 
 
-type DatasetMapping struct {
-	Table        string
-	Columns      []DatasetColumn
-	Associations []DatasetMapping
-}
 
+The following virtual record would create entry in table1, table2 and table4. Note that table3 is skipped since v_table does not define required column table3_id.
+
+@v_table.json
+```json
+  [
+      {
+          "Table": "v_table",
+          "Value": [{
+            "table1_id": "$seq.table1",
+            "name": "Name 1",
+            "table2_id": "$seq.table2",
+            "table2_name": "other name 1",
+            "table4_id": "$table4_Id"
+          }],
+          "PostIncrement": [
+            "seq.table1",
+            "seq.table2"
+          ],
+         "AutoGenerate": {
+           "table4_Id": "uuid.next"
+         },
+        "Key": "${tagId}_table1"
+    }
+  ]
 ```
 
+_Expanded mappings:_ 
+
+```json
+
+  {
+    "table1": {
+      "id": "$seq.table1",
+      "name": "Name 1",
+      "enabled": 1,
+      "cost": null
+    },
+    "table2": {
+      "id": "$seq.table2",
+      "table1_id": "$seq.table1",
+      "name": "other name 1"
+    },
+    "table4": {
+      "id": "$table4_idId",
+      "table2_id": "$seq.table2"
+    }
+  }
+
+
+```
+    
+    
 
 
 
