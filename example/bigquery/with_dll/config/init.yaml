@@ -1,0 +1,9 @@
+datastore: mydb
+config:
+  driverName: bigquery
+  credentials: config/secret.json
+  parameters:
+    datasetId: mydb
+recreate: true
+scripts:
+  - URL: config/schema.sql
