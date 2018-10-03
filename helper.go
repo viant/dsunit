@@ -13,6 +13,7 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 	dialect := GetDatastoreDialect(datastore, registry)
 	var tables = []string{}
 	var err error
+
 	if hasDatastore(manager, dialect, datastore) {
 		tables, err = dialect.GetTables(manager, datastore)
 		if err != nil {
@@ -22,6 +23,18 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
 	var existingTables = make(map[string]bool)
 	toolbox.SliceToMap(tables, existingTables, toolbox.CopyStringValueProvider, toolbox.TrueValueProvider)
 	tableRegistry := manager.TableDescriptorRegistry()
+	if len(tableRegistry.Tables()) == 0 {
+		tables, err = dialect.GetTables(manager, datastore)
+		if err != nil {
+			return err
+		}
+		for _, table := range tables {
+			err := dialect.DropTable(manager, datastore, table)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	for _, table := range tableRegistry.Tables() {
 		descriptor := tableRegistry.Get(table)
 		if !descriptor.HasSchema() {
