@@ -247,6 +247,10 @@ func (r *InitRequest) Init() (err error) {
 	if r.RegisterRequest != nil {
 		if r.RegisterRequest.Datastore == "" {
 			r.RegisterRequest.Datastore = r.Datastore
+			if len(r.Config.Parameters) == 0 {
+				r.Config.Parameters = map[string]interface{}{}
+			}
+			r.Config.Parameters["dbname"] = r.Datastore
 		}
 
 		if r.RegisterRequest.Config == nil && r.RegisterRequest.ConfigURL != "" {
