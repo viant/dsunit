@@ -178,6 +178,7 @@ func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
 			return response
 		}
 	}
+
 	return s.RunSQL(&RunSQLRequest{
 		Expand:    request.Expand,
 		Datastore: request.Datastore,
