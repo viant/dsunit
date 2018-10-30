@@ -609,6 +609,27 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 		return response
 	}
 	destResource := url.NewResource(request.DestURL)
+	if len(records) > 0 {
+		for i, record := range records {
+			if request.OmitEmpty {
+				records[i] = toolbox.DeleteEmptyKeys(record)
+			}
+			if len(request.Ignore) > 0 {
+				var record = data.Map(records[i])
+				for _, path := range request.Ignore {
+					record.Delete(path)
+				}
+				records[i] = record
+			}
+			if len(request.Replace) > 0 {
+				var record = data.Map(records[i])
+				for k, v := range request.Replace {
+					record.Replace(k, escapeVariableIfNeeded(v))
+				}
+				records[i] = record
+			}
+		}
+	}
 	payload, err := toolbox.AsIndentJSONText(records)
 	if err != nil {
 		response.SetError(err)

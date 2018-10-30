@@ -452,9 +452,12 @@ type QueryResponse struct {
 
 //FreezeRequest represent a request to create a data set from datastore for provided  SQL and target path
 type FreezeRequest struct {
-	Datastore string
-	SQL       string
-	DestURL   string `description:"represent dataset destination"`
+	Datastore string            `description:"registered datastore i.e. db1"`
+	SQL       string            `description:"dataset SQL soruce"`
+	DestURL   string            `description:"represent dataset destination"`
+	OmitEmpty bool              `description:"flag to skip empty attributes"`
+	Ignore    []string          `description:"path to ignore i.e. request.postbody"`
+	Replace   map[string]string `description:"key of path with corresponding replacement value"`
 }
 
 //FreezeResponse response
