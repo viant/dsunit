@@ -47,6 +47,9 @@ Datastore initialization and dataset data verification can by managed locally or
 
 ##Usage
 
+
+**Data setup and verification**
+
 ```go
 
 
@@ -59,7 +62,6 @@ import (
 
 func TestSetup(t *testing.T) {
 
-    var verticaRequest = dsunit.NewScriptRequest(...)
 
     dsunit.InitFromURL(t, "test/init.json")
 	dsunit.RunScript(t, verticaRequest)
@@ -75,6 +77,31 @@ func TestSetup(t *testing.T) {
 }
 
 ```
+
+
+**Reverse engineer data setup and verification** 
+
+```go
+
+	registerResponse := service.Register(dsunit.NewRegisterRequest("db1",
+			&dsc.Config{
+				DriverName: "sqlite3",
+				Descriptor: "[url]",
+				Parameters: map[string]interface{}{
+					"url": filename,
+				},
+			}))
+	if registerResponse.Stats != "ok" {
+		log.Fatal(registerResponse.Error)
+	}
+    
+	response := service.Freeze(&dsunit.FreezeRequest{
+			Datastore:"db1",
+			DestURL:"/tmp/dn1/expect/users.json",
+			SQL:"SELECT * FROM users",
+    })
+	
+```  
 
 
 **Tester methods**

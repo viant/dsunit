@@ -21,7 +21,7 @@ func (p *SeparatedValueParser) Parse(data []byte) ([]map[string]interface{}, err
 		p.factory.Create(strings.NewReader(scanner.Text())).Decode(record)
 	}
 	var result = make([]map[string]interface{}, 0)
-	var i =  0
+	var i = 0
 	var hasFirstEmptyRow = false
 	for scanner.Scan() {
 		var line = scanner.Text()
@@ -42,7 +42,6 @@ func (p *SeparatedValueParser) Parse(data []byte) ([]map[string]interface{}, err
 		result = append(result, record.Record)
 	}
 	p.discoverDataTypes(record.Columns, result)
-
 
 	if hasFirstEmptyRow {
 		result = append([]map[string]interface{}{{}}, result...)

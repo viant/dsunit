@@ -125,7 +125,7 @@ func startAerospike() error {
 			time.Sleep(2 * time.Second)
 			break
 		}
-		if !strings.Contains(err.Error(), "Partition not available") {
+		if !strings.Contains(err.Error(), "Suffix not available") {
 			return err
 		}
 		time.Sleep(2 * time.Second)

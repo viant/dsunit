@@ -9,7 +9,9 @@ import (
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
 	"github.com/viant/toolbox/storage"
+	"github.com/viant/toolbox/url"
 	"io"
+	"strings"
 )
 
 var batchSize = 200
@@ -48,6 +50,9 @@ type Service interface {
 
 	//Sequence returns sequence for supplied tables
 	Sequence(request *SequenceRequest) *SequenceResponse
+
+	//Freeze creates a dataset from dataset (reverse engineering test setup/verification)
+	Freeze(request *FreezeRequest) *FreezeResponse
 
 	SetContext(context toolbox.Context)
 }
@@ -580,6 +585,44 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 
 	err = manager.ReadAll(&response.Records, toolbox.AsString(SQL), nil, nil)
 	response.SetError(err)
+	return response
+}
+
+//Freeze creates a dataset from dataset (reverse engineering test setup/verification)
+func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
+	var response = &FreezeResponse{BaseResponse: NewBaseOkResponse()}
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	manager := s.registry.Get(request.Datastore)
+	macroEvaluator := assertly.NewDefaultMacroEvaluator()
+	context := toolbox.NewContext()
+	SQL, err := macroEvaluator.Expand(context, request.SQL)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	var records = make([]map[string]interface{}, 0)
+	err = manager.ReadAll(&records, toolbox.AsString(SQL), nil, nil)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	destResource := url.NewResource(request.DestURL)
+	payload, err := toolbox.AsIndentJSONText(records)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	storageService, err := storage.NewServiceForURL(destResource.URL, "")
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	err = storageService.Upload(destResource.URL, strings.NewReader(payload))
+	response.SetError(err)
+	response.Count = len(records)
+	response.DestURL = destResource.URL
 	return response
 }
 

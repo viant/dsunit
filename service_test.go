@@ -160,3 +160,27 @@ func TestService_GetSequences(t *testing.T) {
 		}
 	}
 }
+
+func TestService_FreezeDataset(t *testing.T) {
+	service, err := getTestService("db1", "test/db1/", "test/db1/schema.ddl")
+
+	response := service.Prepare(&dsunit.PrepareRequest{
+		DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data/", "db1_prepare_", ""),
+	})
+	if !assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
+		return
+	}
+
+	if assert.Nil(t, err) {
+
+		response := service.Freeze(&dsunit.FreezeRequest{
+			Datastore: "db1",
+			DestURL:   "/tmp/dsunit/users.json",
+			SQL:       "SELECT * FROM users",
+		})
+		if !assert.EqualValues(t, dsunit.StatusOk, response.Status, response.Message) {
+			return
+		}
+		assert.EqualValues(t, 4, response.Count)
+	}
+}

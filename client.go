@@ -92,6 +92,15 @@ func (c *serviceClient) Query(request *QueryRequest) *QueryResponse {
 
 }
 
+//Query returns query from database
+func (c *serviceClient) Freeze(request *FreezeRequest) *FreezeResponse {
+	var response = &FreezeResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+freezeURI, request, response)
+	response.SetError(err)
+	return response
+
+}
+
 //Sequence returns sequence for supplied tables
 func (c *serviceClient) Sequence(request *SequenceRequest) *SequenceResponse {
 	var response = &SequenceResponse{BaseResponse: NewBaseOkResponse()}

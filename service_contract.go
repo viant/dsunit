@@ -449,3 +449,17 @@ type QueryResponse struct {
 	*BaseResponse
 	Records Records
 }
+
+//FreezeRequest represent a request to create a data set from datastore for provided  SQL and target path
+type FreezeRequest struct {
+	Datastore string
+	SQL       string
+	DestURL   string `description:"represent dataset destination"`
+}
+
+//FreezeResponse response
+type FreezeResponse struct {
+	*BaseResponse
+	Count   int
+	DestURL string
+}
