@@ -165,3 +165,10 @@ func discoverBaseURLAndPrefix(operation string) (string, string) {
 	method = convertToLowerUnderscore(method)
 	return parent, fmt.Sprintf(name+"_%v_%v_", method, operation)
 }
+
+func escapeVariableIfNeeded(val string) string {
+	if strings.HasPrefix(val, "$$") { //escaping
+		val = strings.Replace(val, "$$", "$", 1)
+	}
+	return val
+}
