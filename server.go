@@ -18,6 +18,7 @@ var prepareURI = version + "prepare"
 var expectURI = version + "expect"
 var queryURI = version + "query"
 var freezeURI = version + "freeze"
+var dumpURI = version + "dump"
 var sequenceURI = version + "sequence"
 
 var errorHandler = func(router *toolbox.ServiceRouter, responseWriter http.ResponseWriter, httpRequest *http.Request, message string) {
@@ -95,6 +96,12 @@ func StartServer(port string) {
 			HTTPMethod: "POST",
 			URI:        freezeURI,
 			Handler:    service.Freeze,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        dumpURI,
+			Handler:    service.Dump,
 			Parameters: []string{"request"},
 		},
 	)

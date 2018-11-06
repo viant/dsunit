@@ -92,9 +92,17 @@ func (c *serviceClient) Query(request *QueryRequest) *QueryResponse {
 
 }
 
-//Query returns query from database
+//Freeze create a dataset from existing database
 func (c *serviceClient) Freeze(request *FreezeRequest) *FreezeResponse {
 	var response = &FreezeResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+freezeURI, request, response)
+	response.SetError(err)
+	return response
+}
+
+//Dump creates schema from existing database
+func (c *serviceClient) Dump(request *DumpRequest) *DumpResponse {
+	var response = &DumpResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+freezeURI, request, response)
 	response.SetError(err)
 	return response

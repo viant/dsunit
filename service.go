@@ -16,6 +16,9 @@ import (
 
 var batchSize = 200
 
+//SubstitutionMapKey if provided in context, it will be used to substitute/expand dataset
+var SubstitutionMapKey = (*data.Map)(nil)
+
 //Service represents test service
 type Service interface {
 	//Registry returns registry of registered database managers
@@ -51,8 +54,11 @@ type Service interface {
 	//Sequence returns sequence for supplied tables
 	Sequence(request *SequenceRequest) *SequenceResponse
 
-	//Freeze creates a dataset from dataset (reverse engineering test setup/verification)
+	//Freeze creates a dataset from existing database/datastore (reverse engineering test setup/verification)
 	Freeze(request *FreezeRequest) *FreezeResponse
+
+	//Dump creates a database schema from existing database for supplied tables, datastore
+	Dump(request *DumpRequest) *DumpResponse
 
 	SetContext(context toolbox.Context)
 }
@@ -276,13 +282,11 @@ func (s *service) Init(request *InitRequest) *InitResponse {
 	return response
 }
 
-var stateKey = (*data.Map)(nil)
-
 func (s *service) getContextState(context toolbox.Context) *data.Map {
-	if !context.Contains(stateKey) {
+	if !context.Contains(SubstitutionMapKey) {
 		return nil
 	}
-	var state = context.GetOptional(stateKey).(*data.Map)
+	var state = context.GetOptional(SubstitutionMapKey).(*data.Map)
 	return state
 }
 
@@ -385,7 +389,9 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	}
 	context.Replace((*Dataset)(nil), dataset)
 	context.Replace((*dsc.TableDescriptor)(nil), table)
+
 	var records []interface{}
+	expandDataIfNeeded(context, dataset.Records)
 	if records, err = dataset.Records.Expand(context, false); err != nil {
 		return err
 	}
@@ -478,10 +484,12 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	context.Replace((*Dataset)(nil), dataset)
 	context.Replace((*dsc.TableDescriptor)(nil), table)
 
+	expandDataIfNeeded(context, dataset.Records)
 	expectedRecords, err := dataset.Records.Expand(context, true)
 	if err != nil {
 		return err
 	}
+
 	expected := dataset.Records
 	var columns = dataset.Records.Columns()
 
@@ -577,12 +585,15 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 	manager := s.registry.Get(request.Datastore)
 	macroEvaluator := assertly.NewDefaultMacroEvaluator()
 	context := toolbox.NewContext()
+	state := s.getContextState(context)
 	SQL, err := macroEvaluator.Expand(context, request.SQL)
 	if err != nil {
 		response.SetError(err)
 		return response
 	}
-
+	if state != nil {
+		SQL = state.Expand(toolbox.AsString(SQL))
+	}
 	err = manager.ReadAll(&response.Records, toolbox.AsString(SQL), nil, nil)
 	response.SetError(err)
 	return response
@@ -635,15 +646,42 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 		response.SetError(err)
 		return response
 	}
-	storageService, err := storage.NewServiceForURL(destResource.URL, "")
-	if err != nil {
-		response.SetError(err)
-		return response
-	}
-	err = storageService.Upload(destResource.URL, strings.NewReader(payload))
-	response.SetError(err)
 	response.Count = len(records)
 	response.DestURL = destResource.URL
+	uploadContent(destResource, response.BaseResponse, []byte(payload))
+	return response
+}
+
+//Dump creates a database schema from existing database
+func (s *service) Dump(request *DumpRequest) *DumpResponse {
+	var response = &DumpResponse{BaseResponse: NewBaseOkResponse()}
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	var err error
+	manager := s.registry.Get(request.Datastore)
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	tables := request.Tables
+	if len(tables) == 0 {
+		if tables, err = dialect.GetTables(manager, request.Datastore); err != nil {
+			response.SetError(err)
+			return response
+		}
+	}
+	destResource := url.NewResource(request.DestURL)
+	var DDLs = []string{}
+	for _, table := range tables {
+		ddl, err := dialect.ShowCreateTable(manager, table)
+		if err != nil {
+			response.SetError(err)
+			return response
+		}
+		DDLs = append(DDLs, ddl)
+	}
+	var payload = strings.Join(DDLs, "\n\n")
+	response.Count = len(DDLs)
+	response.DestURL = destResource.URL
+	uploadContent(destResource, response.BaseResponse, []byte(payload))
 	return response
 }
 

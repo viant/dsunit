@@ -1,9 +1,13 @@
 package dsunit
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/data"
+	"github.com/viant/toolbox/storage"
+	"github.com/viant/toolbox/url"
 	"path"
 	"strings"
 )
@@ -171,4 +175,25 @@ func escapeVariableIfNeeded(val string) string {
 		val = strings.Replace(val, "$$", "$", 1)
 	}
 	return val
+}
+
+func expandDataIfNeeded(context toolbox.Context, records []map[string]interface{}) {
+	if context.Contains(SubstitutionMapKey) {
+		var substitutionMap *data.Map
+		if context.GetInto(SubstitutionMapKey, &substitutionMap) {
+			for i, record := range records {
+				records[i] = toolbox.AsMap(substitutionMap.Expand(record))
+			}
+		}
+	}
+}
+
+func uploadContent(resource *url.Resource, response *BaseResponse, payload []byte) {
+	storageService, err := storage.NewServiceForURL(resource.URL, resource.Credentials)
+	if err != nil {
+		response.SetError(err)
+		return
+	}
+	err = storageService.Upload(resource.URL, bytes.NewReader(payload))
+	response.SetError(err)
 }

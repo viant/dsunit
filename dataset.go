@@ -41,7 +41,9 @@ type Records []map[string]interface{}
 //Records returns non empty records //directive a filtered out
 func (r *Records) Expand(context toolbox.Context, includeDirectives bool) (result []interface{}, err error) {
 	result = make([]interface{}, 0)
+
 	var evaluator = assertly.NewDefaultMacroEvaluator()
+
 	for _, candidate := range *r {
 		record := Record(candidate)
 		recordValues := make(map[string]interface{})
@@ -58,7 +60,6 @@ func (r *Records) Expand(context toolbox.Context, includeDirectives bool) (resul
 				}
 			}
 		}
-
 		if len(recordValues) > 0 {
 			result = append(result, recordValues)
 		}

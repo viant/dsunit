@@ -466,3 +466,17 @@ type FreezeResponse struct {
 	Count   int
 	DestURL string
 }
+
+//DumpRequest represent a request to create a database schema
+type DumpRequest struct {
+	Datastore string   `description:"registered datastore i.e. db1"`
+	Tables    []string `description:"tables, all if empty"`
+	DestURL   string   `description:"represent dataset destination"`
+}
+
+//DumpResponse represents a dump response
+type DumpResponse struct {
+	*BaseResponse
+	Count   int
+	DestURL string
+}
