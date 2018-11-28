@@ -1,3 +1,6 @@
+## Nov 28 2018 - v0.2.1
+    * Added LocationTimezone, TimeLayout attribute to FreezeRequest.
+
 ## Nov 6 2018 - v0.2.0
     * Added Dump method to create schema from existing database
 

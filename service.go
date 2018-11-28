@@ -12,6 +12,7 @@ import (
 	"github.com/viant/toolbox/url"
 	"io"
 	"strings"
+	"time"
 )
 
 var batchSize = 200
@@ -605,6 +606,10 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
+	if err := request.Init();err != nil {
+		response.SetError(err)
+		return response
+	}
 	manager := s.registry.Get(request.Datastore)
 	macroEvaluator := assertly.NewDefaultMacroEvaluator()
 	context := toolbox.NewContext()
@@ -619,12 +624,23 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 		response.SetError(err)
 		return response
 	}
+
+	var locationTimezone *time.Location
+	if request.LocationTimezone != "" {
+		if locationTimezone, err = time.LoadLocation(request.LocationTimezone);err != nil {
+			response.SetError(err)
+			return response
+		}
+	}
+
 	destResource := url.NewResource(request.DestURL)
 	if len(records) > 0 {
-		for i, record := range records {
+
+		for i, _ := range records {
 			if request.OmitEmpty {
-				records[i] = toolbox.DeleteEmptyKeys(record)
+				records[i] = toolbox.DeleteEmptyKeys(records[i])
 			}
+			adjustTime(locationTimezone, request, records[i])
 			if len(request.Ignore) > 0 {
 				var record = data.Map(records[i])
 				for _, path := range request.Ignore {
@@ -650,6 +666,26 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	response.DestURL = destResource.URL
 	uploadContent(destResource, response.BaseResponse, []byte(payload))
 	return response
+}
+func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record map[string]interface{}) {
+	if locationTimezone != nil || request.TimeLayout != "" {
+		for k, v := range record {
+			if toolbox.IsTime(v) {
+				timeValue := toolbox.AsTime(v, "");
+				if timeValue != nil {
+					if locationTimezone != nil {
+						timeInLocation := timeValue.In(locationTimezone)
+						timeValue = &timeInLocation
+					}
+					if request.TimeLayout != "" {
+						record[k] = timeValue.Format(request.TimeLayout)
+					} else {
+						record[k] = timeValue
+					}
+				}
+			}
+		}
+	}
 }
 
 //Dump creates a database schema from existing database

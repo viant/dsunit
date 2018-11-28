@@ -6,6 +6,7 @@ import (
 	"github.com/viant/assertly"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox/url"
+	"github.com/viant/toolbox"
 )
 
 //StatusOk represents ok status
@@ -238,7 +239,7 @@ type InitRequest struct {
 	Datastore string
 	Recreate  bool
 	*RegisterRequest
-	Admin *RegisterRequest
+	Admin     *RegisterRequest
 	*MappingRequest
 	*RunScriptRequest
 }
@@ -310,7 +311,7 @@ type InitResponse struct {
 
 //PrepareRequest represents a request to populate datastore with data resource
 type PrepareRequest struct {
-	Expand           bool `description:"substitute $ expression with content of context.state"`
+	Expand bool      `description:"substitute $ expression with content of context.state"`
 	*DatasetResource `required:"true" description:"datasets resource"`
 }
 
@@ -397,7 +398,7 @@ func NewExpectRequestFromURL(URL string) (*ExpectRequest, error) {
 
 //ExpectRequest represents data validation
 type DatasetValidation struct {
-	Dataset string
+	Dataset  string
 	*assertly.Validation
 	Expected interface{}
 	Actual   interface{}
@@ -452,13 +453,26 @@ type QueryResponse struct {
 
 //FreezeRequest represent a request to create a data set from datastore for provided  SQL and target path
 type FreezeRequest struct {
-	Datastore string            `description:"registered datastore i.e. db1"`
-	SQL       string            `description:"dataset SQL soruce"`
-	DestURL   string            `description:"represent dataset destination"`
-	OmitEmpty bool              `description:"flag to skip empty attributes"`
-	Ignore    []string          `description:"path to ignore i.e. request.postbody"`
-	Replace   map[string]string `description:"key of path with corresponding replacement value"`
+	Datastore        string            `description:"registered datastore i.e. db1"`
+	SQL              string            `description:"dataset SQL soruce"`
+	DestURL          string            `description:"represent dataset destination"`
+	OmitEmpty        bool              `description:"flag to skip empty attributes"`
+	Ignore           []string          `description:"path to ignore i.e. request.postbody"`
+	Replace          map[string]string `description:"key of path with corresponding replacement value"`
+	LocationTimezone string            `description:"convert time to specified timezone i.e UTC"`
+	TimeFormat       string            `description:"java/ios based time format"`
+	TimeLayout       string            `description:"golang based time layout"`
 }
+
+
+func (r *FreezeRequest) Init() error {
+	if r.TimeLayout == "" && r.TimeFormat != "" {
+		 r.TimeLayout = toolbox.DateFormatToLayout(r.TimeFormat)
+	}
+	return nil
+}
+
+
 
 //FreezeResponse response
 type FreezeResponse struct {
