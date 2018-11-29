@@ -197,4 +197,3 @@ func uploadContent(resource *url.Resource, response *BaseResponse, payload []byt
 	err = storageService.Upload(resource.URL, bytes.NewReader(payload))
 	response.SetError(err)
 }
-

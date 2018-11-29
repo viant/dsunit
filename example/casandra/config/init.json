@@ -1,0 +1,16 @@
+{
+  "Datastore": "mydb",
+  "Config": {
+    "DriverName": "cql",
+    "Descriptor": "127.0.0.1?keyspace=mydb",
+    "Params": {
+      "keyspace": "mydb"
+    }
+  },
+  "Recreate": true,
+  "Scripts": [
+    {
+      "URL": "config/schema.ddl"
+    }
+  ]
+}
