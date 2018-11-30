@@ -46,9 +46,9 @@ func casandraTearDown(t *testing.T) {
 }
 
 func TestDsunit_Casandra(t *testing.T) {
-	//casandraSetup(t)
+	casandraSetup(t)
 	dsc.Logf = dsc.StdoutLogger
-	//defer casandraTearDown(t)
+	defer casandraTearDown(t)
 	if dsunit.InitFromURL(t, "config/init.json") {
 		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
