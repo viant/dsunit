@@ -248,6 +248,7 @@ This project provide a various datasore **dsunit** integration examples (some wi
 ## NoSQL
 * [Aerospike](example/aerospike/)
 * [MongoDB](example/mongo)
+* [Casandra](example/casandra)
 
 
 **External projects:**:
