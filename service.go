@@ -641,6 +641,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 				records[i] = toolbox.DeleteEmptyKeys(records[i])
 			}
 			adjustTime(locationTimezone, request, records[i])
+
 			if len(request.Ignore) > 0 {
 				var record = data.Map(records[i])
 				for _, path := range request.Ignore {
