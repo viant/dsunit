@@ -606,7 +606,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
-	if err := request.Init();err != nil {
+	if err := request.Init(); err != nil {
 		response.SetError(err)
 		return response
 	}
@@ -627,7 +627,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 
 	var locationTimezone *time.Location
 	if request.LocationTimezone != "" {
-		if locationTimezone, err = time.LoadLocation(request.LocationTimezone);err != nil {
+		if locationTimezone, err = time.LoadLocation(request.LocationTimezone); err != nil {
 			response.SetError(err)
 			return response
 		}
@@ -636,11 +636,12 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	destResource := url.NewResource(request.DestURL)
 	if len(records) > 0 {
 
-		for i, _ := range records {
+		for i := range records {
 			if request.OmitEmpty {
 				records[i] = toolbox.DeleteEmptyKeys(records[i])
 			}
 			adjustTime(locationTimezone, request, records[i])
+
 			if len(request.Ignore) > 0 {
 				var record = data.Map(records[i])
 				for _, path := range request.Ignore {
@@ -671,7 +672,7 @@ func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record 
 	if locationTimezone != nil || request.TimeLayout != "" {
 		for k, v := range record {
 			if toolbox.IsTime(v) {
-				timeValue := toolbox.AsTime(v, "");
+				timeValue := toolbox.AsTime(v, "")
 				if timeValue != nil {
 					if locationTimezone != nil {
 						timeInLocation := timeValue.In(locationTimezone)

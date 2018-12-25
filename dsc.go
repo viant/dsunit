@@ -116,7 +116,7 @@ func (m *datasetRowMapper) buildProviders(types map[string]dsc.Column) []func(sl
 
 func (m *datasetRowMapper) ColumnValues() ([]interface{}, error) {
 	if len(m.valueProviders) == 0 {
-		return nil, errors.New("not supported")
+		return nil, errors.New("column values not supported")
 	}
 	var result = make([]interface{}, len(m.columns))
 	for i, provider := range m.valueProviders {

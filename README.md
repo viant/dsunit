@@ -3,7 +3,7 @@
 [![Datastore testibility library for Go.](https://goreportcard.com/badge/github.com/viant/dsunit)](https://goreportcard.com/report/github.com/viant/dsunit)
 [![GoDoc](https://godoc.org/github.com/viant/dsunit?status.svg)](https://godoc.org/github.com/viant/dsunit)
 
-This library is compatible with Go 1.5+
+This library is compatible with Go 1.10+
 
 Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes.
 
@@ -248,6 +248,7 @@ This project provide a various datasore **dsunit** integration examples (some wi
 ## NoSQL
 * [Aerospike](example/aerospike/)
 * [MongoDB](example/mongo)
+* [Casandra](example/casandra)
 
 
 **External projects:**:
