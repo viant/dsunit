@@ -47,18 +47,16 @@ func casandraTearDown(t *testing.T) {
 
 func TestDsunit_Casandra(t *testing.T) {
 	casandraSetup(t)
-	dsc.Logf = dsc.StdoutLogger
 	defer casandraTearDown(t)
-	if dsunit.InitFromURL(t, "config/init.json") {
-		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
-			return
-		}
-		err := casandraRunSomeBusinessLogic()
-		if !assert.Nil(t, err) {
-			return
-		}
-		dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
+
+	if dsunit.InitFromURL(t, "config/init.yaml") {
+		return
 	}
+	err := casandraRunSomeBusinessLogic()
+	if !assert.Nil(t, err) {
+		return
+	}
+	dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
 }
 
 func casandraRunSomeBusinessLogic() error {
@@ -87,9 +85,6 @@ func casandraRunSomeBusinessLogic() error {
 var credentials = url.NewResource("config/secret.json").URL
 
 func startCasandra() error {
-
-
-	/*
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "cassandra:3.0",
@@ -106,10 +101,9 @@ func startCasandra() error {
 		return err
 	}
 
-	*/
 	//it takes some time to docker container to fully start
-	config, err := dsc.NewConfigWithParameters("cql", "127.0.0.1?keyspace=mydb", "", map[string]interface{}{
-		"keyspace":"mydb",
+	config, err := dsc.NewConfigWithParameters("cql", "127.0.0.1", "", map[string]interface{}{
+		"keyspace": "mydb",
 	})
 	if err != nil {
 		return err
