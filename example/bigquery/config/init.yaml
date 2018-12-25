@@ -1,0 +1,15 @@
+Datastore: mydb
+Config:
+  DriverName: bigquery
+  Descriptor: bq/[datasetId]
+  Credentials: config/secret.json
+  Parameters:
+    projectId: myproject
+    datasetId: mydataset
+    dateFormat: yyyy-MM-dd HH:mm:ss.SSSZ
+Recreate: 'true'
+Tables:
+  - Table: users
+    PkColumns:
+      - id
+    SchemaURL: config/user_schema.json

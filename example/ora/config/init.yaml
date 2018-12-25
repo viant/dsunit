@@ -1,0 +1,23 @@
+Datastore: mydb
+Config:
+  DriverName: ora
+  Descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+  Parameters:
+    session:
+      NLS_TIMESTAMP_FORMAT: YYYY-MM-DD HH24:MI:SS
+      NLS_TIMESTAMP_TZ_FORMAT: YYYY-MM-DD HH24:MI:SS
+      NLS_DATE_FORMAT: YYYY-MM-DD HH24:MI:SS
+      TIME_ZONE: '00:00'
+    username: mydb
+    password: oracle
+Admin:
+  Datastore: ora
+  Config:
+    DriverName: ora
+    Descriptor: "[username]/[password]@127.0.0.1:1521/xe"
+    Parameters:
+      username: system
+      password: oracle
+Recreate: true
+Scripts:
+  - URL: config/schema.ddl
