@@ -249,14 +249,22 @@ func (s *service) Init(request *InitRequest) *InitResponse {
 		}
 	}
 
+	var adminDatastore = registerRequest.Datastore
+	if request.Admin != nil {
+		adminDatastore = request.Admin.Datastore
+	}
+
 	if request.Recreate {
-		var adminDatastore = registerRequest.Datastore
-		if request.Admin != nil {
-			adminDatastore = request.Admin.Datastore
-		}
+
 		serviceResponse := s.Recreate(NewRecreateRequest(registerRequest.Datastore, adminDatastore))
 		if serviceResponse.Status != StatusOk {
 			response.BaseResponse = serviceResponse.BaseResponse
+			return response
+		}
+	} else {
+		err := s.createDbIfDoesNotExists(registerRequest.Datastore, adminDatastore)
+		if err != nil {
+			response.SetError(err)
 			return response
 		}
 	}
@@ -747,6 +755,23 @@ func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
 func (s *service) SetContext(context toolbox.Context) {
 	s.context = context
 }
+
+
+func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore string) error {
+	dialect := GetDatastoreDialect(adminDatastore, s.registry)
+	adminManager := s.registry.Get(adminDatastore)
+	if adminManager == nil {
+		return fmt.Errorf("failed to lookup manager: %v", adminManager)
+	}
+	if !dialect.CanCreateDatastore(adminManager) {
+		return nil
+	}
+	if hasDatastore(adminManager, dialect, datastore) {
+		return nil
+	}
+	return dialect.CreateDatastore(adminManager, datastore)
+}
+
 
 //New creates new dsunit service
 func New() Service {

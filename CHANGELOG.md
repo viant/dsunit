@@ -1,5 +1,6 @@
-## Dec 28 2018 - v0.3.0
+## Dec 28 2018 - v0.3.1
     * Added casandra example
+    * Updated recreate logic, if set to false it will only create db if it does not exists
 
 ## Nov 28 2018 - v0.2.1
     * Added LocationTimezone, TimeLayout attribute to FreezeRequest.
