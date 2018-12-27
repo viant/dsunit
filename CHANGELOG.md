@@ -1,3 +1,6 @@
+## Dec 28 2018 - v0.3.0
+    * Added casandra example
+
 ## Nov 28 2018 - v0.2.1
     * Added LocationTimezone, TimeLayout attribute to FreezeRequest.
 
