@@ -13,7 +13,6 @@ import (
 	"os"
 	"path"
 	"testing"
-	"time"
 )
 
 /*
