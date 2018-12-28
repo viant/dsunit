@@ -587,6 +587,7 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 	var response = &QueryResponse{
 		BaseResponse: NewBaseOkResponse(),
 		Records:      make([]map[string]interface{}, 0),
+		Validation:   &assertly.Validation{},
 	}
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
@@ -604,7 +605,14 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 		SQL = state.Expand(toolbox.AsString(SQL))
 	}
 	err = manager.ReadAll(&response.Records, toolbox.AsString(SQL), nil, nil)
-	response.SetError(err)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	if len(request.Expect) > 0 {
+		response.Validation, err = assertly.Assert(request.Expect, response.Records, assertly.NewDataPath("sql"))
+		response.SetError(err)
+	}
 	return response
 }
 
@@ -756,7 +764,6 @@ func (s *service) SetContext(context toolbox.Context) {
 	s.context = context
 }
 
-
 func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore string) error {
 	dialect := GetDatastoreDialect(adminDatastore, s.registry)
 	adminManager := s.registry.Get(adminDatastore)
@@ -771,7 +778,6 @@ func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore strin
 	}
 	return dialect.CreateDatastore(adminManager, datastore)
 }
-
 
 //New creates new dsunit service
 func New() Service {

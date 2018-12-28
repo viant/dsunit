@@ -436,6 +436,7 @@ type QueryRequest struct {
 	Datastore   string
 	SQL         string
 	IgnoreError bool
+	Expect      []map[string]interface{} `description:"if specified validation would take place"`
 }
 
 func NewQueryRequest(datastore, SQL string) *QueryRequest {
@@ -449,6 +450,7 @@ func NewQueryRequest(datastore, SQL string) *QueryRequest {
 type QueryResponse struct {
 	*BaseResponse
 	Records Records
+	*assertly.Validation
 }
 
 //FreezeRequest represent a request to create a data set from datastore for provided  SQL and target path

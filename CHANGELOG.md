@@ -1,4 +1,7 @@
-## Dec 28 2018 - v0.3.1
+## Dec 28 2018 - v0.4.0
+    * Added Expect attribute in Query operation for optional valiation (SQL based validation)
+
+## Dec 27 2018 - v0.3.1
     * Added casandra example
     * Updated recreate logic, if set to false it will only create db if it does not exists
 
