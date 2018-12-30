@@ -12,6 +12,7 @@ import (
 	"github.com/viant/toolbox/url"
 	"io"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -811,11 +812,28 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 	data1 := data.NewCompactedSlice(false, true)
 	data2 := data.NewCompactedSlice(false, true)
 
-	if err = manager1.ReadAllWithHandler(request.Source1.SQL, nil, compactedSliceReader(data1)); err == nil {
-		err = manager1.ReadAllWithHandler(request.Source2.SQL, nil, compactedSliceReader(data2))
+	waitGroup := &sync.WaitGroup{}
+	waitGroup.Add(2)
+	go func() {
+		defer waitGroup.Done()
+		if e := manager1.ReadAllWithHandler(request.Source1.SQL, nil, compactedSliceReader(data1)); e != nil {
+			err = e
+		}
+		response.Dataset1Count = data1.Size()
+	}()
+	go func() {
+		defer waitGroup.Done()
+		if e := manager2.ReadAllWithHandler(request.Source2.SQL, nil, compactedSliceReader(data2)); e != nil {
+			err = e
+		}
+		response.Dataset2Count = data2.Size()
+	}()
+	waitGroup.Wait()
+	if err != nil {
+		response.SetError(err)
+		return
 	}
-	response.Dataset1Count = data1.Size()
-	response.Dataset2Count = data2.Size()
+
 	var iter1, iter2 toolbox.Iterator
 	indexBy := request.IndexBy()
 	if len(indexBy) == 0 {

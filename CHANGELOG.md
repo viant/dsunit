@@ -1,3 +1,6 @@
+## Dec 29 2018 - v0.4.1
+    * Added reading data paralizattion for comparision 
+    
 ## Dec 28 2018 - v0.4.0
     * Added Expect attribute in Query operation for optional valiation (SQL based validation)
 
