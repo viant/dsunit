@@ -20,6 +20,7 @@ var queryURI = version + "query"
 var freezeURI = version + "freeze"
 var dumpURI = version + "dump"
 var sequenceURI = version + "sequence"
+var compareURI = version + "compare"
 
 var errorHandler = func(router *toolbox.ServiceRouter, responseWriter http.ResponseWriter, httpRequest *http.Request, message string) {
 	err := router.WriteResponse(toolbox.NewJSONEncoderFactory(), &BaseResponse{Status: "error", Message: message}, httpRequest, responseWriter)
@@ -102,6 +103,12 @@ func StartServer(port string) {
 			HTTPMethod: "POST",
 			URI:        dumpURI,
 			Handler:    service.Dump,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        compareURI,
+			Handler:    service.Compare,
 			Parameters: []string{"request"},
 		},
 	)

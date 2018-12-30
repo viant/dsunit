@@ -61,6 +61,9 @@ type Service interface {
 	//Dump creates a database schema from existing database for supplied tables, datastore
 	Dump(request *DumpRequest) *DumpResponse
 
+	//Compare compares data produces by specified SQLs
+	Compare(request *CompareRequest) *CompareResponse
+
 	SetContext(context toolbox.Context)
 }
 
@@ -305,8 +308,8 @@ func (s *service) newContext(manager dsc.Manager) toolbox.Context {
 		context = s.context.Clone()
 	}
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
-	context.Replace((*dsc.Manager)(nil), &manager)
-	context.Replace((*dsc.DatastoreDialect)(nil), &dialect)
+	_ = context.Replace((*dsc.Manager)(nil), &manager)
+	_ = context.Replace((*dsc.DatastoreDialect)(nil), &dialect)
 	return context
 }
 
@@ -321,9 +324,9 @@ func (s *service) deleteDatasetIfNeeded(dataset *Dataset, table *dsc.TableDescri
 		response.Modification[dataset.Table].Deleted = int(deleted)
 		//since deletion has to happen before new entries are added to address new modification, deletion needs to be committed first
 		//for classified as insertable or updatable to work correctly
-		connection.Commit()
-		connection.Begin()
-		dialect.DisableForeignKeyCheck(manager, connection)
+		_ = connection.Commit()
+		_ = connection.Begin()
+		_ = dialect.DisableForeignKeyCheck(manager, connection)
 	}
 	return nil
 }
@@ -339,7 +342,7 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	table := manager.TableDescriptorRegistry().Get(tableName)
 	if table == nil {
 		table = &dsc.TableDescriptor{Table: tableName}
-		manager.TableDescriptorRegistry().Register(table)
+		_ = manager.TableDescriptorRegistry().Register(table)
 	}
 	var autoincrement = dataset.Records.Autoincrement()
 	var uniqueKeys = dataset.Records.UniqueKeys()
@@ -396,8 +399,8 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
 		return err
 	}
-	context.Replace((*Dataset)(nil), dataset)
-	context.Replace((*dsc.TableDescriptor)(nil), table)
+	_ = context.Replace((*Dataset)(nil), dataset)
+	_ = context.Replace((*dsc.TableDescriptor)(nil), table)
 
 	var records []interface{}
 	expandDataIfNeeded(context, dataset.Records)
@@ -467,7 +470,7 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 		return response
 	}
 	dialect := GetDatastoreDialect(request.Datastore, s.registry)
-	dialect.DisableForeignKeyCheck(manager, connection)
+	_ = dialect.DisableForeignKeyCheck(manager, connection)
 	defer dialect.EnableForeignKeyCheck(manager, connection)
 	defer connection.Close()
 	s.prepare(request, response, manager, connection)
@@ -490,8 +493,8 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
 		return err
 	}
-	context.Replace((*Dataset)(nil), dataset)
-	context.Replace((*dsc.TableDescriptor)(nil), table)
+	_ = context.Replace((*Dataset)(nil), dataset)
+	_ = context.Replace((*dsc.TableDescriptor)(nil), table)
 
 	expandDataIfNeeded(context, dataset.Records)
 	expectedRecords, err := dataset.Records.Expand(context, true)
@@ -777,6 +780,108 @@ func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore strin
 		return nil
 	}
 	return dialect.CreateDatastore(adminManager, datastore)
+}
+
+//Compare compares data between source1 and source2
+func (s *service) Compare(request *CompareRequest) *CompareResponse {
+	var response = &CompareResponse{
+		BaseResponse: NewBaseOkResponse(),
+		Validation:   &assertly.Validation{},
+	}
+
+	if !validateDatastores(s.registry, response.BaseResponse, request.Source1.Datastore) {
+		return response
+	}
+	if !validateDatastores(s.registry, response.BaseResponse, request.Source2.Datastore) {
+		return response
+	}
+
+	manager1 := s.registry.Get(request.Source1.Datastore)
+	manager2 := s.registry.Get(request.Source2.Datastore)
+
+	if len(request.Directives) == 0 {
+		request.Directives = make(map[string]interface{})
+	}
+	s.compare(manager1, manager2, request, response)
+	return response
+}
+
+func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *CompareRequest, response *CompareResponse) {
+	var err error
+	data1 := data.NewCompactedSlice(false, true)
+	data2 := data.NewCompactedSlice(false, true)
+
+	if err = manager1.ReadAllWithHandler(request.Source1.SQL, nil, compactedSliceReader(data1)); err == nil {
+		err = manager1.ReadAllWithHandler(request.Source2.SQL, nil, compactedSliceReader(data2))
+	}
+	response.Dataset1Count = data1.Size()
+	response.Dataset2Count = data2.Size()
+	var iter1, iter2 toolbox.Iterator
+	indexBy := request.IndexBy()
+	if len(indexBy) == 0 {
+		iter1 = data1.Iterator()
+		iter2 = data2.Iterator()
+	} else {
+		if iter1, err = data1.SortedIterator(indexBy); err == nil {
+			iter2, err = data2.SortedIterator(indexBy)
+		}
+		if err != nil {
+			response.SetError(err)
+			return
+		}
+	}
+	rowCount := 0
+	discrepantRowCount := 0
+	var record1, record2 map[string]interface{}
+	if iter1.HasNext() {
+		if err = iter1.Next(&record1); err == nil {
+			if iter2.HasNext() {
+				err = iter2.Next(&record2)
+			}
+		}
+		if err != nil {
+			response.SetError(err)
+			return
+		}
+		removeIgnoredColumns(request, record1, record2)
+		request.ApplyDirective(record1)
+		validation, err := assertly.Assert(record1, record2, assertly.NewDataPath(fmt.Sprintf("%d", rowCount)))
+		if err != nil {
+			response.SetError(err)
+			return
+		}
+		response.PassedCount += validation.PassedCount
+		if validation.HasFailure() {
+			discrepantRowCount++
+			for _, failure := range validation.Failures {
+				response.AddFailure(failure)
+			}
+		} else {
+			response.MatchedRows++
+		}
+		if discrepantRowCount >= request.MaxRowDiscrepancy {
+			return
+		}
+	}
+}
+
+func removeIgnoredColumns(request *CompareRequest, record1, record2 map[string]interface{}) {
+	if len(request.Ignore) > 0 {
+		for _, column := range request.Ignore {
+			delete(record1, column)
+			delete(record2, column)
+		}
+	}
+}
+
+func compactedSliceReader(aSlice *data.CompactedSlice) func(scanner dsc.Scanner) (toContinue bool, err error) {
+	return func(scanner dsc.Scanner) (toContinue bool, err error) {
+		record := make(map[string]interface{})
+		if err = scanner.Scan(record); err == nil {
+			aSlice.Add(record)
+		}
+		return err == nil, err
+	}
 }
 
 //New creates new dsunit service

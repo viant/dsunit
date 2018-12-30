@@ -7,6 +7,7 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
+	"strings"
 )
 
 //StatusOk represents ok status
@@ -492,4 +493,53 @@ type DumpResponse struct {
 	*BaseResponse
 	Count   int
 	DestURL string
+}
+
+type DatastoreSQL struct {
+	Datastore string
+	SQL       string
+}
+
+//CompareRequest represent compare request
+type CompareRequest struct {
+	Source1           *DatastoreSQL
+	Source2           *DatastoreSQL
+	Directives        map[string]interface{}
+	Ignore            []string // columns to ignore
+	MaxRowDiscrepancy int      //max discrepant rows
+}
+
+//IndexBy returns index by directive if specified
+func (r CompareRequest) IndexBy() []string {
+	if len(r.Directives) == 0 {
+		return nil
+	}
+	indexBy, ok := r.Directives[assertly.IndexByDirective]
+	if !ok {
+		return nil
+	}
+	if toolbox.IsSlice(indexBy) {
+		var result = make([]string, 0)
+		toolbox.CopySliceElements(indexBy, &result)
+		return result
+	}
+	return strings.Split(toolbox.AsString(indexBy), ",")
+}
+
+func (r *CompareRequest) ApplyDirective(record map[string]interface{}) {
+	if len(r.Directives) == 0 {
+		return
+	}
+	for k, v := range r.Directives {
+		record[k] = v
+	}
+}
+
+//CompareResponse represents compare response
+type CompareResponse struct {
+	*BaseResponse
+	Dataset1Count int
+	Dataset2Count int
+	MatchedRows   int
+	*assertly.Validation
 }

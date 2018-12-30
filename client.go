@@ -121,6 +121,14 @@ func (s *serviceClient) SetContext(context toolbox.Context) {
 
 }
 
+//Compare compares supplied SQLs data
+func (c *serviceClient) Compare(request *CompareRequest) *CompareResponse {
+	var response = &CompareResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+sequenceURI, request, response)
+	response.SetError(err)
+	return response
+}
+
 //NewServiceClient returns a new dsunit service client
 func NewServiceClient(serverURL string) Service {
 	var result Service = &serviceClient{serverURL: serverURL}

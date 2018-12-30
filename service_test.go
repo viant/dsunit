@@ -5,10 +5,12 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/viant/assertly"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
+	"log"
 	"path"
 	"testing"
 )
@@ -183,4 +185,56 @@ func TestService_FreezeDataset(t *testing.T) {
 		}
 		assert.EqualValues(t, 4, response.Count)
 	}
+}
+
+func TestService_Compare(t *testing.T) {
+	service, err := getTestService("db1", "test/db1/", "test/db1/schema.ddl")
+	if !assert.Nil(t, err, fmt.Sprintf("%v", err)) {
+		return
+	}
+	service.Prepare(&dsunit.PrepareRequest{
+		DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data", "test1_prepare_", ""),
+	})
+
+	{
+		response := service.Compare(&dsunit.CompareRequest{
+			Source1: &dsunit.DatastoreSQL{
+				Datastore: "db1",
+				SQL:       "SELECT * FROM users ORDER BY 1",
+			},
+			Source2: &dsunit.DatastoreSQL{
+				Datastore: "db1",
+				SQL:       "SELECT * FROM users ORDER BY 1",
+			},
+		})
+		assert.EqualValues(t, "ok", response.Status)
+		assert.EqualValues(t, 0, response.FailedCount)
+		assert.EqualValues(t, 6, response.PassedCount)
+		assert.EqualValues(t, 1, response.MatchedRows)
+	}
+	{
+		response := service.Compare(&dsunit.CompareRequest{
+			Source1: &dsunit.DatastoreSQL{
+				Datastore: "db1",
+				SQL:       "SELECT * FROM users",
+			},
+			Source2: &dsunit.DatastoreSQL{
+				Datastore: "db1",
+				SQL:       "SELECT * FROM users",
+			},
+			Directives: map[string]interface{}{
+				assertly.IndexByDirective: "id",
+			},
+		})
+
+		if !assert.EqualValues(t, "ok", response.Status) {
+			log.Print(response.Message)
+			return
+		}
+
+		assert.EqualValues(t, 0, response.FailedCount)
+		assert.EqualValues(t, 6, response.PassedCount)
+		assert.EqualValues(t, 1, response.MatchedRows)
+	}
+
 }
