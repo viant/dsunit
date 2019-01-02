@@ -1,3 +1,8 @@
+## Dec 29 2018 - v0.4.2
+    * Added OmitEmpty to compare request
+    * Added Firebase example
+    
+
 ## Dec 29 2018 - v0.4.1
     * Added reading data paralizattion for comparision 
     
