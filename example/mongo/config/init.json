@@ -5,7 +5,7 @@
     "Parameters": {
       "dbname": "mydb",
       "host": "127.0.0.1",
-      "keyColumnName": "id"
+      "keyColumn": "id"
     }
   },
   "Recreate": true
