@@ -100,7 +100,7 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 		s.registry.Register(request.Datastore, manager)
 		if len(request.Tables) > 0 {
 			for _, table := range request.Tables {
-				manager.TableDescriptorRegistry().Register(table)
+				_ = manager.TableDescriptorRegistry().Register(table)
 			}
 		}
 	}
@@ -541,11 +541,17 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 
 	validation.Expected = expectedRecords
 	validation.Actual = actual
+
 	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
 		response.PassedCount += validation.Validation.PassedCount
 		response.Message += "\n" + dataset.Table + "\n" + validation.Report()
+		if validation.HasFailure() {
+			response.Status = "failed"
+		} else {
+			response.Status = "ok"
+		}
 	}
 	return err
 }
@@ -809,8 +815,8 @@ func (s *service) Compare(request *CompareRequest) *CompareResponse {
 
 func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *CompareRequest, response *CompareResponse) {
 	var err error
-	data1 := data.NewCompactedSlice(false, true)
-	data2 := data.NewCompactedSlice(false, true)
+	data1 := data.NewCompactedSlice(request.OmitEmpty, true)
+	data2 := data.NewCompactedSlice(request.OmitEmpty, true)
 
 	waitGroup := &sync.WaitGroup{}
 	waitGroup.Add(2)

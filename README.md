@@ -252,6 +252,7 @@ This project provide a various datasore **dsunit** integration examples (some wi
 * [Aerospike](example/aerospike/)
 * [MongoDB](example/mongo)
 * [Casandra](example/casandra)
+* [Firebase](example/firebase)
 
 
 **External projects:**:

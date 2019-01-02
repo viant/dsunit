@@ -506,7 +506,8 @@ type CompareRequest struct {
 	Source2           *DatastoreSQL
 	Directives        map[string]interface{}
 	Ignore            []string // columns to ignore
-	MaxRowDiscrepancy int      //max discrepant rows
+	OmitEmpty         bool
+	MaxRowDiscrepancy int //max discrepant rows
 }
 
 //IndexBy returns index by directive if specified

@@ -110,7 +110,7 @@ func handleResponse(t *testing.T, response *BaseResponse) bool {
 	file, method, line := toolbox.DiscoverCaller(3, 10, "stack_helper.go", "static.go", "tester.go", "helper.go")
 	_, file = path.Split(file)
 	if response.Status != StatusOk {
-		LogF("%v:%v (%v)\n%v\n", file, line, method, response.Message)
+		_, _ = LogF("%v:%v (%v)\n%v\n", file, line, method, response.Message)
 		t.Fail()
 		return false
 	}
