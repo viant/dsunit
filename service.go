@@ -840,6 +840,14 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 		return
 	}
 
+	if response.Dataset1Count == 0 {
+		if response.Dataset2Count == 0 {
+			response.AddFailure(assertly.NewFailure("", "", "no data", response.Dataset1Count, response.Dataset2Count))
+			return
+		}
+		response.AddFailure(assertly.NewFailure("", "", assertly.LengthViolation, response.Dataset1Count, response.Dataset2Count))
+		return
+	}
 	var iter1, iter2 toolbox.Iterator
 	indexBy := request.IndexBy()
 	if len(indexBy) == 0 {
@@ -857,7 +865,7 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 	rowCount := 0
 	discrepantRowCount := 0
 	var record1, record2 map[string]interface{}
-	if iter1.HasNext() {
+	for iter1.HasNext() {
 		if err = iter1.Next(&record1); err == nil {
 			if iter2.HasNext() {
 				err = iter2.Next(&record2)
@@ -867,10 +875,28 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 			response.SetError(err)
 			return
 		}
+
+		var record1Path, record2Path string
+		for {
+			record1Path, record2Path = s.extractPaths(rowCount, indexBy, record1, record2)
+			if record2Path == record1Path {
+				break
+			}
+			response.AddFailure(assertly.NewFailure("", record1Path, "record mismatch", record1Path, record2Path))
+			if !iter2.HasNext() {
+				return
+			}
+			if err = iter2.Next(&record2); err != nil {
+				response.SetError(err)
+				return
+			}
+		}
 		removeIgnoredColumns(request, record1, record2)
 		request.ApplyDirective(record1)
-		validation, err := assertly.Assert(record1, record2, assertly.NewDataPath(fmt.Sprintf("%d", rowCount)))
+
+		validation, err := assertly.Assert(record1, record2, assertly.NewDataPath(record1Path))
 		if err != nil {
+
 			response.SetError(err)
 			return
 		}
@@ -887,6 +913,22 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 			return
 		}
 	}
+}
+
+func (s *service) extractPaths(rowCount int, indexBy []string, record1 map[string]interface{}, record2 map[string]interface{}) (string, string) {
+	record1Path := fmt.Sprintf("%d", rowCount)
+	record2Path := fmt.Sprintf("%d", rowCount)
+	if len(indexBy) > 0 {
+		var record1PathKeys = make([]string, 0)
+		var record2PathKeys = make([]string, 0)
+		for _, key := range indexBy {
+			record1PathKeys = append(record1PathKeys, key+":"+toolbox.AsString(record1[key]))
+			record2PathKeys = append(record2PathKeys, key+":"+toolbox.AsString(record2[key]))
+		}
+		record1Path = strings.Join(record1PathKeys, ", ")
+		record2Path = strings.Join(record2PathKeys, ", ")
+	}
+	return record1Path, record2Path
 }
 
 func removeIgnoredColumns(request *CompareRequest, record1, record2 map[string]interface{}) {
