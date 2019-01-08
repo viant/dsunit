@@ -847,7 +847,12 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 		}
 		response.AddFailure(assertly.NewFailure("", "", assertly.LengthViolation, response.Dataset1Count, response.Dataset2Count))
 		return
+	} else if response.Dataset2Count == 0 {
+		response.AddFailure(assertly.NewFailure("", "", assertly.LengthViolation, response.Dataset1Count, response.Dataset2Count))
+		return
 	}
+	
+
 	var iter1, iter2 toolbox.Iterator
 	indexBy := request.IndexBy()
 	if len(indexBy) == 0 {
