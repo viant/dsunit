@@ -74,41 +74,42 @@ func (m *datasetRowMapper) Map(scanner dsc.Scanner) (interface{}, error) {
 
 func (m *datasetRowMapper) buildProviders(types map[string]dsc.Column) []func(slice []interface{}, index int) {
 	valueProvider := []func(slice []interface{}, index int){}
-
 	if len(types) == 0 || len(m.columns) == 0 {
 		return valueProvider
 	}
-
 	for _, column := range m.columns {
-		if info, ok := types[column]; ok {
-			dbTypeName := info.DatabaseTypeName()
-			switch strings.ToUpper(dbTypeName) {
-			case "VARCHAR", "VARCHAR2", "CHAR", "STRING", "TEXT":
-				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
-					var value *string
-					slice[index] = &value
-				})
-			case "DATE", "DATETIME", "TIMESTAMP":
-				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
-					var value *time.Time
-					slice[index] = &value
-				})
-			case "INT", "INTEGER", "BIGINT", "TINYINT", "INT64":
-				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
-					var value *int
-					slice[index] = &value
-				})
-			case "FLOAT", "FLOAT64", "DECIMAL", "NUMERIC":
-				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
-					var value *float64
-					slice[index] = &value
-				})
-			default:
-				valueProvider = append(valueProvider, func(slice []interface{}, index int) {
-					var value interface{}
-					slice[index] = &value
-				})
-			}
+		info, ok := types[column]
+		if !ok {
+			info = dsc.NewSimpleColumn(column, "string")
+		}
+		dbTypeName := info.DatabaseTypeName()
+
+		switch strings.ToUpper(dbTypeName) {
+		case "VARCHAR", "VARCHAR2", "CHAR", "STRING", "TEXT", "S":
+			valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+				var value *string
+				slice[index] = &value
+			})
+		case "DATE", "DATETIME", "TIMESTAMP":
+			valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+				var value *time.Time
+				slice[index] = &value
+			})
+		case "INT", "INTEGER", "BIGINT", "TINYINT", "INT64", "N":
+			valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+				var value *int
+				slice[index] = &value
+			})
+		case "FLOAT", "FLOAT64", "DECIMAL", "NUMERIC":
+			valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+				var value *float64
+				slice[index] = &value
+			})
+		default:
+			valueProvider = append(valueProvider, func(slice []interface{}, index int) {
+				var value interface{}
+				slice[index] = &value
+			})
 		}
 	}
 	return valueProvider
@@ -118,6 +119,7 @@ func (m *datasetRowMapper) ColumnValues() ([]interface{}, error) {
 	if len(m.valueProviders) == 0 {
 		return nil, errors.New("column values not supported")
 	}
+
 	var result = make([]interface{}, len(m.columns))
 	for i, provider := range m.valueProviders {
 		provider(result, i)
@@ -127,6 +129,7 @@ func (m *datasetRowMapper) ColumnValues() ([]interface{}, error) {
 
 func newDatasetRowMapper(columns []string, types []dsc.Column) dsc.RecordMapper {
 	var columnToIndexMap = make(map[string]int)
+
 	for index, column := range columns {
 		columnToIndexMap[column] = index
 	}
