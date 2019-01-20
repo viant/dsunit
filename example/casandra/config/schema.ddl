@@ -6,5 +6,6 @@ CREATE TABLE users (
   active   boolean,
   salary   float,
   comments text,
-  modified TIMESTAMP
+  modified TIMESTAMP,
+  zz Counter
 );

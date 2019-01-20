@@ -1,0 +1,20 @@
+[
+  {
+    "Artist":      "Artist0",
+    "SongTitle":   "Title0",
+    "ReleaseYear": 2000,
+    "Price":       0.5
+  },
+  {
+    "Artist":      "Artist1",
+    "SongTitle":   "Title1",
+    "ReleaseYear": 2001,
+    "Price":       1.5
+  },
+  {
+    "Artist":      "Artist2",
+    "SongTitle":   "Title2",
+    "ReleaseYear": 2002,
+    "Price":       2.5
+  }
+]

@@ -509,12 +509,12 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	datastore, _ := dialect.GetCurrentDatastore(manager)
 
-	var types []dsc.Column
+	var sqlColumns []dsc.Column
 
 	if table.FromQuery == "" {
-		types, _ = dialect.GetColumns(manager, datastore, table.Table)
+		sqlColumns, _ = dialect.GetColumns(manager, datastore, table.Table)
 	}
-	var mapper = newDatasetRowMapper(columns, types)
+	var mapper = newDatasetRowMapper(columns, sqlColumns)
 	var parametrizedSQL *dsc.ParametrizedSQL
 
 	sqlBuilder := dsc.NewQueryBuilder(table, "")
@@ -522,6 +522,7 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	var validation = &DatasetValidation{
 		Dataset: dataset.Table,
 	}
+
 	if policy == FullTableDatasetCheckPolicy || len(table.PkColumns) == 0 { //no keys perform insert
 		parametrizedSQL = sqlBuilder.BuildQueryAll(columns)
 		if err = manager.ReadAll(&actual, parametrizedSQL.SQL, parametrizedSQL.Values, mapper); err != nil {
@@ -541,7 +542,6 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 
 	validation.Expected = expectedRecords
 	validation.Actual = actual
-
 	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
@@ -851,7 +851,6 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 		response.AddFailure(assertly.NewFailure("", "", assertly.LengthViolation, response.Dataset1Count, response.Dataset2Count))
 		return
 	}
-	
 
 	var iter1, iter2 toolbox.Iterator
 	indexBy := request.IndexBy()

@@ -3,7 +3,6 @@ package mysql
 import (
 	"fmt"
 	_ "github.com/MichaelS11/go-cql-driver"
-	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"github.com/viant/endly"
@@ -46,16 +45,20 @@ func casandraTearDown(t *testing.T) {
 }
 
 func TestDsunit_Casandra(t *testing.T) {
-	casandraSetup(t)
-	defer casandraTearDown(t)
+	dsc.Logf = dsc.StdoutLogger
 
-	if dsunit.InitFromURL(t, "config/init.yaml") {
+	//casandraSetup(t)
+	//casandraTearDown(t)
+	if !dsunit.InitFromURL(t, "config/init.yaml") {
 		return
 	}
-	err := casandraRunSomeBusinessLogic()
-	if !assert.Nil(t, err) {
+	if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 		return
 	}
+	//err := casandraRunSomeBusinessLogic()
+	//if !assert.Nil(t, err) {
+	//	return
+	//}
 	dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
 }
 
@@ -68,10 +71,28 @@ func casandraRunSomeBusinessLogic() error {
 	if err != nil {
 		return err
 	}
+
+	dialect := dsc.GetDatastoreDialect("cql")
+
+	for i := 0; i < 10; i++ {
+		dialect.GetDatastores(manager)
+	}
+
+	tb, e := dialect.GetTables(manager, "mydb")
+	fmt.Printf("TAB: %v %v\n", tb, e)
+
+	ddl, e := dialect.ShowCreateTable(manager, "popular_count")
+	fmt.Printf("DDL: %v %v\n", ddl, e)
+
+	/*
+		counter
+	*/
+
 	result, err := manager.Execute("UPDATE users SET comments = ? WHERE id = ?", "dsunit test", 1)
 	if err != nil {
 		return err
 	}
+
 	sqlResult, err := result.RowsAffected()
 	if err != nil {
 		return err
@@ -87,7 +108,7 @@ var credentials = url.NewResource("config/secret.json").URL
 func startCasandra() error {
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
-		Image:  "cassandra:3.0",
+		Image:  "cassandra:2.1.20",
 		Ports: map[string]string{
 			"7000": "7000",
 			"7001": "7001",

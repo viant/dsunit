@@ -1,0 +1,11 @@
+Datastore: mydb
+Config:
+  DriverName: dyndb
+  Credentials: aws
+Recreate: false
+Tables:
+  - Table: music
+    PkColumns:
+      - Artist
+      - SongTitle
+    SchemaURL: config/music.json
