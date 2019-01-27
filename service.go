@@ -259,7 +259,6 @@ func (s *service) Init(request *InitRequest) *InitResponse {
 	}
 
 	if request.Recreate {
-
 		serviceResponse := s.Recreate(NewRecreateRequest(registerRequest.Datastore, adminDatastore))
 		if serviceResponse.Status != StatusOk {
 			response.BaseResponse = serviceResponse.BaseResponse
@@ -774,19 +773,19 @@ func (s *service) SetContext(context toolbox.Context) {
 	s.context = context
 }
 
+//createDbIfDoesNotExists create database with registry tables
 func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore string) error {
 	dialect := GetDatastoreDialect(adminDatastore, s.registry)
 	adminManager := s.registry.Get(adminDatastore)
 	if adminManager == nil {
 		return fmt.Errorf("failed to lookup manager: %v", adminManager)
 	}
-	if !dialect.CanCreateDatastore(adminManager) {
-		return nil
+	if !hasDatastore(adminManager, dialect, datastore) {
+		if err := dialect.CreateDatastore(adminManager, datastore); err != nil {
+			return err
+		}
 	}
-	if hasDatastore(adminManager, dialect, datastore) {
-		return nil
-	}
-	return dialect.CreateDatastore(adminManager, datastore)
+	return recreateTables(s.registry, datastore, false)
 }
 
 //Compare compares data between source1 and source2
@@ -974,11 +973,11 @@ func RecreateDatastore(adminDatastore, targetDatastore string, registry dsc.Mana
 	dialect := GetDatastoreDialect(adminDatastore, registry)
 	adminManager := registry.Get(adminDatastore)
 	if !dialect.CanDropDatastore(adminManager) {
-		return recreateTables(registry, targetDatastore)
+		return recreateTables(registry, targetDatastore, true)
 	}
 	var err error
 	if err = recreateDatastore(adminManager, registry, targetDatastore); err == nil {
-		err = recreateTables(registry, targetDatastore)
+		err = recreateTables(registry, targetDatastore, true)
 	}
 	return err
 }

@@ -1,3 +1,6 @@
+## Dec 29 2018 - v0.5.0
+    * Update createDbIfDoesNotExists to also create registry table for new datastore
+
 ## Dec 29 2018 - v0.4.2
     * Added OmitEmpty to compare request
     * Added Firebase example

@@ -12,43 +12,78 @@ import (
 	"strings"
 )
 
-func recreateTables(registry dsc.ManagerRegistry, datastore string) error {
+func getDatastoreTables(registry dsc.ManagerRegistry, datastore string) ([]string, error) {
 	manager := registry.Get(datastore)
 	dialect := GetDatastoreDialect(datastore, registry)
-	var tables = []string{}
-	var err error
-
 	if hasDatastore(manager, dialect, datastore) {
-		tables, err = dialect.GetTables(manager, datastore)
-		if err != nil {
+		return dialect.GetTables(manager, datastore)
+	}
+	return []string{}, nil
+}
+
+func getRegistryTables(registry dsc.ManagerRegistry, datastore string) []string {
+	manager := registry.Get(datastore)
+	tableRegistry := manager.TableDescriptorRegistry()
+	if len(tableRegistry.Tables()) > 0 {
+		return tableRegistry.Tables()
+	}
+	return []string{}
+}
+
+func indexTables(tables []string) map[string]bool {
+	var index = make(map[string]bool)
+	for _, table := range tables {
+		index[table] = true
+	}
+	return index
+}
+
+func dropTables(registry dsc.ManagerRegistry, datastore string, tables []string) error {
+	manager := registry.Get(datastore)
+	dialect := GetDatastoreDialect(datastore, registry)
+	for _, table := range tables {
+		if err := dialect.DropTable(manager, datastore, table); err != nil {
 			return err
 		}
 	}
-	var existingTables = make(map[string]bool)
-	toolbox.SliceToMap(tables, existingTables, toolbox.CopyStringValueProvider, toolbox.TrueValueProvider)
-	tableRegistry := manager.TableDescriptorRegistry()
-	if len(tableRegistry.Tables()) == 0 {
-		tables, err = dialect.GetTables(manager, datastore)
-		if err != nil {
-			return err
-		}
-		for _, table := range tables {
-			err := dialect.DropTable(manager, datastore, table)
-			if err != nil {
+	return nil
+}
+
+//recreateTables recreate registry or all datastorre table, or just create new if drop flag is false
+func recreateTables(registry dsc.ManagerRegistry, datastore string, drop bool) error {
+	manager := registry.Get(datastore)
+	dialect := GetDatastoreDialect(datastore, registry)
+	registryTables := getRegistryTables(registry, datastore)
+	dbTables, err := getDatastoreTables(registry, datastore)
+	if err != nil {
+		return err
+	}
+	if drop {
+		if len(registryTables) == 0 { //drop all database tables
+			if err = dropTables(registry, datastore, dbTables); err != nil {
 				return err
 			}
+		} //drop only registry specified tables
+		if err = dropTables(registry, datastore, registryTables); err != nil {
+			return err
 		}
+	} //no registry table - quit
+	if len(registryTables) == 0 {
+		return nil
 	}
-	for _, table := range tableRegistry.Tables() {
+	dbTables, err = getDatastoreTables(registry, datastore)
+	if err != nil {
+		return err
+	}
+	existingTable := indexTables(dbTables)
+	tableRegistry := manager.TableDescriptorRegistry()
+	for _, table := range registryTables {
 		descriptor := tableRegistry.Get(table)
 		if !descriptor.HasSchema() {
 			continue
 		}
-		if _, found := existingTables[table]; found {
-			err := dialect.DropTable(manager, datastore, table)
-			if err != nil {
-				return err
-			}
+		if _, hasTable := existingTable[table]; hasTable {
+			continue
 		}
 		err := dialect.CreateTable(manager, datastore, table, "")
 		if err != nil {
