@@ -1,5 +1,9 @@
-## Dec 29 2018 - v0.5.0
+## Jan 27 2019 - v0.6.0
     * Update createDbIfDoesNotExists to also create registry table for new datastore
+
+## Jan 19 2019 - v0.5.0
+    * Update datasetRowMapper to handle a table with partial metadata
+    * Added dynamodb example
 
 ## Dec 29 2018 - v0.4.2
     * Added OmitEmpty to compare request
