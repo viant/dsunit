@@ -781,8 +781,10 @@ func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore strin
 		return fmt.Errorf("failed to lookup manager: %v", adminManager)
 	}
 	if !hasDatastore(adminManager, dialect, datastore) {
-		if err := dialect.CreateDatastore(adminManager, datastore); err != nil {
-			return err
+		if dialect.CanCreateDatastore(adminManager) {
+			if err := dialect.CreateDatastore(adminManager, datastore); err != nil {
+				return err
+			}
 		}
 	}
 	return recreateTables(s.registry, datastore, false)

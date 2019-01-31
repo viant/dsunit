@@ -1,3 +1,6 @@
+## Jan 30 2019 - v0.6.1
+    * Patched createDbIfDoesNotExists
+
 ## Jan 27 2019 - v0.6.0
     * Update createDbIfDoesNotExists to also create registry table for new datastore
 
