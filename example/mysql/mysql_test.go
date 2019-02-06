@@ -48,7 +48,7 @@ func mySQLTearDown(t *testing.T) {
 
 func TestDsunit_MySQL(t *testing.T) {
 	mySQLSetup(t)
-	//defer mySQLTearDown(t)
+	defer mySQLTearDown(t)
 	if dsunit.InitFromURL(t, "config/init.json") {
 		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
