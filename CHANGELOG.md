@@ -1,5 +1,5 @@
 ## Feb 5 2019 - v0.6.2
-    * Patched compare dataset with time incompatibile types
+    * Patched compare dataset with time incompatible types
     * Patched recreated tables with false flag 
 
 ## Jan 30 2019 - v0.6.1
