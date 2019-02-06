@@ -11,7 +11,6 @@ import (
 	"github.com/viant/toolbox/storage"
 	"github.com/viant/toolbox/url"
 	"io"
-	"log"
 	"strings"
 	"sync"
 	"time"

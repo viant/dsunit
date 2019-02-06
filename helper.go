@@ -64,10 +64,18 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string, drop bool) e
 				return err
 			}
 		} //drop only registry specified tables
-		if err = dropTables(registry, datastore, registryTables); err != nil {
+		registryTablesExisting := make([]string, 0)
+		toolbox.Intersect(registryTables, dbTables, &registryTablesExisting)
+		if len(registryTablesExisting) > 0 {
+			fmt.Printf("Dropping from %s following tables %v \n", datastore, registryTablesExisting)
+		} else {
+			fmt.Println("No existing tables to Drop in datastore " + datastore)
+		}
+		if err = dropTables(registry, datastore, registryTablesExisting); err != nil {
 			return err
 		}
-	} //no registry table - quit
+	}
+	//no registry table - quit
 	if len(registryTables) == 0 {
 		return nil
 	}
