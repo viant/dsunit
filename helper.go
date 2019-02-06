@@ -75,9 +75,7 @@ func recreateTables(registry dsc.ManagerRegistry, datastore string, drop bool) e
 			return err
 		}
 	}
-
 	//no registry table - quit
-
 	if len(registryTables) == 0 {
 		return nil
 	}
