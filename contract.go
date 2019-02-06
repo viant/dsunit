@@ -544,3 +544,11 @@ type CompareResponse struct {
 	MatchedRows   int
 	*assertly.Validation
 }
+
+//NewDumpRequestFromURL create a request from url
+func NewDumpRequestFromURL(URL string) (*DumpRequest, error) {
+	var result = &DumpRequest{}
+	resource := url.NewResource(URL)
+	err := resource.Decode(result)
+	return result, err
+}

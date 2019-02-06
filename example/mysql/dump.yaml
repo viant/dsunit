@@ -1,0 +1,15 @@
+pipeline:
+  ci_dm:
+    register:
+      action: dsunit:register
+      datastore: mydb
+      config:
+        driverName: mysql
+        descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
+        credentials: config/secret.json
+    reverse_:
+      action: dsunit:dump
+      datastore: mydb
+      destURL: schema.sql
+      tables:
+        - users

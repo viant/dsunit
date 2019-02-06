@@ -7,7 +7,7 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"github.com/viant/endly"
-	"github.com/viant/endly/system/docker"
+	"github.com/viant/endly/system/docker/ssh"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
 	"os"
@@ -45,9 +45,10 @@ func mySQLTearDown(t *testing.T) {
 	}
 }
 
+
 func TestDsunit_MySQL(t *testing.T) {
 	mySQLSetup(t)
-	defer mySQLTearDown(t)
+	//defer mySQLTearDown(t)
 	if dsunit.InitFromURL(t, "config/init.json") {
 		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
@@ -57,6 +58,20 @@ func TestDsunit_MySQL(t *testing.T) {
 			return
 		}
 		dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
+
+		parent := toolbox.CallerDirectory(3)
+		service := dsunit.New()
+		registerRequest, _ := dsunit.NewRegisterRequestFromURL(path.Join(parent, "config/init.yaml"))
+		{
+			resp := service.Register(registerRequest)
+			assert.Equal(t, "ok", resp.Status)
+		}
+
+
+		dumpRequest, _ := dsunit.NewDumpRequestFromURL(path.Join(parent, "dump_req.yaml"))
+		resp := service.Dump(dumpRequest)
+		assert.Equal(t, "ok", resp.Status)
+
 	}
 }
 

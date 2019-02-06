@@ -1,0 +1,4 @@
+datastore: mydb
+destURL: schema.sql
+tables:
+  - users
