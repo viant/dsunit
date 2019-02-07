@@ -797,7 +797,6 @@ func (s *service) Compare(request *CompareRequest) *CompareResponse {
 		Validation:   &assertly.Validation{},
 	}
 
-
 	if !validateDatastores(s.registry, response.BaseResponse, request.Source1.Datastore) {
 		return response
 	}
@@ -824,7 +823,7 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 	waitGroup.Add(2)
 	go func() {
 		defer waitGroup.Done()
-		if e := manager1.ReadAllWithHandler(request.Source1.SQL, nil, compactedSliceReader(data1, request.Directives) ); e != nil {
+		if e := manager1.ReadAllWithHandler(request.Source1.SQL, nil, compactedSliceReader(data1, request.Directives)); e != nil {
 			err = e
 		}
 		response.Dataset1Count = data1.Size()
@@ -853,11 +852,6 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 		response.AddFailure(assertly.NewFailure("", "", assertly.LengthViolation, response.Dataset1Count, response.Dataset2Count))
 		return
 	}
-
-
-
-
-
 
 	var iter1, iter2 toolbox.Iterator
 	indexBy := request.IndexBy()
@@ -952,7 +946,7 @@ func removeIgnoredColumns(request *CompareRequest, record1, record2 map[string]i
 
 func compactedSliceReader(aSlice *data.CompactedSlice, directives map[string]interface{}) func(scanner dsc.Scanner) (toContinue bool, err error) {
 
-	var timeDirectives= make(map[string]string)
+	var timeDirectives = make(map[string]string)
 	if len(directives) > 0 {
 		for k, v := range directives {
 			if strings.HasPrefix(k, assertly.TimeFormatDirective) {
@@ -967,11 +961,11 @@ func compactedSliceReader(aSlice *data.CompactedSlice, directives map[string]int
 	return func(scanner dsc.Scanner) (toContinue bool, err error) {
 		record := make(map[string]interface{})
 		if err = scanner.Scan(record); err == nil {
-			for k, timeLayout:= range timeDirectives{
-				if val, ok := record[k];ok {
-					timeVal, err :=toolbox.ToTime(val, timeLayout)
+			for k, timeLayout := range timeDirectives {
+				if val, ok := record[k]; ok {
+					timeVal, err := toolbox.ToTime(val, timeLayout)
 					if err == nil {
-						record[k]= timeVal.Format(timeLayout)
+						record[k] = timeVal.Format(timeLayout)
 					}
 				}
 			}

@@ -25,12 +25,17 @@ func (s *Mapper) transform(table *MappingTable, virtualRecord map[string]interfa
 			rowValue = column.DefaultValue
 		}
 
+		if column.Required && rowValue == nil {
+			return
+		}
+
 		if column.Unique {
 			if rowValue == nil {
 				return
 			}
 			uniqueKey += toolbox.AsString(rowValue)
 		}
+
 		if rowValue == nil {
 			continue
 		}
