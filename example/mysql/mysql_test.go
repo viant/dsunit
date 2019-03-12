@@ -12,9 +12,7 @@ import (
 	"github.com/viant/toolbox/url"
 	"os"
 	"path"
-	"strings"
 	"testing"
-	"time"
 )
 
 /*
@@ -49,7 +47,9 @@ func mySQLTearDown(t *testing.T) {
 func TestDsunit_MySQL(t *testing.T) {
 	mySQLSetup(t)
 	defer mySQLTearDown(t)
+
 	if dsunit.InitFromURL(t, "config/init.json") {
+
 		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
 			return
 		}
@@ -122,29 +122,6 @@ func startMySQL() error {
 	})
 	if err != nil {
 		return err
-	}
-	//it takes some time to docker container to fully start
-	config, err := dsc.NewConfigWithParameters("mysql", "[username]:[password]@tcp(127.0.0.1:3306)/mysql?parseTime=true", mysqlCredentials, nil)
-	if err != nil {
-		return err
-	}
-
-	dscManager, err := dsc.NewManagerFactory().Create(config)
-	if err != nil {
-		return err
-	}
-	defer dscManager.ConnectionProvider().Close()
-	for i := 0; i < 60; i++ {
-		var record = make(map[string]interface{})
-		_, err = dscManager.ReadSingle(&record, "SELECT NOW() AS ts", nil, nil)
-		if err == nil {
-			time.Sleep(2 * time.Second)
-			break
-		}
-		if !strings.Contains(err.Error(), "EOF") && !strings.Contains(err.Error(), "bad connection") {
-			return err
-		}
-		time.Sleep(5 * time.Second)
 	}
 	return err
 }

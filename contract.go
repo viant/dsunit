@@ -47,10 +47,12 @@ func NewBaseOkResponse() *BaseResponse {
 
 //RegisterRequest represent register request
 type RegisterRequest struct {
-	Datastore string                 `required:"true" description:"datastore name"`
-	Config    *dsc.Config            `description:"datastore config"`
-	ConfigURL string                 `description:"datastore config URL"`
-	Tables    []*dsc.TableDescriptor `description:"optional table descriptors"`
+	Datastore   string                 `required:"true" description:"datastore name"`
+	Config      *dsc.Config            `description:"datastore config"`
+	ConfigURL   string                 `description:"datastore config URL"`
+	Tables      []*dsc.TableDescriptor `description:"optional table descriptors"`
+	PingRequest `json:",inline" yaml:",inline"`
+	Ping        bool `description:"flag to wait for database get online"`
 }
 
 func (r *RegisterRequest) Init() (err error) {
@@ -551,4 +553,15 @@ func NewDumpRequestFromURL(URL string) (*DumpRequest, error) {
 	resource := url.NewResource(URL)
 	err := resource.Decode(result)
 	return result, err
+}
+
+//PingRequest represents ping request
+type PingRequest struct {
+	Datastore string
+	TimeoutMs int
+}
+
+//PingResponse represents a ping response
+type PingResponse struct {
+	*BaseResponse
 }

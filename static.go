@@ -128,6 +128,11 @@ func ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory st
 	return tester.ExpectFor(t, datastore, checkPolicy, baseDirectory, method)
 }
 
+//Ping wait untill database is online or error
+func Ping(t *testing.T, datastore string, timeoutMs int) bool {
+	return tester.Ping(t, datastore, timeoutMs)
+}
+
 //UseRemoteTestServer enables remove testing mode
 func UseRemoteTestServer(endpoint string) {
 

@@ -91,6 +91,9 @@ type Tester interface {
 	//  read_all_expect_permissions.json
 	//
 	ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool
+
+	//Ping wait until database is online or error
+	Ping(t *testing.T, datastore string, timeoutMs int) bool
 }
 
 type localTester struct {
@@ -279,6 +282,12 @@ func (s *localTester) ExpectFor(t *testing.T, datastore string, checkPolicy int,
 		DatasetResource: NewDatasetResource(datastore, baseDirectory, fmt.Sprintf("%v_expect_", method), ""),
 	}
 	return s.Expect(t, request)
+}
+
+func (s *localTester) Ping(t *testing.T, datastore string, timeoutMs int) bool {
+	request := &PingRequest{Datastore: datastore, TimeoutMs: timeoutMs}
+	response := s.service.Ping(request)
+	return handleResponse(t, response.BaseResponse)
 }
 
 //NewTester creates a new local tester

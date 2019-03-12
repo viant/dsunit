@@ -1,3 +1,6 @@
+## March 12 2019 - v0.7.0
+    * Added Ping method to check/wait untill datastore is online
+
 ## Feb 7 2019 - v0.6.3
     * Patched required field on table mapping
 

@@ -6,6 +6,7 @@
     "Credentials":"config/secret.json"
   },
   "Admin":{
+    "Ping": true,
     "Datastore": "postgres",
     "Config": {
       "DriverName": "postgres",

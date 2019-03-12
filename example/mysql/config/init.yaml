@@ -4,11 +4,13 @@ Config:
   Descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
   Credentials: config/secret.json
 Admin:
+  Ping: true
   Datastore: mysql
   Config:
     DriverName: mysql
     Descriptor: "[username]:[password]@tcp(127.0.0.1:3306)/[dbname]?parseTime=true"
     Credentials: config/secret.json
 Recreate: true
+
 Scripts:
   - URL: config/schema.ddl

@@ -65,6 +65,9 @@ type Service interface {
 	//Compare compares data produces by specified SQLs
 	Compare(request *CompareRequest) *CompareResponse
 
+	//Ping waits until if database is online or error
+	Ping(request *PingRequest) *PingResponse
+
 	SetContext(context toolbox.Context)
 }
 
@@ -106,6 +109,11 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 	}
 	if err != nil {
 		response.SetError(err)
+	}
+	if request.Ping {
+		request.PingRequest.Datastore = request.Datastore
+		pingResponse := s.Ping(&request.PingRequest)
+		response.SetError(pingResponse.Error())
 	}
 	return response
 }
@@ -744,6 +752,32 @@ func (s *service) Dump(request *DumpRequest) *DumpResponse {
 	response.Count = len(DDLs)
 	response.DestURL = destResource.URL
 	uploadContent(destResource, response.BaseResponse, []byte(payload))
+	return response
+}
+
+//Sequence returns sequence for supplied tables
+func (s *service) Ping(request *PingRequest) *PingResponse {
+	response := &PingResponse{
+		BaseResponse: NewBaseOkResponse(),
+	}
+	timeout := 30 * time.Second
+	if request.TimeoutMs > 0 {
+		timeout = time.Duration(request.TimeoutMs) * time.Millisecond
+	}
+	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
+		return response
+	}
+	manager := s.registry.Get(request.Datastore)
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	startTime := time.Now()
+	var err error
+	for time.Now().Sub(startTime) <= timeout {
+		if err = dialect.Ping(manager); err == nil {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+	response.SetError(err)
 	return response
 }
 

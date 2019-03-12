@@ -111,6 +111,12 @@ func StartServer(port string) {
 			Handler:    service.Compare,
 			Parameters: []string{"request"},
 		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        compareURI,
+			Handler:    service.Ping,
+			Parameters: []string{"ping"},
+		},
 	)
 
 	http.HandleFunc("/", func(responseWriter http.ResponseWriter, httpRequest *http.Request) {

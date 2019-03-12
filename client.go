@@ -129,6 +129,14 @@ func (c *serviceClient) Compare(request *CompareRequest) *CompareResponse {
 	return response
 }
 
+//Compare compares supplied SQLs data
+func (c *serviceClient) Ping(request *PingRequest) *PingResponse {
+	var response = &PingResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("ping", c.serverURL+sequenceURI, request, response)
+	response.SetError(err)
+	return response
+}
+
 //NewServiceClient returns a new dsunit service client
 func NewServiceClient(serverURL string) Service {
 	var result Service = &serviceClient{serverURL: serverURL}

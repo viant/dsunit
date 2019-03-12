@@ -7,14 +7,12 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"github.com/viant/endly"
-	"github.com/viant/endly/system/docker"
+	"github.com/viant/endly/system/docker/ssh"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
 	"os"
 	"path"
-	"strings"
 	"testing"
-	"time"
 )
 
 /*
@@ -102,34 +100,7 @@ func startPostgres() error {
 			"5432": "5432",
 		},
 	})
-	if err != nil {
 		return err
-	}
-	//it takes some time to docker container to fully start
-
-	config, err := dsc.NewConfigWithParameters("postgres", "host=127.0.0.1 port=5432 user=[username] password=[password] dbname=postgres sslmode=disable", pgCredential, nil)
-	if err != nil {
-		return err
-	}
-
-	dscManager, err := dsc.NewManagerFactory().Create(config)
-	if err != nil {
-		return err
-	}
-	defer dscManager.ConnectionProvider().Close()
-	for i := 0; i < 60; i++ {
-		var record = make(map[string]interface{})
-		_, err = dscManager.ReadSingle(&record, "SELECT current_database() AS name", nil, nil)
-		if err == nil {
-			time.Sleep(2 * time.Second)
-			break
-		}
-		if !strings.Contains(err.Error(), "EOF") {
-			return err
-		}
-		time.Sleep(2 * time.Second)
-	}
-	return err
 }
 
 func stopPostgres() error {

@@ -11,6 +11,7 @@ Admin:
     Descriptor: host=127.0.0.1 port=5432 user=[username] password=[password] dbname=[dbname]
       sslmode=disable
     Credentials: config/secret.json
+    Ping: true
 Recreate: true
 Scripts:
   - URL: config/schema.ddl
