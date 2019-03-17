@@ -9,23 +9,17 @@ import (
 	"github.com/viant/endly"
 	"github.com/viant/endly/system/docker"
 	"github.com/viant/toolbox"
-	"github.com/viant/toolbox/url"
-	"os"
-	"path"
 	"testing"
 )
 
 /*
 Prerequisites:
 1.docker service running
-2. localhost credentials  to conneect to the localhost vi SSH
-	or generate ~/.secret/localhost.json with  endly -c=localhost option
 */
 
 //Global variables for all test integrating with endly.
 var endlyManager = endly.New()
 var endlyContext = endlyManager.NewContext(toolbox.NewContext())
-var localhostCredential = path.Join(os.Getenv("HOME"), ".secret/localhost.json")
 
 func setup(t *testing.T) {
 	err := startMongo()
@@ -62,9 +56,9 @@ func TestDsunit_Mongo(t *testing.T) {
 
 func getConfig() (*dsc.Config, error) {
 	return dsc.NewConfigWithParameters("mgc", "", "", map[string]interface{}{
-		"dbname":        "mydb",
-		"host":          "127.0.0.1",
-		"keyColumnName": "id",
+		"dbname":    "mydb",
+		"host":      "127.0.0.1",
+		"keyColumn": "id",
 	})
 }
 
@@ -94,39 +88,18 @@ func runSomeBusinessLogic() error {
 func startMongo() error {
 
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
-		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
-		Image:  "mongo:latest",
+		Image: "mongo:latest",
 		Ports: map[string]string{
 			"27017": "27017",
 		},
 		Name: "mongo_dsunit",
 	})
-	if err != nil {
-		return err
-	}
-	//it takes some time to docker container to fully start
-
-	config, err := getConfig()
-	if err != nil {
-		return err
-	}
-
-	dscManager, err := dsc.NewManagerFactory().Create(config)
-	if err != nil {
-		return err
-	}
-	defer dscManager.ConnectionProvider().Close()
-	//wait for docker to fully start
-
 	return err
 }
 
 func stopMongo() error {
 	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
-		&docker.BaseRequest{
-			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
-			Name:   "mongo_dsunit",
-		},
+		Name: "mongo_dsunit",
 	})
 	if err != nil {
 		return err

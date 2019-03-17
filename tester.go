@@ -236,6 +236,7 @@ func (s *localTester) PrepareFor(t *testing.T, datastore, baseDirectory, method 
 	method = convertToLowerUnderscore(method)
 	request := &PrepareRequest{
 		DatasetResource: NewDatasetResource(datastore, baseDirectory, fmt.Sprintf("%v_prepare_", method), ""),
+		Expand:          true,
 	}
 	return s.Prepare(t, request)
 }

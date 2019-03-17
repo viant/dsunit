@@ -6,6 +6,7 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
+	"github.com/viant/toolbox/data/udf"
 	"github.com/viant/toolbox/storage"
 	"github.com/viant/toolbox/url"
 	"path"
@@ -230,6 +231,12 @@ func expandDataIfNeeded(context toolbox.Context, records []map[string]interface{
 				records[i] = toolbox.AsMap(substitutionMap.Expand(record))
 			}
 		}
+		return
+	}
+	aMap := data.NewMap()
+	udf.Register(aMap)
+	for i, record := range records {
+		records[i] = toolbox.AsMap(aMap.Expand(record))
 	}
 }
 

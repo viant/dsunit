@@ -8,7 +8,6 @@ import (
 	"github.com/viant/endly"
 	"github.com/viant/endly/system/docker"
 	"github.com/viant/toolbox"
-	"github.com/viant/toolbox/url"
 	_ "gopkg.in/rana/ora.v4"
 	"os"
 	"path"
@@ -20,8 +19,6 @@ import (
 /*
 Prerequisites:
 1.docker service running
-2. localhost credentials  to conneect to the localhost vi SSH
-	or generate ~/.secret/localhost.json with  endly -c=localhost option
 
 	export CGO_CFLAGS=-I/opt/oracle/instantclient_12_1/sdk/include/
 	export CGO_LDFLAGS=/opt/oracle/instantclient_12_1/lib/
@@ -101,7 +98,6 @@ func runSomeBusinessLogic() error {
 func startOracle() error {
 
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
-		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "wnameless/oracle-xe-11g:latest",
 		Env: map[string]string{
 			"ORACLE_ALLOW_REMOTE": "true",
@@ -150,14 +146,8 @@ func startOracle() error {
 
 func stopOracle() error {
 	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
-		&docker.BaseRequest{
-			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 			Name:   "ora_dsunit",
-		},
 	})
-	if err != nil {
-		return err
-	}
 	return err
 
 }

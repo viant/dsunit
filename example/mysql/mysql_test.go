@@ -7,10 +7,10 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"github.com/viant/endly"
-	"github.com/viant/endly/system/docker/ssh"
+	"github.com/viant/endly/system/docker"
 	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/secret"
 	"github.com/viant/toolbox/url"
-	"os"
 	"path"
 	"testing"
 )
@@ -25,7 +25,6 @@ Prerequisites:
 //Global variables for all test integrating with endly.
 var endlyManager = endly.New()
 var endlyContext = endlyManager.NewContext(toolbox.NewContext())
-var localhostCredential = path.Join(os.Getenv("HOME"), ".secret/localhost.json")
 
 func mySQLSetup(t *testing.T) {
 	err := startMySQL()
@@ -98,12 +97,10 @@ func mySQLRunSomeBusinessLogic() error {
 	return nil
 }
 
+
 var mysqlCredentials = url.NewResource("config/secret.json").URL
-
 func startMySQL() error {
-
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
-		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 		Image:  "mysql:5.6",
 		Ports: map[string]string{
 			"3306": "3306",
@@ -111,8 +108,8 @@ func startMySQL() error {
 		Env: map[string]string{
 			"MYSQL_ROOT_PASSWORD": "**mysql**",
 		},
-		Secrets: map[string]string{
-			"**mysql**": mysqlCredentials,
+		Secrets: map[secret.SecretKey]secret.Secret{
+			"**mysql**": secret.Secret(mysqlCredentials),
 		},
 
 		Mount: map[string]string{
@@ -120,22 +117,14 @@ func startMySQL() error {
 		},
 		Name: "mysql_dsunit",
 	})
-	if err != nil {
-		return err
-	}
 	return err
 }
 
+
 func stopMySQL() error {
 	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
-		&docker.BaseRequest{
-			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
 			Name:   "mysql_dsunit",
-		},
 	})
-	if err != nil {
-		return err
-	}
 	return err
 
 }

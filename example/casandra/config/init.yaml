@@ -1,10 +1,12 @@
 datastore: mydb
+expand: true
 config:
   driverName: cql
   descriptor: 127.0.0.1?keyspace=mydb&disableInitialHostLookup=true
   params:
     keyspace: mydb
 admin:
+  ping: true
   datastore: admin
   config:
     driverName: cql

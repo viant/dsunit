@@ -7,11 +7,10 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
 	"github.com/viant/endly"
-	"github.com/viant/endly/system/docker/ssh"
+	"github.com/viant/endly/system/docker"
 	"github.com/viant/toolbox"
+	"github.com/viant/toolbox/secret"
 	"github.com/viant/toolbox/url"
-	"os"
-	"path"
 	"testing"
 )
 
@@ -25,7 +24,6 @@ Prerequisites:
 //Global variables for all test integrating with endly.
 var endlyManager = endly.New()
 var endlyContext = endlyManager.NewContext(toolbox.NewContext())
-var localhostCredential = path.Join(os.Getenv("HOME"), ".secret/localhost.json")
 
 func setup(t *testing.T) {
 	err := startPostgres()
@@ -83,32 +81,28 @@ func runSomeBusinessLogic() error {
 
 var pgCredential = url.NewResource("config/secret.json").URL
 
-func startPostgres() error {
 
+func startPostgres() error {
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
-		Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
-		Image:  "postgres:9.6-alpine",
+		Image: "postgres:9.6-alpine",
 		Env: map[string]string{
 			"POSTGRES_PASSWORD": "**pg**",
 			"POSTGRES_USER":     "##pg##",
 		},
-		Secrets: map[string]string{
-			"pg": pgCredential,
+		Secrets: map[secret.SecretKey]secret.Secret{
+			"pg": secret.Secret(pgCredential),
 		},
 		Name: "pg_dsunit",
 		Ports: map[string]string{
 			"5432": "5432",
 		},
 	})
-		return err
+	return err
 }
 
 func stopPostgres() error {
 	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
-		&docker.BaseRequest{
-			Target: url.NewResource("ssh://127.0.0.1", localhostCredential),
-			Name:   "pg_dsunit",
-		},
+		Name: "pg_dsunit",
 	})
 	if err != nil {
 		return err

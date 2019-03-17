@@ -1,4 +1,5 @@
 Datastore: mydb
+Ping: true
 Config:
   DriverName: mgc
   Parameters:

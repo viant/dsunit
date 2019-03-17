@@ -1,6 +1,24 @@
 [
   {},
-  { "id":1,"username":"Dudi", "active":true, "salary":12400.1, "comments":"abc","modified": "2016-03-01T03:10:00Z"},
-  { "id":2,"username":"Rudi", "active":true, "salary":12600.3, "comments":"def","modified": "2016-03-01T05:10:00Z"},
-  { "id":3,"username":"Vudi", "active":true, "salary":12800.4, "comments":"xyz","modified": "2016-03-01T08:43:00Z"}
+  {
+    "id": "$AsInt(1)",
+    "username": "Dudi",
+    "active": true,
+    "comments": "abc",
+    "modified": "2016-03-01T03:10:00Z"
+  },
+  {
+    "id": "$AsInt(2)",
+    "username": "Rudi",
+    "active": true,
+    "comments": "def",
+    "modified": "2016-03-01T05:10:00Z"
+  },
+  {
+    "id": "$AsInt(3)",
+    "username": "Vudi",
+    "active": true,
+    "comments": "xyz",
+    "modified": "2016-03-01T08:43:00Z"
+  }
 ]
