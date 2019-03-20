@@ -421,7 +421,6 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 		modification.Added, err = manager.PersistData(connection, records, table.Table, nil, insertSQLProvider(dmlBuilder)) //TODO add insert sql provider
 		return err
 	}
-
 	modification.Added, modification.Modified, err = manager.PersistAllOnConnection(connection, &records, table.Table, dmlBuilder)
 	return err
 }
@@ -431,7 +430,6 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 	if err != nil {
 		response.SetError(err)
 	}
-
 	context := s.newContext(manager)
 	for _, dataset := range request.Datasets {
 		err = s.populate(dataset, response, context, manager, connection)
@@ -483,7 +481,6 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 	defer connection.Close()
 	s.prepare(request, response, manager, connection)
 	return response
-
 }
 
 func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse, context toolbox.Context, manager dsc.Manager) (err error) {
@@ -903,6 +900,16 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 	}
 	rowCount := 0
 	discrepantRowCount := 0
+
+	index := func(record map[string]interface{}) string {
+		result := ""
+		for _, key := range indexBy {
+			result += toolbox.AsString(record[key])
+		}
+		return result
+	}
+
+	var unprocess = make(map[string]map[string]interface{})
 	var record1, record2 map[string]interface{}
 	for iter1.HasNext() {
 		if err = iter1.Next(&record1); err == nil {
@@ -914,13 +921,23 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 			response.SetError(err)
 			return
 		}
+
 		var record1Path, record2Path string
 		for {
 			record1Path, record2Path = s.extractPaths(rowCount, indexBy, record1, record2)
 			if record2Path == record1Path {
 				break
 			}
-			response.AddFailure(assertly.NewFailure("", record1Path, "record mismatch", record1Path, record2Path))
+			key2 := index(record2)
+			unprocess[key2] = record2
+			key1 := index(record1)
+			if match, ok := unprocess[key1]; ok {
+				delete(unprocess, key1)
+				record2 = match
+				break
+			}
+
+			response.AddFailure(assertly.NewFailure("", record1Path, "record mismatch with "+record2Path, record1Path, record2Path))
 			if !iter2.HasNext() {
 				return
 			}

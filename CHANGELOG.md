@@ -1,3 +1,6 @@
+## March 12 2019 - v0.7.1
+    * Enhanced matching logic
+
 ## March 12 2019 - v0.7.0
     * Added Ping method to check/wait untill datastore is online
 
