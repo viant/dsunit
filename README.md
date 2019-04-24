@@ -48,38 +48,51 @@ Datastore initialization and dataset data verification can by managed locally or
 ##Usage
 
 
-**Data setup and verification**
+###### Data setup and verification
 
-```go
+1. With dedicated expected data folder
+    ```go
+    
+    import (
+        "testing"
+        "github.com/viant/dsunit"
+        _ "github.com/go-sql-driver/mysql"
+    )
+    
+    
+    func Test_Usecase(t *testing.T) {
+        parent := toolbox.CallerDirectory(3)
+        if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
+            return
+        }
+        
+            ... business test logic comes here
+    
+        
+        expectURL := path.Join(parent, "test/case1/data/expect")
+        expectedData := dsunit.NewDatasetResource("db1", expectURL , "", "")
+        dsunit.Expect(t, dsunit.NewExpectRequest(dsunit.FullTableDatasetCheckPolicy, expectedData))
+    
+    }
+    ```
+2. With shared expected data folder
+    ```go
+    func Test_Usecase(t *testing.T) {
+        parent := toolbox.CallerDirectory(3)
+        if !dsunit.InitFromURL(t, path.Join(parent, "test", "config.yaml")) {
+            return
+        }
+        
+        
+        ... business test logic comes here
+    
+    
+        baseDir := path.Join(parent, "test", "data")
+        dsunit.ExpectFor(t, "db1", dsunit.FullTableDatasetCheckPolicy, baseDir, "use_case_1")
+    }
+    ```
 
-
-import (
-	"testing"
-	"github.com/viant/dsunit"
-	_ "github.com/go-sql-driver/mysql"
-)
-
-
-func TestSetup(t *testing.T) {
-
-
-    dsunit.InitFromURL(t, "test/init.json")
-	dsunit.RunScript(t, verticaRequest)
-	dsunit.PrepareFromURL(t, "mytestdb")
-	
-	
-	... business test logic comes here
-	
-	dsunit.ExpectFromURL(t, "mytestdb", dsunit.SnapshotDatasetCheckPolicy)
-	
-	
-	
-}
-
-```
-
-
-**Reverse engineer data setup and verification** 
+###### Reverse engineer data setup and verification
 
 ```go
 
@@ -104,7 +117,7 @@ func TestSetup(t *testing.T) {
 ```  
 
 
-**Tester methods**
+###### Tester methods
 
 | Service  Methods | Description | Request | Response |
 | --- | --- | --- | --- |
