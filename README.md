@@ -91,6 +91,22 @@ Datastore initialization and dataset data verification can by managed locally or
         dsunit.ExpectFor(t, "db1", dsunit.FullTableDatasetCheckPolicy, baseDir, "use_case_1")
     }
     ```
+    
+    
+###### Forcing table truncation before loading data
+
+
+[@sometable.json]()
+```json
+[ {},
+    {"id":1,"name":"name 1"},
+    {"id":2,"name":"name 2"}
+]
+```
+
+When pre-seeding table with data, if the first element is empty map, 
+dsunit deletes all record from a table before inserting supplied dataset.
+
 
 ###### Reverse engineer data setup and verification
 
