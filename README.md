@@ -96,7 +96,7 @@ Datastore initialization and dataset data verification can by managed locally or
 ###### Forcing table truncation before loading data
 
 
-[@sometable.json]()
+[@table_x.json]()
 ```json
 [ {},
     {"id":1,"name":"name 1"},
@@ -106,6 +106,14 @@ Datastore initialization and dataset data verification can by managed locally or
 
 When pre-seeding table with data, if the first element is empty map, 
 dsunit deletes all record from a table before inserting supplied dataset.
+
+[@table_x.json]()
+```json
+[]
+```
+
+Empty array will with prepare method removes all record from a table.
+
 
 
 ###### Reverse engineer data setup and verification
