@@ -1,6 +1,6 @@
 Datastore: mydb
 Config:
-  DriverName: ora
+  DriverName: oci8
   Descriptor: "[username]/[password]@127.0.0.1:1521/xe"
   Parameters:
     session:
@@ -11,7 +11,8 @@ Config:
     username: mydb
     password: oracle
 Admin:
-  Datastore: ora
+  Datastore: oci8
+  Ping: true
   Config:
     DriverName: ora
     Descriptor: "[username]/[password]@127.0.0.1:1521/xe"

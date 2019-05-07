@@ -1,7 +1,7 @@
 {
   "Datastore": "mydb",
   "Config": {
-    "DriverName": "ora",
+    "DriverName": "oci8",
     "Descriptor": "[username]/[password]@127.0.0.1:1521/xe",
     "Parameters": {
       "session": {
@@ -16,8 +16,9 @@
   },
   "Admin": {
     "Datastore": "ora",
+    "Ping": true,
     "Config": {
-      "DriverName": "ora",
+      "DriverName": "oci8",
       "Descriptor": "[username]/[password]@127.0.0.1:1521/xe",
       "Parameters": {
         "username": "system",
