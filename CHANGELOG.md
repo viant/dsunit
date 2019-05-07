@@ -1,3 +1,6 @@
+## May 7 2019 - v0.7.2
+    * Updated compare logic
+
 ## March 12 2019 - v0.7.1
     * Enhanced matching logic
 
