@@ -448,6 +448,7 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 }
 
 func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
+
 	var response = &PrepareResponse{
 		BaseResponse: NewBaseOkResponse(),
 	}
@@ -528,6 +529,7 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	}
 
 	if policy == FullTableDatasetCheckPolicy || len(table.PkColumns) == 0 { //no keys perform insert
+
 		parametrizedSQL = sqlBuilder.BuildQueryAll(columns)
 		if err = manager.ReadAll(&actual, parametrizedSQL.SQL, parametrizedSQL.Values, mapper); err != nil {
 			return err
@@ -923,7 +925,7 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 		}
 
 		var record1Path, record2Path string
-		for {
+		for i := 0; ; i++ {
 			record1Path, record2Path = s.extractPaths(rowCount, indexBy, record1, record2)
 			if record2Path == record1Path {
 				break
@@ -937,7 +939,12 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 				break
 			}
 
-			response.AddFailure(assertly.NewFailure("", record1Path, "record mismatch with "+record2Path, record1Path, record2Path))
+			if i == 0 {
+				response.AddFailure(assertly.NewFailure("", record1Path, "record mismatch with "+record2Path, record1Path, record2Path))
+			}
+			if record2Path > record1Path {
+				break
+			}
 			if !iter2.HasNext() {
 				return
 			}
@@ -946,6 +953,7 @@ func (s *service) compare(manager1 dsc.Manager, manager2 dsc.Manager, request *C
 				return
 			}
 		}
+
 		removeIgnoredColumns(request, record1, record2)
 		request.ApplyDirective(record1)
 
@@ -977,8 +985,14 @@ func (s *service) extractPaths(rowCount int, indexBy []string, record1 map[strin
 		var record1PathKeys = make([]string, 0)
 		var record2PathKeys = make([]string, 0)
 		for _, key := range indexBy {
-			record1PathKeys = append(record1PathKeys, key+":"+toolbox.AsString(record1[key]))
-			record2PathKeys = append(record2PathKeys, key+":"+toolbox.AsString(record2[key]))
+			v1 := record1[key]
+			v2 := record2[key]
+			if toolbox.IsNumber(v1) {
+				v1 = fmt.Sprintf("%10d", v1)
+				v2 = fmt.Sprintf("%10d", v2)
+			}
+			record1PathKeys = append(record1PathKeys, key+":"+toolbox.AsString(v1))
+			record2PathKeys = append(record2PathKeys, key+":"+toolbox.AsString(v2))
 		}
 		record1Path = strings.Join(record1PathKeys, ", ")
 		record2Path = strings.Join(record2PathKeys, ", ")
