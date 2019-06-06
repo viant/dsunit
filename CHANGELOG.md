@@ -1,4 +1,4 @@
-## Jine 6 2019 - v0.8.0
+## June 6 2019 - v0.8.0
     * Added cross vendor create table DDL with DumpRequest.Target and DumpRequest.MappingURL
     * patched @queryFrom@ SQL builder 
 
