@@ -166,7 +166,7 @@ Empty array will with prepare method removes all record from a table.
 | ExpectDatasets(t *testing.T, datastore string, checkPolicy int) bool | match to verify all data files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name |  n/a | n/a  |
 | ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory string, method string) bool |   match to verify all dataset files that are located in the same directory as the test file with method name  |  n/a | n/a  |
 | Freeze(request *FreezeRequest) *FreezeResponse |   match to verify all dataset files that are located in the same directory as the test file with method name  |  n/a | n/a  |
-| Dump(request *DumpRequest) *DumpResponse | creates a database schema from existing database for supplied tables, datastore | [DumpRequest](https://github.com/viant/dsunit/blob/master/contract.go) | [DumpResponse](https://github.com/viant/dsunit/blob/master/contract.go)  |
+| Dump(request *DumpRequest) *DumpResponse | creates a database schema from existing database for supplied tables, datastore, and target Vendor | [DumpRequest](https://github.com/viant/dsunit/blob/master/contract.go) | [DumpResponse](https://github.com/viant/dsunit/blob/master/contract.go)  |
 | Compare(request *CompareRequest) *CompareResponse | compares data based on specified SQLs from various databases |  [CompareRequest](https://github.com/viant/dsunit/blob/master/contract.go) | [CompareResponse](https://github.com/viant/dsunit/blob/master/contract.go) |
 
 

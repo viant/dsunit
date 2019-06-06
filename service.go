@@ -23,7 +23,7 @@ var SubstitutionMapKey = (*data.Map)(nil)
 
 //Service represents test service
 type Service interface {
-	//Registry returns registry of registered database managers
+	//registry returns registry of registered database managers
 	Registry() dsc.ManagerRegistry
 
 	//Register registers new datastore connection
@@ -360,6 +360,7 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	}
 	table.FromQuery = fromQuery
 	table.FromQueryAlias = fromQueryAlias
+
 	if len(table.PkColumns) == 0 {
 		table.PkColumns = uniqueKeys
 	} else if len(uniqueKeys) == 0 {
@@ -722,36 +723,100 @@ func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record 
 }
 
 //Dump creates a database schema from existing database
+
 func (s *service) Dump(request *DumpRequest) *DumpResponse {
 	var response = &DumpResponse{BaseResponse: NewBaseOkResponse()}
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
 		return response
 	}
+	if err := s.dump(request, response); err != nil {
+		response.SetError(err)
+	}
+	return response
+}
+
+func (s *service) dump(request *DumpRequest, response *DumpResponse) error {
 	var err error
 	manager := s.registry.Get(request.Datastore)
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	tables := request.Tables
 	if len(tables) == 0 {
 		if tables, err = dialect.GetTables(manager, request.Datastore); err != nil {
-			response.SetError(err)
-			return response
+			return err
 		}
 	}
+
 	destResource := url.NewResource(request.DestURL)
 	var DDLs = []string{}
+
+	hasTarget := request.Target != ""
+	if manager.Config().DriverName == request.Target {
+		hasTarget = false
+	}
+
 	for _, table := range tables {
+		if hasTarget {
+			targetDDL, err := s.getCreateTableDDL(manager, request, table)
+			if err != nil {
+				return err
+			}
+			DDLs = append(DDLs, targetDDL)
+			continue
+		}
+
 		ddl, err := dialect.ShowCreateTable(manager, table)
 		if err != nil {
-			response.SetError(err)
-			return response
+			return err
 		}
 		DDLs = append(DDLs, ddl)
 	}
+
 	var payload = strings.Join(DDLs, "\n\n")
 	response.Count = len(DDLs)
 	response.DestURL = destResource.URL
 	uploadContent(destResource, response.BaseResponse, []byte(payload))
-	return response
+	return nil
+}
+
+func (s *service) getCreateTableDDL(manager dsc.Manager, request *DumpRequest, table string) (string, error) {
+	mapping, ok := dbTypeMappings[request.Target]
+	if !ok && request.MappingURL == "" {
+		return "", fmt.Errorf("unsupported target: %v, consider adding mapping URL", request.Target)
+	}
+	if request.MappingURL != "" {
+		if err := url.NewResource(request.MappingURL).Decode(&mapping); err != nil {
+			return "", err
+		}
+		dbTypeMappings[request.Target] = mapping
+	}
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	datastore, _ := dialect.GetCurrentDatastore(manager)
+	columns, err := dialect.GetColumns(manager, datastore, table)
+	if err != nil {
+		return "", fmt.Errorf("unable to read columns: %v", err)
+	}
+	var ddlColumns = []string{}
+	for _, column := range columns {
+		var ddlColumn = "\t" + column.Name()
+		dbType := strings.ToUpper(column.DatabaseTypeName())
+		if index := strings.Index(dbType, "("); index != -1 {
+			dbType = string(dbType[:index])
+		}
+		if strings.HasSuffix(strings.ToLower(ddlColumn), "id") && dbType == "NUMERIC" {
+			dbType = "INTEGER"
+		}
+		mappedType, ok := mapping[dbType]
+		if !ok {
+			return "", fmt.Errorf("unsupported mapping type: %v", column.DatabaseTypeName())
+		}
+
+		ddlColumn += " " + mappedType
+		if nullable, ok := column.Nullable(); ok && !nullable {
+			ddlColumn += " NOT NULL"
+		}
+		ddlColumns = append(ddlColumns, ddlColumn)
+	}
+	return fmt.Sprintf("CREATE TABLE %v.%v(\n%v);\n", strings.ToLower(datastore), table, strings.Join(ddlColumns, ",\n")), nil
 }
 
 //Sequence returns sequence for supplied tables

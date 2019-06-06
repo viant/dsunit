@@ -206,11 +206,11 @@ func (r *MappingRequest) Validate() error {
 		return nil
 	}
 	if len(r.Mappings) == 0 {
-		return errors.New("mappings were empty")
+		return errors.New("dbTypeMappings were empty")
 	}
 	for i, mapping := range r.Mappings {
 		if mapping.Name == "" {
-			return fmt.Errorf("mappings[%v].name were empty", i)
+			return fmt.Errorf("dbTypeMappings[%v].name were empty", i)
 		}
 	}
 	return nil
@@ -488,6 +488,24 @@ type DumpRequest struct {
 	Datastore string   `description:"registered datastore i.e. db1"`
 	Tables    []string `description:"tables, all if empty"`
 	DestURL   string   `description:"represent dataset destination"`
+	Target    string   `description:"target vendor, use only if different than source"`
+	/*
+		mapping url content should represents a map between source and dest data (all data type should be upper case) type i.e
+
+		{
+			"INT": "BIGINT",
+			"INTEGER":   "BIGINT",
+			"NUMERIC":   "DECIMAL(7,2)",
+			"FLOAT":   "DECIMAL(7,2)",
+			"VARCHAR":   "VARCHAR(255)",
+			"STRING":   "VARCHAR(255)",
+			"CHAR":      "VARCHAR(255)",
+			"DATE":      "DATE",
+			"TIMESTAMP": "TIMESTAMP",
+		},
+
+	*/
+	MappingURL string `description:"if target driver is used - you can provide data type mapping"`
 }
 
 //DumpResponse represents a dump response
