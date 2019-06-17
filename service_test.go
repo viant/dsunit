@@ -18,7 +18,7 @@ import (
 func getTestService(dbname string, baseDirectory string, SQLScripts ...string) (dsunit.Service, error) {
 	service := dsunit.New()
 	filename := path.Join(baseDirectory, fmt.Sprintf("%v.db", dbname))
-	toolbox.RemoveFileIfExist(filename)
+	_ = toolbox.RemoveFileIfExist(filename)
 	{
 		response := service.Register(dsunit.NewRegisterRequest(dbname,
 			&dsc.Config{

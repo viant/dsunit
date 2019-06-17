@@ -535,6 +535,7 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 		if err = manager.ReadAll(&actual, parametrizedSQL.SQL, parametrizedSQL.Values, mapper); err != nil {
 			return err
 		}
+
 	} else {
 		pkValues := buildBatchedPkValues(expected, table.PkColumns)
 		for _, parametrizedSQL = range sqlBuilder.BuildBatchedQueryOnPk(columns, pkValues, batchSize) {
@@ -549,7 +550,15 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 
 	validation.Expected = expectedRecords
 	validation.Actual = actual
-	if validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table)); err == nil {
+	validation.Validation, err = assertly.Assert(expectedRecords, actual, assertly.NewDataPath(table.Table))
+
+	if err == nil {
+		if policy == FullTableDatasetCheckPolicy {
+			expectedRecords = removeDirectiveRecord(expectedRecords)
+			if len(actual) != len(expectedRecords) {
+				validation.Validation.AddFailure(assertly.NewFailure("", "count", assertly.EqualViolation, len(expectedRecords), len(actual)))
+			}
+		}
 		response.Validation = append(response.Validation, validation)
 		response.FailedCount += validation.Validation.FailedCount
 		response.PassedCount += validation.Validation.PassedCount
@@ -560,6 +569,7 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 			response.Status = "ok"
 		}
 	}
+
 	return err
 }
 

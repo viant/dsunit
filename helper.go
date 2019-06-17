@@ -249,3 +249,20 @@ func uploadContent(resource *url.Resource, response *BaseResponse, payload []byt
 	err = storageService.Upload(resource.URL, bytes.NewReader(payload))
 	response.SetError(err)
 }
+
+func removeDirectiveRecord(records []interface{}) []interface{} {
+	if len(records) == 0 {
+		return records
+	}
+	theFirst := records[0]
+
+	if toolbox.IsMap(theFirst) {
+		aMap := toolbox.AsMap(theFirst)
+		for k := range aMap {
+			if !strings.HasPrefix(k, "@"+k) {
+				return records
+			}
+		}
+	}
+	return records[1:]
+}
