@@ -1,4 +1,4 @@
-## June 6 2019 - v0.8.1
+## June 17 2019 - v0.9.1
     * Added/patched FullTableDatasetCheckPolicy check
     
 ## June 6 2019 - v0.8.0
