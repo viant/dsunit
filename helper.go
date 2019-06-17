@@ -259,7 +259,7 @@ func removeDirectiveRecord(records []interface{}) []interface{} {
 	if toolbox.IsMap(theFirst) {
 		aMap := toolbox.AsMap(theFirst)
 		for k := range aMap {
-			if !strings.HasPrefix(k, "@"+k) {
+			if !strings.HasPrefix(k, "@") {
 				return records
 			}
 		}

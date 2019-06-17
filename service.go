@@ -604,7 +604,6 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 		}
 
 	}
-
 	response.SetError(err)
 	return response
 }
