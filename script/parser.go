@@ -1,123 +1,124 @@
 package script
 
 import (
-	"bufio"
-	"bytes"
+	"github.com/viant/toolbox"
 	"io"
 	"io/ioutil"
 	"strings"
 )
 
-var delimiterKeyword = "delimiter"
+const (
+	eofToken     = -1
+	invalidToken = iota
+	whitespaces
+	lineBreak
+	commandTerminator
+	delimiterKeyword
+	createKeyword
+	beginKeyword
+	functionKeyword
+	commandEnd
+	pgDelimiter
+	plSQLBlock
+)
 
-//parseSQLScript parses sql script and breaks it down to submittable sql statements
-func ParseSQLScript(reader io.Reader) []string {
+var matchers = map[int]toolbox.Matcher{
+	commandTerminator: toolbox.NewTerminatorMatcher(";"),
+	commandEnd:        toolbox.NewKeywordsMatcher(false, ";"),
+	delimiterKeyword:  toolbox.NewKeywordsMatcher(false, "delimiter"),
+	pgDelimiter:       toolbox.NewTerminatorMatcher("$$"),
+	plSQLBlock:        toolbox.NewBodyMatcher("BEGIN", "END;"),
+	beginKeyword:      toolbox.NewTerminatorMatcher("BEGIN"),
+	createKeyword:     toolbox.NewKeywordsMatcher(false, "create"),
+	functionKeyword:   toolbox.NewKeywordsMatcher(false, "function"),
+	whitespaces:       toolbox.CharactersMatcher{" \n\t"},
+	lineBreak:         toolbox.CharactersMatcher{"\n"},
+}
+
+//ParseWithReader splits SQL blob into separate commands
+func ParseWithReader(reader io.Reader) []string {
 	var result = make([]string, 0)
-	content, err := ioutil.ReadAll(reader)
-	if err != nil {
+	data, _ := ioutil.ReadAll(reader)
+	if len(data) == 0 {
 		return result
 	}
-	var mySQLMode = strings.Contains(strings.ToUpper(string(content)), "\nDELIMITER")
-	scanner := bufio.NewScanner(bytes.NewReader(content))
-	var command, delimiter = "", ";"
-	var pending = ""
-	var blockDepth = 0
-	for scanner.Scan() {
-		line := strings.Trim(scanner.Text(), " \t")
-		if len(line) == 0 || strings.HasPrefix(line, "--") || (strings.HasPrefix(line, "/*") && strings.HasSuffix(line, "*/")) {
-			pending += line
-			continue
-		}
-		if pending != "" {
-			result = append(result, pending+"\n")
-		}
+	return Parse(string(data))
+}
 
-		if !mySQLMode {
-			if strings.Contains(strings.ToLower(line), "begin") {
-				blockDepth++
-				command += line + "\n"
-				continue
-			}
+//Parse splits SQL blob into separate commands
+func Parse(expression string) []string {
+	var result = make([]string, 0)
+	tokenizer := toolbox.NewTokenizer(expression, invalidToken, eofToken, matchers)
+
+	pending := ""
+	appendMatched := func(text string) {
+		SQL := strings.TrimSpace(pending + text)
+		if SQL != "" {
+			result = append(result, SQL)
 		}
-		if blockDepth > 0 {
-			endBlockPosition := strings.LastIndex(strings.ToLower(line), "end")
-			if endBlockPosition != -1 {
-				var endBlock = strings.TrimSpace(line[endBlockPosition+3:]) == delimiter
-				if endBlock {
-					blockDepth--
+		pending = ""
+	}
+
+	done := false
+
+outer:
+	for tokenizer.Index < len(expression) && !done {
+
+		match := tokenizer.Nexts(whitespaces, createKeyword, delimiterKeyword, plSQLBlock, commandTerminator, commandEnd, eofToken)
+		switch match.Token {
+		case whitespaces:
+			pending += match.Matched
+		case delimiterKeyword:
+			if match := tokenizer.Nexts(lineBreak, eofToken); match.Token == lineBreak {
+				delimiter := string(match.Matched[:len(match.Matched)-1])
+				remaining := string(tokenizer.Input[tokenizer.Index:])
+				if index := strings.Index(remaining, delimiter); index != -1 {
+					match := remaining[0:index]
+					tokenizer.Index += len(match)
+					appendMatched(match)
 				}
 			}
-			command += line + "\n"
-			if blockDepth == 0 {
-				result = append(result, command)
-				command = ""
-			}
+		case createKeyword:
+			pending += match.Matched
+			if match := tokenizer.Nexts(whitespaces, eofToken); match.Token == whitespaces {
+				pending += match.Matched
+				match := tokenizer.Nexts(functionKeyword, beginKeyword, eofToken)
+				switch match.Token {
+				case functionKeyword:
+					pending += match.Matched
+					if match = tokenizer.Nexts(pgDelimiter, eofToken); match.Token == pgDelimiter {
+						pending += match.Matched + "$$"
+						tokenizer.Index += 2
+						if match = tokenizer.Nexts(pgDelimiter, eofToken); match.Token == pgDelimiter {
+							pending += match.Matched + "$$"
+							tokenizer.Index += 2
+						}
+					}
+				case beginKeyword:
+					if strings.Contains(match.Matched, ";") || strings.Contains(match.Matched, "$$") {
+						tokenizer.Index -= len(match.Matched)
+						continue
+					}
+					pending += match.Matched
+					continue
 
-			continue
+				}
+			}
+		case eofToken:
+			pending += match.Matched
+		case plSQLBlock:
+			pending += string(match.Matched[:len(match.Matched)-1])
+			appendMatched("")
+		case invalidToken:
+			break outer
+		case commandTerminator:
+			pending += match.Matched
+		case commandEnd:
+			appendMatched("")
+
 		}
 
-		var inInSingleQuote, isInDoubleQuote bool = false, false
-		positionOfDelimiter := strings.Index(strings.ToLower(line), delimiterKeyword)
-		if positionOfDelimiter != -1 {
-			delimiter = strings.Trim(line[positionOfDelimiter+len(delimiterKeyword):], " \t")
-			continue
-		}
-		for i := 0; i < len(line); i++ {
-			aChar := line[i : i+1]
-
-			if aChar == "'" && i > 0 && line[i-1:i] != "\\" {
-				inInSingleQuote = !inInSingleQuote
-			}
-
-			if aChar == "\"" {
-				isInDoubleQuote = !isInDoubleQuote
-			}
-
-			hasDelimiter, indexIncrease := hasDelimiter(line, delimiter, i)
-
-			if hasDelimiter && !inInSingleQuote && !isInDoubleQuote {
-
-				i = i + indexIncrease
-				command = strings.Trim(command, " \t\"")
-
-				commans := normalizeCommand(command)
-
-				result = append(result, commans...)
-				command = ""
-			} else {
-				command = command + aChar
-			}
-		}
-		command = command + "\n"
 	}
+	appendMatched("")
 	return result
-}
-
-func normalizeCommand(command string) []string {
-	lowerCommand := strings.ToLower(command)
-	if !strings.Contains(lowerCommand, "begin") {
-		return []string{command}
-	}
-	var result = make([]string, 0)
-	positionOfEnd := strings.LastIndex(lowerCommand, "end")
-	if positionOfEnd != -1 {
-		endPosition := positionOfEnd + 3
-		block := string(command[:endPosition])
-		result = append(result, block)
-		if endPosition+1 < len(command) {
-			result = append(result, command[endPosition+1:])
-		}
-	}
-	return result
-}
-
-func hasDelimiter(line, delimiter string, index int) (contains bool, indexIncrease int) {
-	if !(index+len(delimiter) <= len(line)) {
-		return false, 0
-	}
-
-	if line[index:index+len(delimiter)] == delimiter {
-		return true, len(delimiter) - 1
-	}
-	return false, 0
 }
