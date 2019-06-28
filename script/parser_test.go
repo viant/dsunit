@@ -1,18 +1,38 @@
-package script_test
+package script
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/viant/dsunit/script"
-	"strings"
 	"testing"
 )
 
-//parseSQLScript parses sql script and breaks it down to submittable sql statements
-func TestParseSQLScript(t *testing.T) {
+func TestParse(t *testing.T) {
 
-	{
-		sqlScript := `
+	var useCases = []struct {
+		description string
+		SQL         string
+		SQLs        []string
+	}{
+
+		{
+			description: "mysql delimiter",
+			SQL: `SELECT 1;
+DELIMITER;;
 BEGIN
+SELECT 1;
+END;;
+DELIMITER;
+SELECT 2;`,
+			SQLs: []string{
+				`SELECT 1`,
+				`BEGIN
+SELECT 1;
+END`,
+				`SELECT 2`,
+			},
+		},
+		{
+			description: "PLSQL plSQLBlock",
+			SQL: `BEGIN
 EXECUTE IMMEDIATE 'DROP TABLE users';
 EXCEPTION
 WHEN OTHERS THEN
@@ -21,17 +41,7 @@ RAISE;
 END IF;
 END;
 
-CREATE TABLE users (
-  id               NUMBER(5) PRIMARY KEY,
-  username         VARCHAR2(255) DEFAULT NULL,
-  active           NUMBER(1)    DEFAULT NULL,
-  salary           DECIMAL(7, 2)  DEFAULT NULL,
-  comments         VARCHAR2(255),
-  modified         timestamp(0)
-);
-
-CREATE SEQUENCE users_seq START WITH 1;
-
+INSERT INTO DUMMY(ID, NAME) VALUES(1, 'abc');
 
 CREATE OR REPLACE TRIGGER users_before_insert
 BEFORE INSERT ON users
@@ -42,29 +52,107 @@ INTO   :new.id
 FROM   dual;
 END;
 
-`
-		sqls := script.ParseSQLScript(strings.NewReader(sqlScript))
-		assert.Equal(t, 4, len(sqls))
+INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz');
+
+`,
+			SQLs: []string{
+				`BEGIN
+EXECUTE IMMEDIATE 'DROP TABLE users';
+EXCEPTION
+WHEN OTHERS THEN
+IF SQLCODE != -942 THEN
+RAISE;
+END IF;
+END`,
+				`INSERT INTO DUMMY(ID, NAME) VALUES(1, 'abc')`,
+				`CREATE OR REPLACE TRIGGER users_before_insert
+BEFORE INSERT ON users
+FOR EACH ROW
+BEGIN
+SELECT users_seq.NEXTVAL
+INTO   :new.id
+FROM   dual;
+END`,
+				`INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz')`,
+			},
+		},
+
+		{
+			description: "regular SQL",
+			SQL: `
+		CREATE TABLE users (
+		 id               NUMBER(5) PRIMARY KEY,
+		 username         VARCHAR2(255) DEFAULT NULL,
+		 active           NUMBER(1)    DEFAULT NULL,
+		 salary           DECIMAL(7, 2)  DEFAULT NULL,
+		 comments         VARCHAR2(255),
+		 modified         timestamp(0)
+		);
+		
+		CREATE SEQUENCE users_seq START WITH 1;
+		`,
+			SQLs: []string{
+				`CREATE TABLE users (
+		 id               NUMBER(5) PRIMARY KEY,
+		 username         VARCHAR2(255) DEFAULT NULL,
+		 active           NUMBER(1)    DEFAULT NULL,
+		 salary           DECIMAL(7, 2)  DEFAULT NULL,
+		 comments         VARCHAR2(255),
+		 modified         timestamp(0)
+		)`,
+				`CREATE SEQUENCE users_seq START WITH 1`,
+			},
+		},
+
+		{
+			description: "posgress delimitered",
+			SQL: `CREATE TABLE words(
+  id NUMERIC NOT NULL PRIMARY KEY,
+  language CHAR(2) NOT NULL REFERENCES languages,
+  name TEXT UNIQUE NOT NULL
+);
+
+CREATE FUNCTION insert_language_trigger() 
+  RETURNS TRIGGER
+  LANGUAGE plpgsql AS
+  $$
+  BEGIN
+    NEW.code := '11';
+    RETURN NEW;
+  END
+  $$;
+
+CREATE TRIGGER insert_language BEFORE INSERT 
+  ON languages
+  FOR EACH ROW
+  EXECUTE PROCEDURE insert_language_trigger();
+`,
+			SQLs: []string{
+				`CREATE TABLE words(
+  id NUMERIC NOT NULL PRIMARY KEY,
+  language CHAR(2) NOT NULL REFERENCES languages,
+  name TEXT UNIQUE NOT NULL
+)`,
+				`CREATE FUNCTION insert_language_trigger() 
+  RETURNS TRIGGER
+  LANGUAGE plpgsql AS
+  $$
+  BEGIN
+    NEW.code := '11';
+    RETURN NEW;
+  END
+  $$`,
+				`CREATE TRIGGER insert_language BEFORE INSERT 
+  ON languages
+  FOR EACH ROW
+  EXECUTE PROCEDURE insert_language_trigger()`,
+			},
+		},
 	}
 
-	{
-		sqlScript := "SELECT 1;\nSELECT 2;"
-		sqls := script.ParseSQLScript(strings.NewReader(sqlScript))
-		assert.Equal(t, 2, len(sqls))
-	}
-
-	{
-		sqlScript := "SELECT 1;\nDELIMITER;;\nBEGIN\nSELECT 1;\nEND;;\nDELIMITER;\nSELECT 2;"
-		sqls := script.ParseSQLScript(strings.NewReader(sqlScript))
-		assert.Equal(t, 3, len(sqls))
-		assert.Equal(t, "\nBEGIN\nSELECT 1;\nEND", sqls[1])
-	}
-
-	{
-		sqlScript := "SELECT 1;\nDELIMITER;;\nBEGIN\nSELECT 1;\nEND;;\nDELIMITER;\nSELECT 2;"
-		sqls := script.ParseSQLScript(strings.NewReader(sqlScript))
-		assert.Equal(t, 3, len(sqls))
-		assert.Equal(t, "\nBEGIN\nSELECT 1;\nEND", sqls[1])
+	for _, useCase := range useCases {
+		actual := Parse(useCase.SQL)
+		assert.EqualValues(t, useCase.SQLs, actual, useCase.description)
 	}
 
 }

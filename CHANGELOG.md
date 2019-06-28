@@ -1,3 +1,7 @@
+## June 28 2019 - v0.9.3
+    * Patched  'SQL script not parsed entirely' issue
+    * Moved disable/enable foreign key check to admin connection
+
 ## June 17 2019 - v0.9.2
     * Added/patched FullTableDatasetCheckPolicy check
     
