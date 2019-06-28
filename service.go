@@ -72,9 +72,10 @@ type Service interface {
 }
 
 type service struct {
-	registry dsc.ManagerRegistry
-	mapper   *Mapper
-	context  toolbox.Context
+	registry        dsc.ManagerRegistry
+	mapper          *Mapper
+	context         toolbox.Context
+	adminDatastores map[string]string
 }
 
 func (s *service) Registry() dsc.ManagerRegistry {
@@ -187,20 +188,27 @@ func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
 	var storageService storage.Service
 	var storageObject storage.Object
 	for _, resource := range request.Scripts {
-		resource.Init()
+		err = resource.Init()
+		if err != nil {
+			break
+		}
 		var reader io.ReadCloser
 		if storageService, err = storage.NewServiceForURL(resource.URL, resource.Credentials); err == nil {
 			if storageObject, err = storageService.StorageObject(resource.URL); err == nil {
 				if reader, err = storageService.Download(storageObject); err == nil {
 					defer reader.Close()
-					SQL = append(SQL, script.ParseSQLScript(reader)...)
+					SQL = append(SQL, script.ParseWithReader(reader)...)
 				}
 			}
 		}
 		if err != nil {
-			response.SetError(err)
-			return response
+			break
 		}
+	}
+
+	if err != nil {
+		response.SetError(err)
+		return response
 	}
 
 	return s.RunSQL(&RunSQLRequest{
@@ -266,6 +274,7 @@ func (s *service) Init(request *InitRequest) *InitResponse {
 		adminDatastore = request.Admin.Datastore
 	}
 
+	s.adminDatastores[request.Datastore] = adminDatastore
 	if request.Recreate {
 		serviceResponse := s.Recreate(NewRecreateRequest(registerRequest.Datastore, adminDatastore))
 		if serviceResponse.Status != StatusOk {
@@ -321,9 +330,8 @@ func (s *service) newContext(manager dsc.Manager) toolbox.Context {
 	return context
 }
 
-func (s *service) deleteDatasetIfNeeded(dataset *Dataset, table *dsc.TableDescriptor, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
+func (s *service) deleteDatasetIfNeeded(datastore string, dataset *Dataset, table *dsc.TableDescriptor, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
 	if dataset.Records.ShouldDeleteAll() {
-		dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 		sqlResult, err := manager.ExecuteOnConnection(connection, fmt.Sprintf("DELETE FROM %s", table.Table), nil)
 		if err != nil {
 			return err
@@ -334,9 +342,10 @@ func (s *service) deleteDatasetIfNeeded(dataset *Dataset, table *dsc.TableDescri
 		//for classified as insertable or updatable to work correctly
 		_ = connection.Commit()
 		_ = connection.Begin()
-		_ = dialect.DisableForeignKeyCheck(manager, connection)
+
+		_, err = s.disableForeignKeyCheck(datastore, connection, true)
 	}
-	return nil
+	return err
 }
 
 func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, context toolbox.Context) (*dsc.TableDescriptor, error) {
@@ -384,11 +393,11 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	return table, nil
 }
 
-func (s *service) populate(dataset *Dataset, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
+func (s *service) populate(datastore string, dataset *Dataset, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
 	if s.mapper.Has(dataset.Table) {
 		datasets := s.mapper.Map(dataset)
 		for _, dataset := range datasets {
-			if err = s.populate(dataset, response, context, manager, connection); err != nil {
+			if err = s.populate(datastore, dataset, response, context, manager, connection); err != nil {
 				return err
 			}
 		}
@@ -405,7 +414,7 @@ func (s *service) populate(dataset *Dataset, response *PrepareResponse, context 
 		return err
 	}
 
-	if err = s.deleteDatasetIfNeeded(dataset, table, response, context, manager, connection); err != nil {
+	if err = s.deleteDatasetIfNeeded(datastore, dataset, table, response, context, manager, connection); err != nil {
 		return err
 	}
 	_ = context.Replace((*Dataset)(nil), dataset)
@@ -433,7 +442,7 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 	}
 	context := s.newContext(manager)
 	for _, dataset := range request.Datasets {
-		err = s.populate(dataset, response, context, manager, connection)
+		err = s.populate(request.Datastore, dataset, response, context, manager, connection)
 		if err != nil {
 			break
 		}
@@ -449,40 +458,82 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 }
 
 func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
-
 	var response = &PrepareResponse{
 		BaseResponse: NewBaseOkResponse(),
 	}
+	err := s.prepareWithRequest(request, response)
+	if err != nil {
+		response.SetError(err)
+		return response
+	}
+	return response
+}
+
+func (s *service) prepareWithRequest(request *PrepareRequest, response *PrepareResponse) error {
 	err := request.Init()
 	if err == nil {
 		err = request.Validate()
 	}
 	if err != nil {
-		response.SetError(err)
-		return response
+		return err
 	}
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
-		return response
+		return nil
 	}
+
 	var connection dsc.Connection
 	manager := s.registry.Get(request.Datastore)
 	if err = request.Load(); err == nil {
 		if len(request.Datasets) == 0 {
-			response.SetError(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
-			return response
+			return fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix)
 		}
 		connection, err = manager.ConnectionProvider().Get()
 	}
 	if err != nil {
-		response.SetError(err)
-		return response
+		return err
 	}
-	dialect := GetDatastoreDialect(request.Datastore, s.registry)
-	_ = dialect.DisableForeignKeyCheck(manager, connection)
-	defer dialect.EnableForeignKeyCheck(manager, connection)
 	defer connection.Close()
+	adminConnection, err := s.disableForeignKeyCheck(request.Datastore, connection, false)
+	if err != nil {
+		return err
+	}
+	defer s.enableForeignKeyCheck(request.Datastore, adminConnection)
 	s.prepare(request, response, manager, connection)
-	return response
+	return nil
+}
+
+func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connection) error {
+	dialect := GetDatastoreDialect(datastore, s.registry)
+	manager := s.registry.Get(datastore)
+	adminManager, err := s.getAdminManager(datastore)
+	if err != nil {
+		return err
+	}
+	if manager != adminManager {
+		defer connection.Close()
+	}
+	err = dialect.EnableForeignKeyCheck(adminManager, connection)
+	return err
+}
+
+func (s *service) disableForeignKeyCheck(datastore string, connection dsc.Connection, closeIfAdmin bool) (dsc.Connection, error) {
+	dialect := GetDatastoreDialect(datastore, s.registry)
+	manager := s.registry.Get(datastore)
+	adminManager, err := s.getAdminManager(datastore)
+	if err != nil {
+		return nil, err
+	}
+	isAdmin := manager != adminManager
+	if isAdmin {
+		connection, err = adminManager.ConnectionProvider().Get()
+	}
+	err = dialect.DisableForeignKeyCheck(adminManager, connection)
+	if isAdmin && closeIfAdmin {
+		if err == nil {
+			err = connection.Close()
+		}
+	}
+	return connection, err
 }
 
 func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse, context toolbox.Context, manager dsc.Manager) (err error) {
@@ -880,6 +931,18 @@ func (s *service) SetContext(context toolbox.Context) {
 	s.context = context
 }
 
+func (s *service) getAdminManager(datastore string) (dsc.Manager, error) {
+	adminDatastore, ok := s.adminDatastores[datastore]
+	if !ok {
+		adminDatastore = datastore
+	}
+	adminManager := s.registry.Get(adminDatastore)
+	if adminManager == nil {
+		return nil, fmt.Errorf("failed to lookup manager: %v", adminManager)
+	}
+	return adminManager, nil
+}
+
 //createDbIfDoesNotExists create database with registry tables
 func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore string) error {
 	dialect := GetDatastoreDialect(adminDatastore, s.registry)
@@ -1117,8 +1180,9 @@ func compactedSliceReader(aSlice *data.CompactedSlice, directives map[string]int
 //New creates new dsunit service
 func New() Service {
 	return &service{
-		registry: dsc.NewManagerRegistry(),
-		mapper:   NewMapper(),
+		registry:        dsc.NewManagerRegistry(),
+		mapper:          NewMapper(),
+		adminDatastores: make(map[string]string),
 	}
 }
 
