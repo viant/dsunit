@@ -17,6 +17,8 @@ const (
 	createKeyword
 	beginKeyword
 	functionKeyword
+	orKeyword
+	replaceKeyword
 	commandEnd
 	pgDelimiter
 	plSQLBlock
@@ -30,9 +32,12 @@ var matchers = map[int]toolbox.Matcher{
 	plSQLBlock:        toolbox.NewBodyMatcher("BEGIN", "END;"),
 	beginKeyword:      toolbox.NewTerminatorMatcher("BEGIN"),
 	createKeyword:     toolbox.NewKeywordsMatcher(false, "create"),
-	functionKeyword:   toolbox.NewKeywordsMatcher(false, "function"),
-	whitespaces:       toolbox.CharactersMatcher{" \n\t"},
-	lineBreak:         toolbox.CharactersMatcher{"\n"},
+	orKeyword:         toolbox.NewKeywordsMatcher(false, "or"),
+	replaceKeyword:    toolbox.NewKeywordsMatcher(false, "replace"),
+
+	functionKeyword: toolbox.NewKeywordsMatcher(false, "function"),
+	whitespaces:     toolbox.CharactersMatcher{" \n\t"},
+	lineBreak:       toolbox.CharactersMatcher{"\n"},
 }
 
 //ParseWithReader splits SQL blob into separate commands
@@ -81,9 +86,24 @@ outer:
 		case createKeyword:
 			pending += match.Matched
 			if match := tokenizer.Nexts(whitespaces, eofToken); match.Token == whitespaces {
+
 				pending += match.Matched
-				match := tokenizer.Nexts(functionKeyword, beginKeyword, eofToken)
+
+				candidates := []int{orKeyword, whitespaces, replaceKeyword, whitespaces, functionKeyword, beginKeyword, orKeyword}
+
+				match := tokenizer.Nexts(candidates...)
+
+				for ; len(candidates) > 3; {
+					if match.Token != candidates[0] {
+						break
+					}
+					pending += match.Matched
+					candidates = candidates[1:]
+					match = tokenizer.Nexts(candidates...)
+				}
+
 				switch match.Token {
+
 				case functionKeyword:
 					pending += match.Matched
 					if match = tokenizer.Nexts(pgDelimiter, eofToken); match.Token == pgDelimiter {

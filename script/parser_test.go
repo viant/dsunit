@@ -126,6 +126,23 @@ CREATE TRIGGER insert_language BEFORE INSERT
   ON languages
   FOR EACH ROW
   EXECUTE PROCEDURE insert_language_trigger();
+
+
+
+
+CREATE OR REPLACE FUNCTION insert_language_trigger() 
+  RETURNS TRIGGER
+  LANGUAGE plpgsql AS
+  $$
+  BEGIN
+    NEW.code := '11';
+    RETURN NEW;
+  END
+  $$;
+
+
+INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz');
+
 `,
 			SQLs: []string{
 				`CREATE TABLE words(
@@ -145,7 +162,16 @@ CREATE TRIGGER insert_language BEFORE INSERT
 				`CREATE TRIGGER insert_language BEFORE INSERT 
   ON languages
   FOR EACH ROW
-  EXECUTE PROCEDURE insert_language_trigger()`,
+  EXECUTE PROCEDURE insert_language_trigger()`,`CREATE OR REPLACE FUNCTION insert_language_trigger() 
+  RETURNS TRIGGER
+  LANGUAGE plpgsql AS
+  $$
+  BEGIN
+    NEW.code := '11';
+    RETURN NEW;
+  END
+  $$`,
+  `INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz')`,
 			},
 		},
 	}
