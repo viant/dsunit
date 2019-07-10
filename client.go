@@ -32,6 +32,13 @@ func (c *serviceClient) Recreate(request *RecreateRequest) *RecreateResponse {
 
 }
 
+func (c *serviceClient) CheckSchema(request *CheckSchemaRequest) *CheckSchemaResponse {
+	var response = &CheckSchemaResponse{BaseResponse: NewBaseOkResponse()}
+	err := toolbox.RouteToService("post", c.serverURL+schemaURI, request, response)
+	response.SetError(err)
+	return response
+}
+
 //RunSQL runs supplied SQL
 func (c *serviceClient) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{BaseResponse: NewBaseOkResponse()}

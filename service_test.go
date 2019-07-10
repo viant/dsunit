@@ -93,7 +93,7 @@ func TestService_Expect(t *testing.T) {
 		}
 	}
 	response := service.Expect(&dsunit.ExpectRequest{
-		CheckPolicy:dsunit.SnapshotDatasetCheckPolicy,
+		CheckPolicy:     dsunit.SnapshotDatasetCheckPolicy,
 		DatasetResource: dsunit.NewDatasetResource("db1", "test/db1/data", "db1_expect_", ""),
 	})
 

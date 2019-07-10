@@ -14,6 +14,7 @@ var recreateURI = version + "recreate"
 var mappingURI = version + "mapping"
 var scriptURI = version + "script"
 var sqlURI = version + "sql"
+var schemaURI = version + "schema"
 var prepareURI = version + "prepare"
 var expectURI = version + "expect"
 var queryURI = version + "query"
@@ -109,6 +110,12 @@ func StartServer(port string) {
 			HTTPMethod: "POST",
 			URI:        compareURI,
 			Handler:    service.Compare,
+			Parameters: []string{"request"},
+		},
+		toolbox.ServiceRouting{
+			HTTPMethod: "POST",
+			URI:        schemaURI,
+			Handler:    service.CheckSchema,
 			Parameters: []string{"request"},
 		},
 		toolbox.ServiceRouting{

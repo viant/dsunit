@@ -7,14 +7,13 @@ import (
 
 func TestRegisterRequest_Validate(t *testing.T) {
 
-
 	records := []interface{}{
 		map[string]interface{}{
-				"@fromQuery@": "SELECT *  FROM users where id \u003c= 2 ORDER BY id",
-				"@indexBy@": []string{"id"},
+			"@fromQuery@": "SELECT *  FROM users where id \u003c= 2 ORDER BY id",
+			"@indexBy@":   []string{"id"},
 		},
 		map[string]interface{}{
-			"id":1,
+			"id": 1,
 		},
 	}
 	actual := removeDirectiveRecord(records)

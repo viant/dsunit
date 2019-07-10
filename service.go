@@ -65,6 +65,9 @@ type Service interface {
 	//Compare compares data produces by specified SQLs
 	Compare(request *CompareRequest) *CompareResponse
 
+	//CheckSchema checks source and dest schema
+	CheckSchema(request *CheckSchemaRequest) *CheckSchemaResponse
+
 	//Ping waits until if database is online or error
 	Ping(request *PingRequest) *PingResponse
 
@@ -795,13 +798,22 @@ func (s *service) Dump(request *DumpRequest) *DumpResponse {
 	return response
 }
 
+func (s *service) getTableNames(manager dsc.Manager, datastore string) ([]string, error) {
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	dbNme, err := dialect.GetCurrentDatastore(manager)
+	if err != nil {
+		return nil, err
+	}
+	return dialect.GetTables(manager, dbNme)
+}
+
 func (s *service) dump(request *DumpRequest, response *DumpResponse) error {
 	var err error
 	manager := s.registry.Get(request.Datastore)
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	tables := request.Tables
 	if len(tables) == 0 {
-		if tables, err = dialect.GetTables(manager, request.Datastore); err != nil {
+		if tables, err = s.getTableNames(manager, request.Datastore); err != nil {
 			return err
 		}
 	}
@@ -838,40 +850,75 @@ func (s *service) dump(request *DumpRequest, response *DumpResponse) error {
 	return nil
 }
 
-func (s *service) getCreateTableDDL(manager dsc.Manager, request *DumpRequest, table string) (string, error) {
-	mapping, ok := dbTypeMappings[request.Target]
-	if !ok && request.MappingURL == "" {
-		return "", fmt.Errorf("unsupported target: %v, consider adding mapping URL", request.Target)
+func (s *service) getOrLoadMapping(target, mappingURL string) (map[string]string, error) {
+	var result = make(map[string]string)
+	if target == "" {
+		return result, nil
 	}
-	if request.MappingURL != "" {
-		if err := url.NewResource(request.MappingURL).Decode(&mapping); err != nil {
-			return "", err
+
+	if len(dbTypeMappings) == 0 {
+		loadDefaultDbMappings()
+	}
+	mapping, ok := dbTypeMappings[target]
+	if !ok && mappingURL == "" {
+		return nil, fmt.Errorf("unsupported target: %v, consider adding mapping URL", target)
+	}
+	if mappingURL != "" {
+		if err := url.NewResource(mappingURL).Decode(&mapping); err != nil {
+			return nil, err
 		}
-		dbTypeMappings[request.Target] = mapping
+		dbTypeMappings[target] = mapping
 	}
+
+	return mapping, nil
+}
+
+func (s *service) TableInfo(manager dsc.Manager, table, mappingURL, target string) (*dsc.TableDescriptor, error) {
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
 	datastore, _ := dialect.GetCurrentDatastore(manager)
 	columns, err := dialect.GetColumns(manager, datastore, table)
 	if err != nil {
-		return "", fmt.Errorf("unable to read columns: %v", err)
+		return nil, err
 	}
-	var ddlColumns = []string{}
+
+	mapping, err := s.getOrLoadMapping(target, mappingURL)
+	result := &dsc.TableDescriptor{Table: table, ColumnTypes: make(map[string]string), Columns: make([]string, 0), Nullables: make(map[string]bool)}
+	pk := dialect.GetKeyName(manager, datastore, table)
+	result.PkColumns = strings.Split(pk, ",")
+
 	for _, column := range columns {
-		var ddlColumn = "\t" + column.Name()
+		result.Columns = append(result.Columns, column.Name())
 		dbType := strings.ToUpper(column.DatabaseTypeName())
-		if index := strings.Index(dbType, "("); index != -1 {
-			dbType = string(dbType[:index])
-		}
-		if strings.HasSuffix(strings.ToLower(ddlColumn), "id") && dbType == "NUMERIC" {
+		if strings.HasSuffix(strings.ToLower(column.Name()), "id") && dbType == "NUMERIC" {
 			dbType = "INTEGER"
 		}
-		mappedType, ok := mapping[dbType]
-		if !ok {
-			return "", fmt.Errorf("unsupported mapping type: %v", column.DatabaseTypeName())
+
+		if mapedType, ok := mapping[dbType]; ok {
+			dbType = mapedType
 		}
 
-		ddlColumn += " " + mappedType
-		if nullable, ok := column.Nullable(); ok && !nullable {
+		result.ColumnTypes[column.Name()] = dbType
+		if nullable, ok := column.Nullable(); ok {
+			result.Nullables[column.Name()] = nullable
+		}
+	}
+	return result, nil
+}
+
+func (s *service) getCreateTableDDL(manager dsc.Manager, request *DumpRequest, table string) (string, error) {
+	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
+	datastore, _ := dialect.GetCurrentDatastore(manager)
+	tableInfo, err := s.TableInfo(manager, table, request.MappingURL, request.Target)
+	if err != nil {
+		return "", err
+	}
+	var ddlColumns = []string{}
+	for _, columnName := range tableInfo.Columns {
+		var ddlColumn = "\t" + columnName
+		dbType := tableInfo.ColumnTypes[columnName]
+
+		ddlColumn += " " + dbType
+		if nullable, ok := tableInfo.Nullables[columnName]; ok && !nullable {
 			ddlColumn += " NOT NULL"
 		}
 		ddlColumns = append(ddlColumns, ddlColumn)
@@ -962,6 +1009,7 @@ func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore strin
 
 //Compare compares data between source1 and source2
 func (s *service) Compare(request *CompareRequest) *CompareResponse {
+	_ = request.Init()
 	var response = &CompareResponse{
 		BaseResponse: NewBaseOkResponse(),
 		Validation:   &assertly.Validation{},
@@ -1175,6 +1223,85 @@ func compactedSliceReader(aSlice *data.CompactedSlice, directives map[string]int
 		}
 		return err == nil, err
 	}
+}
+
+func (s *service) getTables(schema *SchemaTarget, tables []string) (map[string]*dsc.TableDescriptor, error) {
+	var err error
+	manager := s.registry.Get(schema.Datastore)
+	if manager == nil {
+		return nil, fmt.Errorf("failed to lookup manager for %s", schema.Datastore)
+	}
+	if len(tables) == 0 {
+		if tables, err = s.getTableNames(manager, schema.Datastore); err != nil {
+			return nil, err
+		}
+	}
+	var result = make(map[string]*dsc.TableDescriptor)
+	for i := range tables {
+		tableName := tables[i]
+		table, err := s.TableInfo(manager, tableName, schema.MappingURL, schema.Target)
+		if err != nil {
+			return nil, err
+		}
+		result[tableName] = table
+	}
+	return result, nil
+}
+
+func (s *service) CheckSchema(request *CheckSchemaRequest) *CheckSchemaResponse {
+	response := NewCheckSchemaResponse()
+	err := s.checkSchema(request, response)
+	if err != nil {
+		response.SetError(err)
+	}
+	return response
+}
+
+//CheckSchema checks schema
+func (s *service) checkSchema(request *CheckSchemaRequest, response *CheckSchemaResponse) error {
+	source, err := s.getTables(request.Source, request.Tables)
+	if err != nil {
+		return err
+	}
+	dest, err := s.getTables(request.Dest, request.Tables)
+	if err != nil {
+		return err
+	}
+
+	for table, sourceTable := range source {
+		destTable, ok := dest[table]
+		if !ok {
+			response.Validation.AddFailure(assertly.NewFailure("", table, "missing table in dest", table, ""))
+			continue
+		}
+		tableCheck := &SchemaTableCheck{Table: table}
+		if tableCheck.Validation, err = assertly.Assert(sourceTable.ColumnTypes, destTable.ColumnTypes, assertly.NewDataPath(table)); err != nil {
+			return err
+		}
+		if request.CheckNullables {
+			if nullableValidation, err := assertly.Assert(sourceTable.Nullables, destTable.Nullables, assertly.NewDataPath(fmt.Sprintf("%v/NULLABLE", table))); err == nil {
+				tableCheck.PassedCount += nullableValidation.PassedCount
+				for j := range nullableValidation.Failures {
+					tableCheck.AddFailure(nullableValidation.Failures[j])
+				}
+			}
+		}
+		if request.CheckPrimaryKeys {
+			if pkValidation, err := assertly.Assert(sourceTable.PkColumns, destTable.PkColumns, assertly.NewDataPath(fmt.Sprintf("%v/PK", table))); err == nil {
+				tableCheck.PassedCount += pkValidation.PassedCount
+				for j := range pkValidation.Failures {
+					tableCheck.AddFailure(pkValidation.Failures[j])
+				}
+			}
+		}
+		response.Tables = append(response.Tables, tableCheck)
+		delete(dest, table)
+	}
+
+	for table := range dest {
+		response.Validation.AddFailure(assertly.NewFailure("", table, "missing table in source", table, ""))
+	}
+	return nil
 }
 
 //New creates new dsunit service

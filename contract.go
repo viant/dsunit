@@ -530,6 +530,16 @@ type CompareRequest struct {
 	MaxRowDiscrepancy int //max discrepant rows
 }
 
+func (r *CompareRequest) Init() error {
+	if len(r.Directives) == 0 {
+		r.Directives = make(map[string]interface{})
+	}
+	if _, has := r.Directives[assertly.StrictMapCheckDirective]; !has {
+		r.Directives[assertly.StrictMapCheckDirective] = true
+	}
+	return nil
+}
+
 //IndexBy returns index by directive if specified
 func (r CompareRequest) IndexBy() []string {
 	if len(r.Directives) == 0 {
@@ -582,4 +592,39 @@ type PingRequest struct {
 //PingResponse represents a ping response
 type PingResponse struct {
 	*BaseResponse
+}
+
+type SchemaTarget struct {
+	Datastore  string `description:"datastore"`
+	Target     string `description:"target vendor, use only if different than source"`
+	MappingURL string `description:"if target driver is used - you can provide data type mapping"`
+}
+
+//CheckSchemaRequest represents schema check request
+type CheckSchemaRequest struct {
+	Source           *SchemaTarget
+	Dest             *SchemaTarget
+	Tables           []string
+	CheckNullables   bool
+	CheckPrimaryKeys bool
+}
+
+type SchemaTableCheck struct {
+	Table string
+	*assertly.Validation
+}
+
+//CheckSchemaResponse represents schema check response
+type CheckSchemaResponse struct {
+	*BaseResponse
+	Tables []*SchemaTableCheck
+	*assertly.Validation
+}
+
+//NewCheckSchemaResponse returns new check schema response
+func NewCheckSchemaResponse() *CheckSchemaResponse {
+	return &CheckSchemaResponse{
+		BaseResponse: NewBaseOkResponse(),
+		Tables:       make([]*SchemaTableCheck, 0),
+		Validation:   assertly.NewValidation()}
 }

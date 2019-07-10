@@ -162,7 +162,9 @@ func expandDscConfig(config *dsc.Config, datastore string) (*dsc.Config, error) 
 	if len(config.Parameters) == 0 {
 		config.Parameters = make(map[string]interface{})
 	}
-	config.Parameters["dbname"] = datastore
+	if _, has := config.Parameters["dbname"]; !has {
+		config.Parameters["dbname"] = datastore
+	}
 	err := config.Init()
 	return config, err
 }
