@@ -1,4 +1,4 @@
-## June 28 2019 - v0.10.0
+## July 10 2019 - v0.10.0
     * Added checkSchema
 
 ## June 28 2019 - v0.9.3
