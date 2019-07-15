@@ -1,5 +1,5 @@
 ## July 10 2019 - v0.10.1
-    * Patched oracel script parseing
+    * Patched oracle script parsing
     
 ## July 10 2019 - v0.10.0
     * Added checkSchema
