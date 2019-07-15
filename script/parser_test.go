@@ -26,7 +26,7 @@ SELECT 2;`,
 				`SELECT 1`,
 				`BEGIN
 SELECT 1;
-END`,
+END;`,
 				`SELECT 2`,
 			},
 		},
@@ -63,7 +63,7 @@ WHEN OTHERS THEN
 IF SQLCODE != -942 THEN
 RAISE;
 END IF;
-END`,
+END;`,
 				`INSERT INTO DUMMY(ID, NAME) VALUES(1, 'abc')`,
 				`CREATE OR REPLACE TRIGGER users_before_insert
 BEFORE INSERT ON users
@@ -72,7 +72,7 @@ BEGIN
 SELECT users_seq.NEXTVAL
 INTO   :new.id
 FROM   dual;
-END`,
+END;`,
 				`INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz')`,
 			},
 		},

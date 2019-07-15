@@ -128,7 +128,7 @@ outer:
 			pending += match.Matched
 		case plSQLBlock:
 			pending += string(match.Matched[:len(match.Matched)-1])
-			appendMatched("")
+			appendMatched(";")
 		case invalidToken:
 			break outer
 		case commandTerminator:
