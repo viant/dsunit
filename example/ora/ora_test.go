@@ -28,8 +28,6 @@ Prerequisites:
 var endlyManager = endly.New()
 var endlyContext = endlyManager.NewContext(toolbox.NewContext())
 
-
-
 func setup(t *testing.T) {
 
 	err := startOracle()
@@ -51,7 +49,7 @@ func TestDsunit_Oracle(t *testing.T) {
 	setup(t)
 	defer tearDown(t)
 
-//	showCreateTable()
+	//	showCreateTable()
 
 	if dsunit.InitFromURL(t, "config/init.json") {
 		if !dsunit.PrepareFor(t, "mydb", "data", "use_case_1") {
@@ -75,17 +73,15 @@ func showCreateTable() error {
 		return err
 	}
 	dialect := dsc.GetDatastoreDialect("oci8")
-	DDL, err := dialect.ShowCreateTable(manager,  "events")
+	DDL, err := dialect.ShowCreateTable(manager, "events")
 
 	dd := strings.Replace(DDL, "events", "events_993999", 1)
 	dd = strings.Replace(dd, ";", "", 1)
 
-	_, err =manager.Execute(dd )
+	_, err = manager.Execute(dd)
 	fmt.Printf("DML: %v %v\n", DDL, err)
 	return nil
 }
-
-
 
 func runSomeBusinessLogic() error {
 	config, err := dsc.NewConfigWithParameters("oci8", "mydb/oracle@127.0.0.1:1521/xe", "", nil)
@@ -113,7 +109,7 @@ func runSomeBusinessLogic() error {
 func startOracle() error {
 
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
-		Image:  "thebookpeople/oracle-xe-11g",
+		Image: "thebookpeople/oracle-xe-11g",
 		Env: map[string]string{
 			"ORACLE_ALLOW_REMOTE": "true",
 		},
@@ -127,7 +123,7 @@ func startOracle() error {
 
 func stopOracle() error {
 	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
-			Name:   "ora_dsunit",
+		Name: "ora_dsunit",
 	})
 	return err
 

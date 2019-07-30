@@ -42,7 +42,6 @@ func mySQLTearDown(t *testing.T) {
 	}
 }
 
-
 func TestDsunit_MySQL(t *testing.T) {
 	mySQLSetup(t)
 	defer mySQLTearDown(t)
@@ -65,7 +64,6 @@ func TestDsunit_MySQL(t *testing.T) {
 			resp := service.Register(registerRequest)
 			assert.Equal(t, "ok", resp.Status)
 		}
-
 
 		dumpRequest, _ := dsunit.NewDumpRequestFromURL(path.Join(parent, "dump_req.yaml"))
 		resp := service.Dump(dumpRequest)
@@ -97,11 +95,11 @@ func mySQLRunSomeBusinessLogic() error {
 	return nil
 }
 
-
 var mysqlCredentials = url.NewResource("config/secret.json").URL
+
 func startMySQL() error {
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
-		Image:  "mysql:5.6",
+		Image: "mysql:5.6",
 		Ports: map[string]string{
 			"3306": "3306",
 		},
@@ -120,10 +118,9 @@ func startMySQL() error {
 	return err
 }
 
-
 func stopMySQL() error {
 	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
-			Name:   "mysql_dsunit",
+		Name: "mysql_dsunit",
 	})
 	return err
 

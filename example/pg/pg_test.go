@@ -81,7 +81,6 @@ func runSomeBusinessLogic() error {
 
 var pgCredential = url.NewResource("config/secret.json").URL
 
-
 func startPostgres() error {
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
 		Image: "postgres:9.6-alpine",

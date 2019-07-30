@@ -52,9 +52,6 @@ func TestDsunit_Aerospike(t *testing.T) {
 	}
 }
 
-
-
-
 func runSomeBusinessLogic() error {
 	config, err := dsc.NewConfigWithParameters("aerospike", "tcp(127.0.0.1:3000)/[namespace]", "", map[string]interface{}{
 		"namespace": "test",
@@ -81,11 +78,10 @@ func runSomeBusinessLogic() error {
 	return nil
 }
 
-
 func startAerospike() error {
 
 	_, err := endlyManager.Run(endlyContext, &docker.RunRequest{
-		Image:  "aerospike/aerospike-server:latest",
+		Image: "aerospike/aerospike-server:latest",
 		Ports: map[string]string{
 			"3000": "3000",
 			"3001": "3001",
@@ -100,7 +96,7 @@ func startAerospike() error {
 
 func stopAerospike() error {
 	_, err := endlyManager.Run(endlyContext, &docker.StopRequest{
-			Name:   "aerospike_dsunit",
+		Name: "aerospike_dsunit",
 	})
 	if err != nil {
 		return err

@@ -53,8 +53,6 @@ func TestDsunit_Casandra(t *testing.T) {
 	dsunit.ExpectFor(t, "mydb", dsunit.FullTableDatasetCheckPolicy, "data", "use_case_1")
 }
 
-
-
 func casandraRunSomeBusinessLogic() error {
 	config, err := dsc.NewConfigWithParameters("cql", "127.0.0.1?keyspace=mydb", "", nil)
 	if err != nil {
@@ -78,9 +76,6 @@ func casandraRunSomeBusinessLogic() error {
 	}
 	return nil
 }
-
-
-
 
 func startCasandra() error {
 
@@ -108,4 +103,3 @@ func stopCasandra() error {
 	return err
 
 }
-

@@ -1,4 +1,4 @@
-## July 29 2019 - v0.10.2
+## July 29 2019 - v0.10.3
     * Patched mysql script parsing
 
 ## July 10 2019 - v0.10.1
