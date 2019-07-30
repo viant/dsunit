@@ -43,6 +43,7 @@ SELECT 1;
 END;;
 DELIMITER;
 SELECT 2;
+INSERT INTO abc(id_type, name) VALUES(3, 'Javascript ad; must be available XHTML (i.e. include script tags)');
 SELECT 3;
 `,
 			SQLs: []string{
@@ -51,6 +52,7 @@ SELECT 3;
 SELECT 1;
 END`,
 				`SELECT 2`,
+				`INSERT INTO abc(id_type, name) VALUES(3, 'Javascript ad; must be available XHTML (i.e. include script tags)')`,
 				`SELECT 3`,
 			},
 		},
@@ -187,7 +189,7 @@ INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz');
 				`CREATE TRIGGER insert_language BEFORE INSERT 
   ON languages
   FOR EACH ROW
-  EXECUTE PROCEDURE insert_language_trigger()`,`CREATE OR REPLACE FUNCTION insert_language_trigger() 
+  EXECUTE PROCEDURE insert_language_trigger()`, `CREATE OR REPLACE FUNCTION insert_language_trigger() 
   RETURNS TRIGGER
   LANGUAGE plpgsql AS
   $$
@@ -196,7 +198,7 @@ INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz');
     RETURN NEW;
   END
   $$`,
-  `INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz')`,
+				`INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz')`,
 			},
 		},
 	}
