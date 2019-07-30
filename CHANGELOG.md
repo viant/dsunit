@@ -1,3 +1,6 @@
+## July 29 2019 - v0.10.2
+    * Patched mysql script parsing
+
 ## July 10 2019 - v0.10.1
     * Patched oracle script parsing
     

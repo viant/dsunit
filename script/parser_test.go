@@ -17,19 +17,44 @@ func TestParse(t *testing.T) {
 			description: "mysql delimiter",
 			SQL: `SELECT 1;
 DELIMITER;;
+/*!50003 SET SESSION SQL_MODE="" */;;
 BEGIN
 SELECT 1;
 END;;
+
 DELIMITER;
 SELECT 2;`,
 			SQLs: []string{
 				`SELECT 1`,
+				`/*!50003 SET SESSION SQL_MODE="" */`,
 				`BEGIN
 SELECT 1;
-END;`,
+END`,
 				`SELECT 2`,
 			},
 		},
+
+		{
+			description: "mysql delimiter",
+			SQL: `SELECT 1;
+DELIMITER;;
+BEGIN
+SELECT 1;
+END;;
+DELIMITER;
+SELECT 2;
+SELECT 3;
+`,
+			SQLs: []string{
+				`SELECT 1`,
+				`BEGIN
+SELECT 1;
+END`,
+				`SELECT 2`,
+				`SELECT 3`,
+			},
+		},
+
 		{
 			description: "PLSQL plSQLBlock",
 			SQL: `BEGIN

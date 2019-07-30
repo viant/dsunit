@@ -12,6 +12,7 @@ const (
 	invalidToken = iota
 	whitespaces
 	lineBreak
+	lineBreakTerminator
 	commandTerminator
 	delimiterKeyword
 	createKeyword
@@ -34,6 +35,8 @@ var matchers = map[int]toolbox.Matcher{
 	createKeyword:     toolbox.NewKeywordsMatcher(false, "create"),
 	orKeyword:         toolbox.NewKeywordsMatcher(false, "or"),
 	replaceKeyword:    toolbox.NewKeywordsMatcher(false, "replace"),
+
+	lineBreakTerminator: toolbox.NewTerminatorMatcher("\n"),
 
 	functionKeyword: toolbox.NewKeywordsMatcher(false, "function"),
 	whitespaces:     toolbox.CharactersMatcher{" \n\t"},
@@ -74,15 +77,19 @@ outer:
 		case whitespaces:
 			pending += match.Matched
 		case delimiterKeyword:
-			if match := tokenizer.Nexts(lineBreak, eofToken); match.Token == lineBreak {
-				delimiter := string(match.Matched[:len(match.Matched)-1])
+			if match := tokenizer.Nexts(lineBreakTerminator, eofToken); match.Token == lineBreakTerminator {
+				delimiter := string(match.Matched[:len(match.Matched)])
 				remaining := string(tokenizer.Input[tokenizer.Index:])
-				if index := strings.Index(remaining, delimiter); index != -1 {
-					match := remaining[0:index]
-					tokenizer.Index += len(match)
-					appendMatched(match)
+				if index := strings.Index(strings.ToLower(remaining), "delimiter"); index != -1 {
+					delimitedStatements := string(remaining[0:index])
+					statements := strings.Split(delimitedStatements, delimiter)
+					for i := 0; i < len(statements);i++ {
+						appendMatched(statements[i])
+					}
+					tokenizer.Index += len(delimitedStatements)
 				}
-			}
+		}
+
 		case createKeyword:
 			pending += match.Matched
 			if match := tokenizer.Nexts(whitespaces, eofToken); match.Token == whitespaces {
