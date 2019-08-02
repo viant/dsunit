@@ -889,6 +889,12 @@ func (s *service) TableInfo(manager dsc.Manager, table, mappingURL, target strin
 	for _, column := range columns {
 		result.Columns = append(result.Columns, column.Name())
 		dbType := strings.ToUpper(column.DatabaseTypeName())
+
+		if dbType == "TINYINT" {
+			if size, ok := column.Length(); ok && size > 1 {
+				dbType = "SMALLINT"
+			}
+		}
 		if strings.HasSuffix(strings.ToLower(column.Name()), "id") && dbType == "NUMERIC" {
 			dbType = "INTEGER"
 		}

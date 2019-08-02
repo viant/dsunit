@@ -5,6 +5,7 @@ var dbTypeMappings map[string]map[string]string
 func loadDefaultDbMappings() {
 	dbTypeMappings = map[string]map[string]string{"bigquery": {
 
+		"BIT":     "BOOLEAN",
 		"BOOLEAN": "BOOLEAN",
 		"TINYINT": "BOOLEAN",
 
@@ -34,9 +35,9 @@ func loadDefaultDbMappings() {
 	},
 
 		"mysql": {
-			"BOOLEAN": "TINYINT",
-			"TINYINT": "TINYINT",
-
+			"BOOLEAN":  "TINYINT",
+			"TINYINT":  "TINYINT",
+			"BIT":      "TINYINT",
 			"INT":      "INT",
 			"INT64":    "BIGINT",
 			"INTEGER":  "BIGINT",
@@ -64,6 +65,7 @@ func loadDefaultDbMappings() {
 		"pq": {
 
 			"BOOLEAN": "BOOLEAN",
+			"BIT":     "BOOLEAN",
 			"TINYINT": "BOOLEAN",
 
 			"INT":      "INTEGER",
@@ -90,9 +92,9 @@ func loadDefaultDbMappings() {
 		},
 
 		"oracle": {
-			"TINYINT": "NUMBER(1)",
-			"BOOLEAN": "NUMBER(1)",
-
+			"TINYINT":  "NUMBER(1)",
+			"BOOLEAN":  "NUMBER(1)",
+			"BIT":      "NUMBER(1)",
 			"INT":      "NUMBER(7,0)",
 			"INTEGER":  "NUMBER(7,0)",
 			"INT64":    "NUMBER(14,0)",
