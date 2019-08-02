@@ -1,0 +1,26 @@
+Datastore: mydb
+Config:
+  DriverName: odbc
+  Descriptor: driver=Vertica;Database=[database];ServerName=[server];port=5433;user=dbadmin;password=[password];Schema=[dbname]
+  Credentials: config/secret.json
+  Parameters:
+    database: mydb
+    dbname: mydb
+    server: 127.0.0.1
+    TIMEZONE: UTC
+    SEARCH_PATH: mydb
+
+Admin:
+  Datastore: admin
+  Config:
+    DriverName: odbc
+    Descriptor: driver=Vertica;Database=[database];ServerName=[server];port=5433;user=dbadmin;password=[password]
+    Credentials: config/secret.json
+    Ping: true
+    Parameters:
+      database: mydb
+      server: 127.0.0.1
+      TIMEZONE: UTC
+Recreate: true
+Scripts:
+  - URL: config/schema.ddl
