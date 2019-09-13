@@ -4,6 +4,7 @@ import (
 	"github.com/viant/toolbox"
 	"io"
 	"io/ioutil"
+	"regexp"
 	"strings"
 )
 
@@ -24,6 +25,7 @@ const (
 	commandEnd
 	pgDelimiter
 	plSQLBlock
+	inlineComment
 )
 
 //ParseWithReader splits SQL blob into separate commands
@@ -39,8 +41,10 @@ func ParseWithReader(reader io.Reader) []string {
 func appendMatched(terminator, pending *string, result *[]string) func(text string) {
 	return func(text string) {
 		SQL := strings.TrimSpace(*pending + text)
-		quotesCount := strings.Count(SQL, `'`)
-		if quotesCount%2 == 1 { //missing closing quote
+		SQL = regexp.MustCompile(`--.*\n`).ReplaceAllString(SQL, "")
+		SQL = regexp.MustCompile(`--.*\r`).ReplaceAllString(SQL, "")
+		quotesCount := strings.Count(SQL, `'`) - strings.Count(SQL, `\'`)
+		if quotesCount % 2 == 1 { //missing closing quote
 			*pending = SQL + *terminator
 			return
 		}
@@ -68,14 +72,13 @@ func parse(expression string, terminator string, delimiterMode bool) []string {
 		quoteTerminator:   toolbox.NewTerminatorMatcher(`'`),
 		delimiterKeyword:  toolbox.NewKeywordsMatcher(false, "delimiter"),
 		pgDelimiter:       toolbox.NewTerminatorMatcher("$$"),
-		plSQLBlock:        toolbox.NewBodyMatcher("BEGIN", "END;"),
+		plSQLBlock:        toolbox.NewSQLBeginEndMatcher(),
+		inlineComment:     toolbox.NewBodyMatcher("--", "\n"),
 		beginKeyword:      toolbox.NewTerminatorMatcher("BEGIN"),
 		createKeyword:     toolbox.NewKeywordsMatcher(false, "create"),
 		orKeyword:         toolbox.NewKeywordsMatcher(false, "or"),
 		replaceKeyword:    toolbox.NewKeywordsMatcher(false, "replace"),
-
 		lineBreakTerminator: toolbox.NewTerminatorMatcher("\n"),
-
 		functionKeyword: toolbox.NewKeywordsMatcher(false, "function"),
 		whitespaces:     toolbox.CharactersMatcher{" \n\t"},
 		lineBreak:       toolbox.CharactersMatcher{"\n"},
@@ -85,14 +88,15 @@ func parse(expression string, terminator string, delimiterMode bool) []string {
 
 	pending := ""
 	appendMatched := appendMatched(&terminator, &pending, &result)
-	done := false
 
 outer:
-	for tokenizer.Index < len(expression) && !done {
-		match := tokenizer.Nexts(whitespaces, createKeyword, delimiterKeyword, plSQLBlock, commandTerminator, commandEnd, eofToken)
+	for tokenizer.Index < len(expression) {
+		match := tokenizer.Nexts(whitespaces, inlineComment, createKeyword, delimiterKeyword, plSQLBlock, commandTerminator, commandEnd, eofToken)
 		switch match.Token {
 		case whitespaces:
 			pending += match.Matched
+		case inlineComment:
+			appendMatched("")
 		case delimiterKeyword:
 			if match := tokenizer.Nexts(lineBreakTerminator, eofToken); match.Token == lineBreakTerminator {
 				delimiter := strings.TrimSpace(string(match.Matched[:len(match.Matched)]))
@@ -117,7 +121,7 @@ outer:
 
 			if match := tokenizer.Nexts(whitespaces, eofToken); match.Token == whitespaces {
 				pending += match.Matched
-				candidates := []int{orKeyword, whitespaces, replaceKeyword, whitespaces, functionKeyword, beginKeyword, orKeyword}
+				candidates := []int{orKeyword, whitespaces, inlineComment, replaceKeyword, whitespaces, functionKeyword, beginKeyword, orKeyword}
 				match := tokenizer.Nexts(candidates...)
 
 				for len(candidates) > 3 {
@@ -131,16 +135,10 @@ outer:
 
 				switch match.Token {
 
+				case inlineComment:
+					appendMatched("")
 				case functionKeyword:
 					pending += match.Matched
-					if match = tokenizer.Nexts(pgDelimiter, eofToken); match.Token == pgDelimiter {
-						pending += match.Matched + "$$"
-						tokenizer.Index += 2
-						if match = tokenizer.Nexts(pgDelimiter, eofToken); match.Token == pgDelimiter {
-							pending += match.Matched + "$$"
-							tokenizer.Index += 2
-						}
-					}
 				case beginKeyword:
 					if strings.Contains(match.Matched, ";") || strings.Contains(match.Matched, "$$") {
 						tokenizer.Index -= len(match.Matched)
@@ -153,6 +151,10 @@ outer:
 
 				}
 			}
+		case pgDelimiter:
+			pending += match.Matched
+			appendMatched("")
+			tokenizer.Index += len("$$")
 		case eofToken:
 			pending += match.Matched
 		case plSQLBlock:
