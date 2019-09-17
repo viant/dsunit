@@ -522,9 +522,13 @@ func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connect
 func (s *service) disableForeignKeyCheck(datastore string, connection dsc.Connection, closeIfAdmin bool) (dsc.Connection, error) {
 	dialect := GetDatastoreDialect(datastore, s.registry)
 	manager := s.registry.Get(datastore)
-	adminManager, err := s.getAdminManager(datastore)
-	if err != nil {
-		return nil, err
+	var err error
+	adminManager := manager
+	if ! dialect.IsKeyCheckSwitchSessionLevel() {
+		adminManager, err = s.getAdminManager(datastore)
+		if err != nil {
+			return nil, err
+		}
 	}
 	isAdmin := manager != adminManager
 	if isAdmin {

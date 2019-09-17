@@ -1,3 +1,6 @@
+## July 29 2019 - v0.10.4
+    * Updated switching foreign key check logic
+    
 ## July 29 2019 - v0.10.3
     * Patched mysql script parsing
 
