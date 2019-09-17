@@ -1,4 +1,4 @@
-## July 29 2019 - v0.10.4
+## September 17 2019 - v0.10.4
     * Updated switching foreign key check logic
     
 ## July 29 2019 - v0.10.3
