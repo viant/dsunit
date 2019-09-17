@@ -508,9 +508,13 @@ func (s *service) prepareWithRequest(request *PrepareRequest, response *PrepareR
 func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connection) error {
 	dialect := GetDatastoreDialect(datastore, s.registry)
 	manager := s.registry.Get(datastore)
-	adminManager, err := s.getAdminManager(datastore)
-	if err != nil {
-		return err
+	adminManager := manager
+	var err error
+	if ! dialect.IsKeyCheckSwitchSessionLevel() {
+		adminManager, err = s.getAdminManager(datastore)
+		if err != nil {
+			return err
+		}
 	}
 	if manager != adminManager {
 		defer connection.Close()
