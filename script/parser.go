@@ -72,7 +72,7 @@ func parse(expression string, terminator string, delimiterMode bool) []string {
 		quoteTerminator:   toolbox.NewTerminatorMatcher(`'`),
 		delimiterKeyword:  toolbox.NewKeywordsMatcher(false, "delimiter"),
 		pgDelimiter:       toolbox.NewTerminatorMatcher("$$"),
-		plSQLBlock:        toolbox.NewSQLBeginEndMatcher(),
+		plSQLBlock:        toolbox.NewBlockMatcher(false, "begin", "end;", []string{"CASE"}, []string{"END IF"}),
 		inlineComment:     toolbox.NewBodyMatcher("--", "\n"),
 		beginKeyword:      toolbox.NewTerminatorMatcher("BEGIN"),
 		createKeyword:     toolbox.NewKeywordsMatcher(false, "create"),
@@ -121,7 +121,7 @@ outer:
 
 			if match := tokenizer.Nexts(whitespaces, eofToken); match.Token == whitespaces {
 				pending += match.Matched
-				candidates := []int{orKeyword, whitespaces, inlineComment, replaceKeyword, whitespaces, functionKeyword, beginKeyword, orKeyword}
+				candidates := []int{orKeyword, whitespaces, replaceKeyword, whitespaces, functionKeyword,  beginKeyword, orKeyword}
 				match := tokenizer.Nexts(candidates...)
 
 				for len(candidates) > 3 {
@@ -135,10 +135,24 @@ outer:
 
 				switch match.Token {
 
-				case inlineComment:
-					appendMatched("")
 				case functionKeyword:
 					pending += match.Matched
+					if delimiterMode {
+						if match = tokenizer.Nexts(delimiterKeyword, eofToken); match.Token==delimiterKeyword {
+							pending += match.Matched + "$$"
+							tokenizer.Index += 2
+						}
+					} else {
+						if match = tokenizer.Nexts(pgDelimiter, eofToken); match.Token == pgDelimiter {
+							pending += match.Matched + "$$"
+							tokenizer.Index += 2
+							if match = tokenizer.Nexts(pgDelimiter, eofToken); match.Token == pgDelimiter {
+								pending += match.Matched + "$$"
+								tokenizer.Index += 2
+							}
+						}
+					}
+
 				case beginKeyword:
 					if strings.Contains(match.Matched, ";") || strings.Contains(match.Matched, "$$") {
 						tokenizer.Index -= len(match.Matched)
