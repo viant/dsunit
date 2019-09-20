@@ -201,6 +201,96 @@ INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz');
 				`INSERT INTO DUMMY(ID, NAME) VALUES(2, 'xyz')`,
 			},
 		},
+		{
+			description: "Create function, begin end blocks",
+			SQL: `DELIMITER $$
+START TRANSACTION $$
+
+CREATE FUNCTION get_version()
+	RETURNS INT
+	READS SQL DATA
+BEGIN
+	DECLARE result INT DEFAULT 1;
+	SELECT coalesce(max(version_number), 1) INTO result FROM version;
+	RETURN result;
+END $$
+
+DROP PROCEDURE IF EXISTS set_version $$
+
+CREATE PROCEDURE set_version(version INT)
+BEGIN
+	DELETE FROM version;
+	INSERT INTO version VALUES(version);
+END $$
+
+COMMIT $$
+DELIMITER ;
+`,
+			SQLs: []string{
+				"START TRANSACTION",
+				"CREATE FUNCTION get_version()\n\tRETURNS INT\n\tREADS SQL DATA\nBEGIN\n\tDECLARE result INT DEFAULT 1;\n\tSELECT coalesce(max(version_number), 1) INTO result FROM version;\n\tRETURN result;\nEND",
+				"DROP PROCEDURE IF EXISTS set_version",
+				"CREATE PROCEDURE set_version(version INT)\nBEGIN\n\tDELETE FROM version;\n\tINSERT INTO version VALUES(version);\nEND",
+				"COMMIT",
+			},
+		},
+		{
+			description: "Comments and IF condition inside BEGIN-END block",
+			SQL:`DELIMITER $$
+DROP PROCEDURE IF EXISTS test_func $$
+CREATE PROCEDURE test_func()
+BEGIN
+  IF get_version() = 17
+  THEN
+    -- Set this to false by default
+    alter table TABLE_NAME add column IS_BLACK BOOLEAN DEFAULT FALSE;
+    CALL set_version(18);
+END IF;
+END $$
+DELIMITER ;
+`,
+			SQLs : []string{
+				`DROP PROCEDURE IF EXISTS test_func`,
+`CREATE PROCEDURE test_func()
+BEGIN
+  IF get_version() = 17
+  THEN
+        alter table TABLE_NAME add column IS_BLACK BOOLEAN DEFAULT FALSE;
+    CALL set_version(18);
+END IF;
+END`,
+			},
+
+		},
+		{
+			description: "'END;' string within BEGIN block before intended END;",
+			SQL:`DELIMITER $$
+DROP PROCEDURE IF EXISTS test_proc $$
+CREATE PROCEDURE test_proc()
+BEGIN
+  IF get_version() = 14
+  THEN
+    DROP VIEW IF EXISTS TABLE_NAME;
+    DROP VIEW IF EXISTS MONEY_SPEND;
+    DROP VIEW IF EXISTS OTHER_TABLE;
+    CALL set_version(15);
+  END IF;
+END $$
+DELIMITER ;`,
+			SQLs  : []string{
+				"DROP PROCEDURE IF EXISTS test_proc",
+				`CREATE PROCEDURE test_proc()
+BEGIN
+  IF get_version() = 14
+  THEN
+    DROP VIEW IF EXISTS TABLE_NAME;
+    DROP VIEW IF EXISTS MONEY_SPEND;
+    DROP VIEW IF EXISTS OTHER_TABLE;
+    CALL set_version(15);
+  END IF;
+END`,
+			},
+		},
 	}
 
 	for _, useCase := range useCases {
