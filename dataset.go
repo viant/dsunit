@@ -241,7 +241,7 @@ func (r *DatasetResource) load(service storage.Service, object storage.Object) (
 			var content []byte
 			if content, err = ioutil.ReadAll(reader); err == nil {
 				if err = loader(datafile, content);err != nil {
-					return err
+					return errors.Wrapf(err, "failed to load dataset: %v", object.URL())
 				}
 			}
 		}
