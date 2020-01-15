@@ -240,12 +240,15 @@ func (r *DatasetResource) load(service storage.Service, object storage.Object) (
 			defer reader.Close()
 			var content []byte
 			if content, err = ioutil.ReadAll(reader); err == nil {
-				err = loader(datafile, content)
+				if err = loader(datafile, content);err != nil {
+					return err
+				}
 			}
 		}
 	}
-	return nil
+	return err
 }
+
 
 func (r *DatasetResource) loadJSON(datafile *DatafileInfo, data []byte) error {
 	var dataSet = &Dataset{
