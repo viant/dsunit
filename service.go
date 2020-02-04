@@ -370,9 +370,14 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	if !table.Autoincrement {
 		table.Autoincrement = autoincrement
 	}
+	if fromQuery != "" {
+		state := s.getContextState(context)
+		if state == nil {
+			fromQuery = state.ExpandAsText(fromQuery)
+		}
+	}
 	table.FromQuery = fromQuery
 	table.FromQueryAlias = fromQueryAlias
-
 	if len(table.PkColumns) == 0 {
 		table.PkColumns = uniqueKeys
 	} else if len(uniqueKeys) == 0 {
@@ -510,7 +515,7 @@ func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connect
 	manager := s.registry.Get(datastore)
 	adminManager := manager
 	var err error
-	if ! dialect.IsKeyCheckSwitchSessionLevel() {
+	if !dialect.IsKeyCheckSwitchSessionLevel() {
 		adminManager, err = s.getAdminManager(datastore)
 		if err != nil {
 			return err
@@ -528,7 +533,7 @@ func (s *service) disableForeignKeyCheck(datastore string, connection dsc.Connec
 	manager := s.registry.Get(datastore)
 	var err error
 	adminManager := manager
-	if ! dialect.IsKeyCheckSwitchSessionLevel() {
+	if !dialect.IsKeyCheckSwitchSessionLevel() {
 		adminManager, err = s.getAdminManager(datastore)
 		if err != nil {
 			return nil, err

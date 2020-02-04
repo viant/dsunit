@@ -44,7 +44,7 @@ func appendMatched(terminator, pending *string, result *[]string) func(text stri
 		SQL = regexp.MustCompile(`--.*\n`).ReplaceAllString(SQL, "")
 		SQL = regexp.MustCompile(`--.*\r`).ReplaceAllString(SQL, "")
 		quotesCount := strings.Count(SQL, `'`) - strings.Count(SQL, `\'`)
-		if quotesCount % 2 == 1 { //missing closing quote
+		if quotesCount%2 == 1 { //missing closing quote
 			*pending = SQL + *terminator
 			return
 		}
@@ -67,21 +67,21 @@ func parse(expression string, terminator string, delimiterMode bool) []string {
 	var result = make([]string, 0)
 
 	var matchers = map[int]toolbox.Matcher{
-		commandTerminator: toolbox.NewTerminatorMatcher(terminator),
-		commandEnd:        toolbox.NewKeywordsMatcher(false, terminator),
-		quoteTerminator:   toolbox.NewTerminatorMatcher(`'`),
-		delimiterKeyword:  toolbox.NewKeywordsMatcher(false, "delimiter"),
-		pgDelimiter:       toolbox.NewTerminatorMatcher("$$"),
-		plSQLBlock:        toolbox.NewBlockMatcher(false, "begin", "end;", []string{"CASE"}, []string{"END IF"}),
-		inlineComment:     toolbox.NewBodyMatcher("--", "\n"),
-		beginKeyword:      toolbox.NewTerminatorMatcher("BEGIN"),
-		createKeyword:     toolbox.NewKeywordsMatcher(false, "create"),
-		orKeyword:         toolbox.NewKeywordsMatcher(false, "or"),
-		replaceKeyword:    toolbox.NewKeywordsMatcher(false, "replace"),
+		commandTerminator:   toolbox.NewTerminatorMatcher(terminator),
+		commandEnd:          toolbox.NewKeywordsMatcher(false, terminator),
+		quoteTerminator:     toolbox.NewTerminatorMatcher(`'`),
+		delimiterKeyword:    toolbox.NewKeywordsMatcher(false, "delimiter"),
+		pgDelimiter:         toolbox.NewTerminatorMatcher("$$"),
+		plSQLBlock:          toolbox.NewBlockMatcher(false, "begin", "end;", []string{"CASE"}, []string{"END IF"}),
+		inlineComment:       toolbox.NewBodyMatcher("--", "\n"),
+		beginKeyword:        toolbox.NewTerminatorMatcher("BEGIN"),
+		createKeyword:       toolbox.NewKeywordsMatcher(false, "create"),
+		orKeyword:           toolbox.NewKeywordsMatcher(false, "or"),
+		replaceKeyword:      toolbox.NewKeywordsMatcher(false, "replace"),
 		lineBreakTerminator: toolbox.NewTerminatorMatcher("\n"),
-		functionKeyword: toolbox.NewKeywordsMatcher(false, "function"),
-		whitespaces:     toolbox.CharactersMatcher{" \n\t"},
-		lineBreak:       toolbox.CharactersMatcher{"\n"},
+		functionKeyword:     toolbox.NewKeywordsMatcher(false, "function"),
+		whitespaces:         toolbox.CharactersMatcher{" \n\t"},
+		lineBreak:           toolbox.CharactersMatcher{"\n"},
 	}
 
 	tokenizer := toolbox.NewTokenizer(expression, invalidToken, eofToken, matchers)
@@ -121,7 +121,7 @@ outer:
 
 			if match := tokenizer.Nexts(whitespaces, eofToken); match.Token == whitespaces {
 				pending += match.Matched
-				candidates := []int{orKeyword, whitespaces, replaceKeyword, whitespaces, functionKeyword,  beginKeyword, orKeyword}
+				candidates := []int{orKeyword, whitespaces, replaceKeyword, whitespaces, functionKeyword, beginKeyword, orKeyword}
 				match := tokenizer.Nexts(candidates...)
 
 				for len(candidates) > 3 {
@@ -138,7 +138,7 @@ outer:
 				case functionKeyword:
 					pending += match.Matched
 					if delimiterMode {
-						if match = tokenizer.Nexts(delimiterKeyword, eofToken); match.Token==delimiterKeyword {
+						if match = tokenizer.Nexts(delimiterKeyword, eofToken); match.Token == delimiterKeyword {
 							pending += match.Matched + "$$"
 							tokenizer.Index += 2
 						}

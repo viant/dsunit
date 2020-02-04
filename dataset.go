@@ -240,7 +240,7 @@ func (r *DatasetResource) load(service storage.Service, object storage.Object) (
 			defer reader.Close()
 			var content []byte
 			if content, err = ioutil.ReadAll(reader); err == nil {
-				if err = loader(datafile, content);err != nil {
+				if err = loader(datafile, content); err != nil {
 					return errors.Wrapf(err, "failed to load dataset: %v", object.URL())
 				}
 			}
@@ -248,7 +248,6 @@ func (r *DatasetResource) load(service storage.Service, object storage.Object) (
 	}
 	return err
 }
-
 
 func (r *DatasetResource) loadJSON(datafile *DatafileInfo, data []byte) error {
 	var dataSet = &Dataset{

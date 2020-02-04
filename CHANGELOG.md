@@ -1,3 +1,6 @@
+## Feb 4 2020 - v0.10.9
+    * Patched "@fromQuery@" variable substitution 
+    
 ## September 17 2019 - v0.10.4
     * Updated switching foreign key check logic
     

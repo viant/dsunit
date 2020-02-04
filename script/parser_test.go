@@ -236,7 +236,7 @@ DELIMITER ;
 		},
 		{
 			description: "Comments and IF condition inside BEGIN-END block",
-			SQL:`DELIMITER $$
+			SQL: `DELIMITER $$
 DROP PROCEDURE IF EXISTS test_func $$
 CREATE PROCEDURE test_func()
 BEGIN
@@ -249,9 +249,9 @@ END IF;
 END $$
 DELIMITER ;
 `,
-			SQLs : []string{
+			SQLs: []string{
 				`DROP PROCEDURE IF EXISTS test_func`,
-`CREATE PROCEDURE test_func()
+				`CREATE PROCEDURE test_func()
 BEGIN
   IF get_version() = 17
   THEN
@@ -260,11 +260,10 @@ BEGIN
 END IF;
 END`,
 			},
-
 		},
 		{
 			description: "'END;' string within BEGIN block before intended END;",
-			SQL:`DELIMITER $$
+			SQL: `DELIMITER $$
 DROP PROCEDURE IF EXISTS test_proc $$
 CREATE PROCEDURE test_proc()
 BEGIN
@@ -277,7 +276,7 @@ BEGIN
   END IF;
 END $$
 DELIMITER ;`,
-			SQLs  : []string{
+			SQLs: []string{
 				"DROP PROCEDURE IF EXISTS test_proc",
 				`CREATE PROCEDURE test_proc()
 BEGIN
