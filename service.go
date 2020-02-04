@@ -372,7 +372,7 @@ func (s *service) getTableDescriptor(dataset *Dataset, manager dsc.Manager, cont
 	}
 	if fromQuery != "" {
 		state := s.getContextState(context)
-		if state == nil {
+		if state != nil {
 			fromQuery = state.ExpandAsText(fromQuery)
 		}
 	}
