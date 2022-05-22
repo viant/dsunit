@@ -2,15 +2,16 @@ package dsunit
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/pkg/errors"
+	"github.com/viant/afs"
+	"github.com/viant/afs/option"
+	"github.com/viant/afs/storage"
 	"github.com/viant/assertly"
 	"github.com/viant/dsunit/sv"
+	"github.com/viant/dsunit/url"
 	"github.com/viant/toolbox"
-	"github.com/viant/toolbox/storage"
-	"github.com/viant/toolbox/url"
-	"io"
-	"io/ioutil"
 	"sort"
 	"strings"
 )
@@ -164,19 +165,19 @@ func (r *DatasetResource) loadDataset() (err error) {
 		return errors.New("resource was empty")
 	}
 
-	r.Resource.Init()
-	var storageService storage.Service
-	storageService, err = storage.NewServiceForURL(r.URL, r.Credentials)
+	err = r.Resource.Init()
 	if err != nil {
 		return err
 	}
+	var storageService = afs.New()
+	var ctx = context.Background()
 	var candidates []storage.Object
-	candidates, err = storageService.List(r.Resource.URL)
+	candidates, err = storageService.List(ctx, r.Resource.URL, option.NewRecursive(false))
 	if err != nil {
 		return err
 	}
 	for _, candidate := range candidates {
-		if candidate.FileInfo().IsDir() {
+		if candidate.IsDir() {
 			continue
 		}
 		err = r.load(storageService, candidate)
@@ -216,11 +217,11 @@ func (r *DatasetResource) Init() error {
 	return nil
 }
 
-func (r *DatasetResource) load(service storage.Service, object storage.Object) (err error) {
+func (r *DatasetResource) load(service afs.Service, object storage.Object) (err error) {
 	if len(r.Datasets) == 0 {
 		r.Datasets = make([]*Dataset, 0)
 	}
-	datafile := NewDatafileInfo(object.FileInfo().Name(), r.Prefix, r.Postfix)
+	datafile := NewDatafileInfo(object.Name(), r.Prefix, r.Postfix)
 	if datafile == nil {
 		return nil
 	}
@@ -228,21 +229,21 @@ func (r *DatasetResource) load(service storage.Service, object storage.Object) (
 	switch datafile.Ext {
 	case "json":
 		loader = r.loadJSON
-
 	case "csv":
 		loader = r.loadCSV
 	case "tsv":
 		loader = r.loadTSV
 	}
 	if loader != nil {
-		var reader io.ReadCloser
-		if reader, err = service.Download(object); err == nil {
-			defer reader.Close()
-			var content []byte
-			if content, err = ioutil.ReadAll(reader); err == nil {
-				if err = loader(datafile, content); err != nil {
-					return errors.Wrapf(err, "failed to load dataset: %v", object.URL())
-				}
+		var data []byte
+		ctx := context.Background()
+		data, err = service.Download(ctx, object)
+		if err != nil {
+			return err
+		}
+		if len(data) > 0 {
+			if err = loader(datafile, data); err != nil {
+				return errors.Wrapf(err, "failed to load dataset: %v", object.URL())
 			}
 		}
 	}
