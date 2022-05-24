@@ -3,8 +3,8 @@ package url_test
 import (
 	"github.com/stretchr/testify/assert"
 	afsfile "github.com/viant/afs/file"
-	afsurl "github.com/viant/afs/url"
-	dsuniturl "github.com/viant/dsunit/url"
+	"github.com/viant/afs/url"
+	dsurl "github.com/viant/dsunit/url"
 	"github.com/viant/toolbox"
 	"io/ioutil"
 	"os"
@@ -15,7 +15,7 @@ import (
 func TestNewResource(t *testing.T) {
 
 	{
-		var resource = dsuniturl.NewResource("https://raw.githubusercontent.com/viant/toolbox/master/LICENSE.txt", "credential_test")
+		var resource = dsurl.NewResource("https://raw.githubusercontent.com/viant/toolbox/master/LICENSE.txt", "credential_test")
 		assert.Equal(t, "https://raw.githubusercontent.com/viant/toolbox/master/LICENSE.txt", resource.URL)
 		assert.Equal(t, "credential_test", resource.Credentials)
 	}
@@ -43,8 +43,8 @@ func TestResource_YamlDecode(t *testing.T) {
 
 	{
 		var resourceData = make(map[string]interface{})
-		location := afsurl.Normalize(filename1, afsfile.Scheme)
-		err = dsuniturl.Decode(location, &resourceData)
+		location := url.Normalize(filename1, afsfile.Scheme)
+		err = dsurl.Decode(location, &resourceData)
 		assert.Nil(t, err)
 		assert.EqualValues(t, resourceData["a"], 1)
 		assert.EqualValues(t, resourceData["b"], "123")
@@ -70,8 +70,8 @@ pipeline:
 	{
 
 		var resourceData = make(map[string]interface{})
-		location := afsurl.Normalize(filename2, afsfile.Scheme)
-		err = dsuniturl.Decode(location, &resourceData)
+		location := url.Normalize(filename2, afsfile.Scheme)
+		err = dsurl.Decode(location, &resourceData)
 		assert.Nil(t, err)
 
 		if normalized, err := toolbox.NormalizeKVPairs(resourceData); err == nil {
@@ -98,8 +98,10 @@ pipeline:
 func TestResource_JsonDecode(t *testing.T) {
 	tempDir := os.TempDir()
 	var filename = path.Join(tempDir, "resource.json")
+
 	assert.Nil(t, toolbox.RemoveFileIfExist(filename))
 	defer assert.Nil(t, toolbox.RemoveFileIfExist(filename))
+
 	var aMap = map[string]interface{}{
 		"a": 1,
 		"b": "123",
@@ -111,8 +113,8 @@ func TestResource_JsonDecode(t *testing.T) {
 	}
 
 	var resourceData = make(map[string]interface{})
-	location := afsurl.Normalize(filename, afsfile.Scheme)
-	err = dsuniturl.Decode(location, &resourceData)
+	location := url.Normalize(filename, afsfile.Scheme)
+	err = dsurl.Decode(location, &resourceData)
 	assert.Nil(t, err)
 	assert.EqualValues(t, resourceData["a"], 1)
 	assert.EqualValues(t, resourceData["b"], "123")

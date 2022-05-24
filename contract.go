@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/viant/afs/file"
-	afsurl "github.com/viant/afs/url"
+	"github.com/viant/afs/url"
 	"github.com/viant/assertly"
 	"github.com/viant/dsc"
-	dsuniturl "github.com/viant/dsunit/url"
+	dsurl "github.com/viant/dsunit/url"
 	"github.com/viant/toolbox"
 	"strings"
 )
@@ -90,8 +90,8 @@ func NewRegisterRequest(datastore string, config *dsc.Config, tables ...*dsc.Tab
 
 func NewRegisterRequestFromURL(URL string) (*RegisterRequest, error) {
 	var result = &RegisterRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 
@@ -117,8 +117,8 @@ func NewRecreateRequest(datastore, adminDatastore string) *RecreateRequest {
 //NewRecreateRequestFromURL create a request from URL
 func NewRecreateRequestFromURL(URL string) (*RecreateRequest, error) {
 	var result = &RecreateRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 
 }
@@ -146,8 +146,8 @@ func NewRunSQLRequest(datastore string, SQL ...string) *RunSQLRequest {
 //NewRunSQLRequestFromURL create a request from URL
 func NewRunSQLRequestFromURL(URL string) (*RunSQLRequest, error) {
 	var result = &RunSQLRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 
@@ -161,11 +161,11 @@ type RunSQLResponse struct {
 type RunScriptRequest struct {
 	Datastore string `required:"true" description:"registered datastore name"`
 	Expand    bool   `description:"substitute $ expression with content of context.state"`
-	Scripts   []*dsuniturl.Resource
+	Scripts   []*dsurl.Resource
 }
 
 //NewRunScriptRequest creates new run script request
-func NewRunScriptRequest(datastore string, scripts ...*dsuniturl.Resource) *RunScriptRequest {
+func NewRunScriptRequest(datastore string, scripts ...*dsurl.Resource) *RunScriptRequest {
 	return &RunScriptRequest{
 		Datastore: datastore,
 		Scripts:   scripts,
@@ -175,8 +175,8 @@ func NewRunScriptRequest(datastore string, scripts ...*dsuniturl.Resource) *RunS
 //NewRunScriptRequestFromURL create a request from URL
 func NewRunScriptRequestFromURL(URL string) (*RunScriptRequest, error) {
 	var result = &RunScriptRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 
@@ -193,8 +193,8 @@ func (r *MappingRequest) Init() (err error) {
 	for _, mapping := range r.Mappings {
 		if (mapping.Resource != nil && mapping.URL != "") || mapping.Name == "" {
 			if err = mapping.Init(); err == nil {
-				location := afsurl.Normalize(mapping.URL, file.Scheme)
-				err = dsuniturl.Decode(location, mapping)
+				location := url.Normalize(mapping.URL, file.Scheme)
+				err = dsurl.Decode(location, mapping)
 			}
 			if err != nil {
 				return err
@@ -229,8 +229,8 @@ func NewMappingRequest(mappings ...*Mapping) *MappingRequest {
 //NewMappingRequestFromURL create a request from URL
 func NewMappingRequestFromURL(URL string) (*MappingRequest, error) {
 	var result = &MappingRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 
@@ -304,8 +304,8 @@ func NewInitRequest(datastore string, recreate bool, register, admin *RegisterRe
 //NewInitRequestFromURL create a request from URL
 func NewInitRequestFromURL(URL string) (*InitRequest, error) {
 	var result = &InitRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 
@@ -345,8 +345,8 @@ func NewPrepareRequest(resource *DatasetResource) *PrepareRequest {
 //NewPrepareRequestFromURL create a request from URL
 func NewPrepareRequestFromURL(URL string) (*PrepareRequest, error) {
 	var result = &PrepareRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 
@@ -397,8 +397,8 @@ func NewExpectRequest(checkPolicy int, resource *DatasetResource) *ExpectRequest
 //NewExpectRequestFromURL create a request from URL
 func NewExpectRequestFromURL(URL string) (*ExpectRequest, error) {
 	var result = &ExpectRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 
@@ -581,8 +581,8 @@ type CompareResponse struct {
 //NewDumpRequestFromURL create a request from url
 func NewDumpRequestFromURL(URL string) (*DumpRequest, error) {
 	var result = &DumpRequest{}
-	location := afsurl.Normalize(URL, file.Scheme)
-	err := dsuniturl.Decode(location, result)
+	location := url.Normalize(URL, file.Scheme)
+	err := dsurl.Decode(location, result)
 	return result, err
 }
 

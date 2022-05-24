@@ -6,11 +6,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/viant/afs"
 	"github.com/viant/afs/file"
-	afsurl "github.com/viant/afs/url"
+	"github.com/viant/afs/url"
 	"github.com/viant/assertly"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit/script"
-	dsuniturl "github.com/viant/dsunit/url"
+	dsurl "github.com/viant/dsunit/url"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
 	"strings"
@@ -502,18 +502,14 @@ func (s *service) prepareWithRequest(request *PrepareRequest, response *PrepareR
 	}
 	// TODO How to handle returned error with error from defer?
 	defer func() {
-		err2 := connection.Close()
-		if err2 != nil {
-			err = err2
-		}
+		_ = connection.Close()
 	}()
 	adminConnection, err := s.disableForeignKeyCheck(request.Datastore, connection, false)
 	if err != nil {
 		return err
 	}
-	defer s.enableForeignKeyCheck(request.Datastore, adminConnection)
 	s.prepare(request, response, manager, connection)
-	return err
+	return s.enableForeignKeyCheck(request.Datastore, adminConnection)
 }
 
 func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connection) error {
@@ -527,10 +523,11 @@ func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connect
 			return err
 		}
 	}
-	if manager != adminManager {
-		defer connection.Close()
-	}
+
 	err = dialect.EnableForeignKeyCheck(adminManager, connection)
+	if manager != adminManager {
+		return connection.Close()
+	}
 	return err
 }
 
@@ -748,7 +745,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 		}
 	}
 
-	destResource := dsuniturl.NewResource(request.DestURL)
+	destResource := dsurl.NewResource(request.DestURL)
 	if len(records) > 0 {
 
 		for i := range records {
@@ -837,7 +834,7 @@ func (s *service) dump(request *DumpRequest, response *DumpResponse) error {
 		}
 	}
 
-	destResource := dsuniturl.NewResource(request.DestURL)
+	destResource := dsurl.NewResource(request.DestURL)
 	var DDLs = []string{}
 
 	hasTarget := request.Target != ""
@@ -883,8 +880,8 @@ func (s *service) getOrLoadMapping(target, mappingURL string) (map[string]string
 		return nil, fmt.Errorf("unsupported target: %v, consider adding mapping URL", target)
 	}
 	if mappingURL != "" {
-		location := afsurl.Normalize(mappingURL, file.Scheme)
-		err := dsuniturl.Decode(location, mapping)
+		location := url.Normalize(mappingURL, file.Scheme)
+		err := dsurl.Decode(location, mapping)
 		if err != nil {
 			return nil, err
 		}
