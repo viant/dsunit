@@ -113,8 +113,8 @@ func ExpectFromURL(t *testing.T, URL string) bool {
 }
 
 //ExpectWithURL Verify datastore with supplied expected datasets, JSON requests are fetched from files in directory
-func ExpectWithURL(t *testing.T, URL string, datastore string, datasets ...*Dataset) bool {
-	return tester.ExpectWithURL(t, URL, datastore, datasets...)
+func ExpectWithURL(t *testing.T, checkPolicy int, URL string, datastore string, datasets ...*Dataset) bool {
+	return tester.ExpectWithURL(t, checkPolicy, URL, datastore, datasets...)
 }
 
 //ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name to

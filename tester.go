@@ -79,7 +79,7 @@ type Tester interface {
 	ExpectFromURL(t *testing.T, URL string) bool
 
 	// ExpectWithURL verifies datastore with supplied expected datasets, JSON requests are fetched from files in directory
-	ExpectWithURL(t *testing.T, URL string, datastore string, datasets ...*Dataset) bool
+	ExpectWithURL(t *testing.T, checkPolicy int, URL string, datastore string, datasets ...*Dataset) bool
 
 	// ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name to
 	// verify that all listed dataset values are present in datastore
@@ -268,9 +268,9 @@ func (s *localTester) ExpectFromURL(t *testing.T, URL string) bool {
 }
 
 // ExpectWithURL verifies datastore with supplied expected datasets, JSON requests are fetched from files in directory
-func (s *localTester) ExpectWithURL(t *testing.T, URL string, datastore string, datasets ...*Dataset) bool {
+func (s *localTester) ExpectWithURL(t *testing.T, checkPolicy int, URL string, datastore string, datasets ...*Dataset) bool {
 	expextSet := NewDatasetResource(datastore, URL, "", "", datasets...)
-	return s.Expect(t, NewExpectRequest(SnapshotDatasetCheckPolicy, expextSet))
+	return s.Expect(t, NewExpectRequest(checkPolicy, expextSet))
 }
 
 // ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name to
