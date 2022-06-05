@@ -1,16 +1,18 @@
 package dsunit
 
 import (
+	"context"
 	"fmt"
 	"github.com/pkg/errors"
+	"github.com/viant/afs"
+	"github.com/viant/afs/file"
+	"github.com/viant/afs/url"
 	"github.com/viant/assertly"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit/script"
+	dsurl "github.com/viant/dsunit/url"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
-	"github.com/viant/toolbox/storage"
-	"github.com/viant/toolbox/url"
-	"io"
 	"strings"
 	"sync"
 	"time"
@@ -140,8 +142,8 @@ func (s *service) expandSQLIfNeeded(request *RunSQLRequest, manager dsc.Manager)
 	if !request.Expand {
 		return request.SQL
 	}
-	context := s.newContext(manager)
-	state := s.getContextState(context)
+	ctx := s.newContext(manager)
+	state := s.getContextState(ctx)
 	if state == nil {
 		return request.SQL
 	}
@@ -188,20 +190,18 @@ func (s *service) RunScript(request *RunScriptRequest) *RunSQLResponse {
 	}
 	var SQL = []string{}
 	var err error
-	var storageService storage.Service
-	var storageObject storage.Object
+	var storageService = afs.New()
+	var ctx = context.Background()
 	for _, resource := range request.Scripts {
 		err = resource.Init()
 		if err != nil {
 			break
 		}
-		var reader io.ReadCloser
-		if storageService, err = storage.NewServiceForURL(resource.URL, resource.Credentials); err == nil {
-			if storageObject, err = storageService.StorageObject(resource.URL); err == nil {
-				if reader, err = storageService.Download(storageObject); err == nil {
-					defer reader.Close()
-					SQL = append(SQL, script.ParseWithReader(reader)...)
-				}
+
+		var data []byte
+		if data, err = storageService.DownloadWithURL(ctx, resource.URL); err == nil {
+			if len(data) != 0 {
+				SQL = append(SQL, script.Parse(string(data))...)
 			}
 		}
 		if err != nil {
@@ -323,14 +323,14 @@ func (s *service) getContextState(context toolbox.Context) *data.Map {
 }
 
 func (s *service) newContext(manager dsc.Manager) toolbox.Context {
-	context := toolbox.NewContext()
+	ctx := toolbox.NewContext()
 	if s.context != nil {
-		context = s.context.Clone()
+		ctx = s.context.Clone()
 	}
 	dialect := dsc.GetDatastoreDialect(manager.Config().DriverName)
-	_ = context.Replace((*dsc.Manager)(nil), &manager)
-	_ = context.Replace((*dsc.DatastoreDialect)(nil), &dialect)
-	return context
+	_ = ctx.Replace((*dsc.Manager)(nil), &manager)
+	_ = ctx.Replace((*dsc.DatastoreDialect)(nil), &dialect)
+	return ctx
 }
 
 func (s *service) deleteDatasetIfNeeded(datastore string, dataset *Dataset, table *dsc.TableDescriptor, response *PrepareResponse, context toolbox.Context, manager dsc.Manager, connection dsc.Connection) (err error) {
@@ -448,9 +448,9 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 	if err != nil {
 		response.SetError(err)
 	}
-	context := s.newContext(manager)
+	ctx := s.newContext(manager)
 	for _, dataset := range request.Datasets {
-		err = s.populate(request.Datastore, dataset, response, context, manager, connection)
+		err = s.populate(request.Datastore, dataset, response, ctx, manager, connection)
 		if err != nil {
 			break
 		}
@@ -477,8 +477,8 @@ func (s *service) Prepare(request *PrepareRequest) *PrepareResponse {
 	return response
 }
 
-func (s *service) prepareWithRequest(request *PrepareRequest, response *PrepareResponse) error {
-	err := request.Init()
+func (s *service) prepareWithRequest(request *PrepareRequest, response *PrepareResponse) (err error) {
+	err = request.Init()
 	if err == nil {
 		err = request.Validate()
 	}
@@ -500,14 +500,16 @@ func (s *service) prepareWithRequest(request *PrepareRequest, response *PrepareR
 	if err != nil {
 		return err
 	}
-	defer connection.Close()
+	// TODO How to handle returned error with error from defer?
+	defer func() {
+		_ = connection.Close()
+	}()
 	adminConnection, err := s.disableForeignKeyCheck(request.Datastore, connection, false)
 	if err != nil {
 		return err
 	}
-	defer s.enableForeignKeyCheck(request.Datastore, adminConnection)
 	s.prepare(request, response, manager, connection)
-	return nil
+	return s.enableForeignKeyCheck(request.Datastore, adminConnection)
 }
 
 func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connection) error {
@@ -521,10 +523,11 @@ func (s *service) enableForeignKeyCheck(datastore string, connection dsc.Connect
 			return err
 		}
 	}
-	if manager != adminManager {
-		defer connection.Close()
-	}
+
 	err = dialect.EnableForeignKeyCheck(adminManager, connection)
+	if manager != adminManager {
+		return connection.Close()
+	}
 	return err
 }
 
@@ -657,7 +660,7 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 		return response
 	}
 	manager := s.registry.Get(request.Datastore)
-	context := s.newContext(manager)
+	ctx := s.newContext(manager)
 
 	if err = request.Load(); err == nil {
 		if len(request.Datasets) == 0 {
@@ -665,7 +668,7 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 			return response
 		}
 		for _, dataset := range request.Datasets {
-			if err = s.expect(request.CheckPolicy, dataset, response, context, manager); err != nil {
+			if err = s.expect(request.CheckPolicy, dataset, response, ctx, manager); err != nil {
 				break
 			}
 		}
@@ -687,9 +690,9 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 	}
 	manager := s.registry.Get(request.Datastore)
 	macroEvaluator := assertly.NewDefaultMacroEvaluator()
-	context := toolbox.NewContext()
-	state := s.getContextState(context)
-	SQL, err := macroEvaluator.Expand(context, request.SQL)
+	ctx := toolbox.NewContext()
+	state := s.getContextState(ctx)
+	SQL, err := macroEvaluator.Expand(ctx, request.SQL)
 	if err != nil {
 		response.SetError(err)
 		return response
@@ -721,8 +724,8 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	}
 	manager := s.registry.Get(request.Datastore)
 	macroEvaluator := assertly.NewDefaultMacroEvaluator()
-	context := toolbox.NewContext()
-	SQL, err := macroEvaluator.Expand(context, request.SQL)
+	ctx := toolbox.NewContext()
+	SQL, err := macroEvaluator.Expand(ctx, request.SQL)
 	if err != nil {
 		response.SetError(err)
 		return response
@@ -742,7 +745,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 		}
 	}
 
-	destResource := url.NewResource(request.DestURL)
+	destResource := dsurl.NewResource(request.DestURL)
 	if len(records) > 0 {
 
 		for i := range records {
@@ -831,7 +834,7 @@ func (s *service) dump(request *DumpRequest, response *DumpResponse) error {
 		}
 	}
 
-	destResource := url.NewResource(request.DestURL)
+	destResource := dsurl.NewResource(request.DestURL)
 	var DDLs = []string{}
 
 	hasTarget := request.Target != ""
@@ -877,7 +880,9 @@ func (s *service) getOrLoadMapping(target, mappingURL string) (map[string]string
 		return nil, fmt.Errorf("unsupported target: %v, consider adding mapping URL", target)
 	}
 	if mappingURL != "" {
-		if err := url.NewResource(mappingURL).Decode(&mapping); err != nil {
+		location := url.Normalize(mappingURL, file.Scheme)
+		err := dsurl.Decode(location, mapping)
+		if err != nil {
 			return nil, err
 		}
 		dbTypeMappings[target] = mapping

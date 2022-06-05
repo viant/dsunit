@@ -6,11 +6,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit"
+	"github.com/viant/dsunit/url"
 	"github.com/viant/endly"
 	"github.com/viant/endly/system/docker"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/secret"
-	"github.com/viant/toolbox/url"
 	"path"
 	"testing"
 )
