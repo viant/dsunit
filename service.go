@@ -812,7 +812,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	uploadContent(destResource, response.BaseResponse, []byte(payload))
 	return response
 }
-func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record map[string]interface{}, dates map[string]bool) {
+func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record map[string]interface{}, relativeDates map[string]bool) {
 	if locationTimezone != nil || request.TimeLayout != "" {
 		for k, v := range record {
 			if toolbox.IsTime(v) {
