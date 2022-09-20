@@ -16,6 +16,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 )
 
 var batchSize = 200
@@ -744,6 +745,12 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 			return response
 		}
 	}
+	relativeDates := map[string]bool{}
+	if len(request.RelativeDate) > 0 {
+		for _, item := range request.RelativeDate {
+			relativeDates[item] = true
+		}
+	}
 
 	destResource := dsurl.NewResource(request.DestURL)
 	if len(records) > 0 {
@@ -768,7 +775,32 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 				}
 				records[i] = record
 			}
+
+			if len(request.ASCII) > 0 {
+				for _, column := range request.ASCII {
+					if val, ok := records[i][column]; ok {
+						switch actual := val.(type) {
+						case string:
+							records[i][column] = strings.TrimFunc(actual, func(r rune) bool {
+								return !unicode.IsGraphic(r)
+							})
+						case []byte:
+							records[i][column] = strings.TrimFunc(string(actual), func(r rune) bool {
+								return !unicode.IsGraphic(r)
+							})
+						}
+					}
+				}
+
+			}
+
 		}
+	}
+
+	if request.Reset {
+		records = append([]map[string]interface{}{
+			map[string]interface{}{},
+		}, records...)
 	}
 	payload, err := toolbox.AsIndentJSONText(records)
 	if err != nil {
@@ -789,6 +821,13 @@ func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record 
 					if locationTimezone != nil {
 						timeInLocation := timeValue.In(locationTimezone)
 						timeValue = &timeInLocation
+					}
+
+					if relativeDates[k] && timeValue != nil && request.TimeFormat != "" {
+						diff := time.Now().Sub(*timeValue)
+						hours := int(diff.Hours())
+						record[k] = fmt.Sprintf("$FormatTime('%v hours ago In UTC', '%v')", hours, request.TimeFormat)
+						continue
 					}
 					if request.TimeLayout != "" {
 						record[k] = timeValue.Format(request.TimeLayout)

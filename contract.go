@@ -468,6 +468,9 @@ type FreezeRequest struct {
 	Ignore           []string          `description:"path to ignore i.e. request.postbody"`
 	Replace          map[string]string `description:"key of path with corresponding replacement value"`
 	LocationTimezone string            `description:"convert time to specified timezone i.e UTC"`
+	ASCII            []string          `description:"column values to be ascii sanitized"`
+	RelativeDate     []string          `description:"transform date to date expr"`
+	Reset            bool              `description:"add extra empty record to truncate before inserting"`
 	TimeFormat       string            `description:"java/ios based time format"`
 	TimeLayout       string            `description:"golang based time layout"`
 }
