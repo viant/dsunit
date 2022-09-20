@@ -1,12 +1,16 @@
 package dsunit
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/viant/afs"
 	"github.com/viant/assertly"
 	"github.com/viant/dsc"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/url"
+	"gopkg.in/yaml.v2"
 	"strings"
 )
 
@@ -303,6 +307,27 @@ func NewInitRequestFromURL(URL string) (*InitRequest, error) {
 	var result = &InitRequest{}
 	resource := url.NewResource(URL)
 	err := resource.Decode(result)
+
+	ctx := context.Background()
+	fs := afs.New()
+	data, err := fs.DownloadWithURL(ctx, URL)
+	if err != nil {
+		return nil, err
+	}
+	aMap := map[string]interface{}{}
+	if strings.HasSuffix(URL, "yaml") {
+		aMap = map[string]interface{}{}
+		if err := yaml.Unmarshal(data, &aMap); err != nil {
+			return nil, err
+		}
+	} else {
+		aMap = map[string]interface{}{}
+		if err := json.Unmarshal(data, &aMap); err != nil {
+			return nil, err
+		}
+	}
+	requst := &InitRequest{}
+	toolbox.DefaultConverter.AssignConverted(requst, aMap)
 	return result, err
 }
 
@@ -465,6 +490,9 @@ type FreezeRequest struct {
 	Ignore           []string          `description:"path to ignore i.e. request.postbody"`
 	Replace          map[string]string `description:"key of path with corresponding replacement value"`
 	LocationTimezone string            `description:"convert time to specified timezone i.e UTC"`
+	ASCII            []string          `description:"column values to be ascii sanitized"`
+	RelativeDate     []string          `description:"transform date to date expr"`
+	Reset            bool              `description:"add extra empty record to truncate before inserting"`
 	TimeFormat       string            `description:"java/ios based time format"`
 	TimeLayout       string            `description:"golang based time layout"`
 }
