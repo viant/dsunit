@@ -2,13 +2,15 @@ package dsunit
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"github.com/viant/afs"
+	"github.com/viant/afs/file"
 	"github.com/viant/dsc"
+	"github.com/viant/dsunit/url"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
 	"github.com/viant/toolbox/data/udf"
-	"github.com/viant/toolbox/storage"
-	"github.com/viant/toolbox/url"
 	"path"
 	"strings"
 )
@@ -243,12 +245,9 @@ func expandDataIfNeeded(context toolbox.Context, records []map[string]interface{
 }
 
 func uploadContent(resource *url.Resource, response *BaseResponse, payload []byte) {
-	storageService, err := storage.NewServiceForURL(resource.URL, resource.Credentials)
-	if err != nil {
-		response.SetError(err)
-		return
-	}
-	err = storageService.Upload(resource.URL, bytes.NewReader(payload))
+	ctx := context.Background()
+	fs := afs.New()
+	err := fs.Upload(ctx, resource.URL, file.DefaultFileOsMode, bytes.NewReader(payload))
 	response.SetError(err)
 }
 

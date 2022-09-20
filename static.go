@@ -11,7 +11,7 @@ func Register(t *testing.T, request *RegisterRequest) bool {
 	return tester.Register(t, request)
 }
 
-//Register registers new datastore connection, JSON request is fetched from URL
+// RegisterFromURL Register registers new datastore connection, JSON request is fetched from URL
 func RegisterFromURL(t *testing.T, URL string) bool {
 	return tester.RegisterFromURL(t, URL)
 }
@@ -21,7 +21,7 @@ func Recreate(t *testing.T, request *RecreateRequest) bool {
 	return tester.Recreate(t, request)
 }
 
-//Recreate recreates datastore, JSON request is fetched from URL
+// RecreateFromURL Recreate recreates datastore, JSON request is fetched from URL
 func RecreateFromURL(t *testing.T, URL string) bool {
 	return tester.RecreateFromURL(t, URL)
 }
@@ -31,7 +31,7 @@ func RunSQL(t *testing.T, request *RunSQLRequest) bool {
 	return tester.RunSQL(t, request)
 }
 
-//RunSQL runs supplied SQL, JSON request is fetched from URL
+// RunSQLFromURL RunSQL runs supplied SQL, JSON request is fetched from URL
 func RunSQLFromURL(t *testing.T, URL string) bool {
 	return tester.RunSQLFromURL(t, URL)
 }
@@ -41,17 +41,17 @@ func RunScript(t *testing.T, request *RunScriptRequest) bool {
 	return tester.RunScript(t, request)
 }
 
-//RunScript runs supplied SQL scripts, JSON request is fetched from URL
+// RunScriptFromURL RunScript runs supplied SQL scripts, JSON request is fetched from URL
 func RunScriptFromURL(t *testing.T, URL string) bool {
 	return tester.RunScriptFromURL(t, URL)
 }
 
-//Add table mapping
+// AddTableMapping Add table mapping
 func AddTableMapping(t *testing.T, request *MappingRequest) bool {
 	return tester.AddTableMapping(t, request)
 }
 
-//Add table mapping, JSON request is fetched from URL
+//AddTableMappingFromURL Add table mapping, JSON request is fetched from URL
 func AddTableMappingFromURL(t *testing.T, URL string) bool {
 	return tester.AddTableMappingFromURL(t, URL)
 }
@@ -61,19 +61,24 @@ func Init(t *testing.T, request *InitRequest) bool {
 	return tester.Init(t, request)
 }
 
-//Init datastore, (register, recreated, run sql, add mapping), JSON request is fetched from URL
+// InitFromURL Init datastore, (register, recreated, run sql, add mapping), JSON request is fetched from URL
 func InitFromURL(t *testing.T, URL string) bool {
 	return tester.InitFromURL(t, URL)
 }
 
-//Populate database with datasets
+// Prepare Populate database with datasets
 func Prepare(t *testing.T, request *PrepareRequest) bool {
 	return tester.Prepare(t, request)
 }
 
-//Populate database with datasets, JSON request is fetched from URL
+// PrepareFromURL Populate database with datasets, JSON request is fetched from URL
 func PrepareFromURL(t *testing.T, URL string) bool {
 	return tester.PrepareFromURL(t, URL)
+}
+
+// PopulateWithURL Populate database with datasets, JSON requests are fetched from files in directory
+func PopulateWithURL(t *testing.T, URL string, datastore string, datasets ...*Dataset) bool {
+	return tester.PopulateWithURL(t, URL, datastore, datasets...)
 }
 
 //PrepareDatastore matches all dataset files that are in the same location as a test file, with the same test file prefix, followed by lowe camel case test name.
@@ -97,14 +102,19 @@ func PrepareFor(t *testing.T, datastore string, baseDirectory string, method str
 	return tester.PrepareFor(t, datastore, baseDirectory, method)
 }
 
-//Verify datastore with supplied expected datasets
+// Expect Verify datastore with supplied expected datasets
 func Expect(t *testing.T, request *ExpectRequest) bool {
 	return tester.Expect(t, request)
 }
 
-//Verify datastore with supplied expected datasets, JSON request is fetched from URL
+//ExpectFromURL Verify datastore with supplied expected datasets, JSON request is fetched from URL
 func ExpectFromURL(t *testing.T, URL string) bool {
 	return tester.ExpectFromURL(t, URL)
+}
+
+//ExpectWithURL Verify datastore with supplied expected datasets, JSON requests are fetched from files in directory
+func ExpectWithURL(t *testing.T, checkPolicy int, URL string, datastore string, datasets ...*Dataset) bool {
+	return tester.ExpectWithURL(t, checkPolicy, URL, datastore, datasets...)
 }
 
 //ExpectDatasets matches all dataset files that are located in the same directory as the test file with method name to

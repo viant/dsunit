@@ -1,6 +1,6 @@
 package dsunit
 
-import "github.com/viant/toolbox/url"
+import "github.com/viant/dsunit/url"
 
 //Mapping represents mapping
 type Mapping struct {
