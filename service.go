@@ -759,7 +759,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 			if request.OmitEmpty {
 				records[i] = toolbox.DeleteEmptyKeys(records[i])
 			}
-			adjustTime(locationTimezone, request, records[i])
+			adjustTime(locationTimezone, request, records[i], relativeDates)
 
 			if len(request.Ignore) > 0 {
 				var record = data.Map(records[i])
@@ -812,7 +812,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	uploadContent(destResource, response.BaseResponse, []byte(payload))
 	return response
 }
-func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record map[string]interface{}) {
+func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record map[string]interface{}, dates map[string]bool) {
 	if locationTimezone != nil || request.TimeLayout != "" {
 		for k, v := range record {
 			if toolbox.IsTime(v) {
