@@ -826,7 +826,12 @@ func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record 
 					if relativeDates[k] && timeValue != nil && request.TimeFormat != "" {
 						diff := time.Now().Sub(*timeValue)
 						hours := int(diff.Hours())
-						record[k] = fmt.Sprintf("$FormatTime('%v hours ago In UTC', '%v')", hours, request.TimeFormat)
+						if hours < 0 {
+							hours = -1 * hours
+							record[k] = fmt.Sprintf("$FormatTime('%v hours ahead In UTC', '%v')", hours, request.TimeFormat)
+						} else {
+							record[k] = fmt.Sprintf("$FormatTime('%v hours ago In UTC', '%v')", hours, request.TimeFormat)
+						}
 						continue
 					}
 					if request.TimeLayout != "" {
