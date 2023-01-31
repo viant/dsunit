@@ -11,6 +11,7 @@ import (
 	"github.com/viant/dsc"
 	"github.com/viant/dsunit/script"
 	dsurl "github.com/viant/dsunit/url"
+	_ "github.com/viant/scy/kms/blowfish"
 	"github.com/viant/toolbox"
 	"github.com/viant/toolbox/data"
 	"strings"
@@ -751,6 +752,11 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 			relativeDates[item] = true
 		}
 	}
+	if len(request.Obfuscation) > 0 {
+		for _, item := range request.Obfuscation {
+			item.Init(context.Background())
+		}
+	}
 
 	destResource := dsurl.NewResource(request.DestURL)
 	if len(records) > 0 {
@@ -760,6 +766,10 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 				records[i] = toolbox.DeleteEmptyKeys(records[i])
 			}
 			adjustTime(locationTimezone, request, records[i], relativeDates)
+			if err = obfuscateData(context.Background(), records[i], request.Obfuscation); err != nil {
+				response.SetError(err)
+				return response
+			}
 
 			if len(request.Ignore) > 0 {
 				var record = data.Map(records[i])
@@ -812,6 +822,24 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	uploadContent(destResource, response.BaseResponse, []byte(payload))
 	return response
 }
+
+func obfuscateData(ctx context.Context, m map[string]interface{}, obfuscation []*Obfuscation) error {
+	if len(obfuscation) == 0 {
+		return nil
+	}
+	var err error
+	for _, o := range obfuscation {
+		for _, column := range o.Columns {
+			if value, ok := m[column]; ok {
+				if m[column], err = o.Obfuscate(ctx, toolbox.AsString(value)); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return err
+}
+
 func adjustTime(locationTimezone *time.Location, request *FreezeRequest, record map[string]interface{}, relativeDates map[string]bool) {
 	if locationTimezone != nil || request.TimeLayout != "" {
 		for k, v := range record {
