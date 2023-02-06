@@ -831,7 +831,7 @@ func obfuscateData(ctx context.Context, m map[string]interface{}, obfuscation []
 	for _, o := range obfuscation {
 		for _, column := range o.Columns {
 			if value, ok := m[column]; ok {
-				if m[column], err = o.Obfuscate(ctx, toolbox.AsString(value)); err != nil {
+				if m[column], err = o.Obfuscate(ctx, toolbox.AsString(value), m, column); err != nil {
 					return err
 				}
 			}

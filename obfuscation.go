@@ -15,6 +15,7 @@ import (
 type ObfuscationMethod string
 
 const (
+	ObfuscationMethodReplace    = "replace"
 	ObfuscationMethodShuffle    = "shuffle"
 	ObfuscationMethodDictionary = "dictionary"
 	ObfuscationMethodCipher     = "cipher"
@@ -26,12 +27,16 @@ type Obfuscation struct {
 	DictionaryURL string
 	Dictionary    []string
 	Key           *kms.Key
+	IDKey         string
 }
 
 func (o *Obfuscation) Init(ctx context.Context) {
 	if o.Method == ObfuscationMethodCipher && o.Key == nil || o.Key.Scheme == "" {
 		if o.Key == nil {
 			o.Key = &kms.Key{}
+		}
+		if o.IDKey == "" {
+			o.IDKey = "ID"
 		}
 		if o.Key.Scheme == "" {
 			o.Key.Scheme = "blowfish"
@@ -52,9 +57,17 @@ func (o *Obfuscation) Init(ctx context.Context) {
 	}
 }
 
-func (o *Obfuscation) Obfuscate(ctx context.Context, value string) (string, error) {
+var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+func (o *Obfuscation) Obfuscate(ctx context.Context, value string, record map[string]interface{}, column string) (string, error) {
 	switch o.Method {
-	case "", ObfuscationMethodShuffle:
+	case "", ObfuscationMethodReplace:
+		id, ok := record[o.IDKey]
+		if !ok {
+			id = int(rnd.Int31())
+		}
+		return fmt.Sprintf("%s %v", column, id), nil
+	case ObfuscationMethodShuffle:
 		return o.shuffle(value), nil
 	case ObfuscationMethodDictionary:
 		if len(o.Dictionary) == 0 {
