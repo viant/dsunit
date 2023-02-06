@@ -31,12 +31,11 @@ type Obfuscation struct {
 }
 
 func (o *Obfuscation) Init(ctx context.Context) {
-	if o.Method == ObfuscationMethodCipher && o.Key == nil || o.Key.Scheme == "" {
+	if o.Method == ObfuscationMethodCipher {
 		if o.Key == nil {
-			o.Key = &kms.Key{}
-		}
-		if o.IDKey == "" {
-			o.IDKey = "ID"
+			if o.Key == nil {
+				o.Key = &kms.Key{}
+			}
 		}
 		if o.Key.Scheme == "" {
 			o.Key.Scheme = "blowfish"
@@ -44,6 +43,10 @@ func (o *Obfuscation) Init(ctx context.Context) {
 		if o.Key.Auth == "" {
 			o.Key.Auth = "default"
 		}
+	}
+
+	if o.IDKey == "" {
+		o.IDKey = "ID"
 	}
 
 	if o.DictionaryURL == "" || len(o.Dictionary) > 0 {
