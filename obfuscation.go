@@ -73,7 +73,12 @@ func (o *Obfuscation) Obfuscate(ctx context.Context, value string, record map[st
 		if !ok {
 			id = int(rnd.Int31())
 		}
-		return fmt.Sprintf(o.Template, column, id), nil
+		switch strings.Count(o.Template, "%") {
+		case 1:
+			return fmt.Sprintf(o.Template, id), nil
+		case 2:
+			return fmt.Sprintf(o.Template, column, id), nil
+		}
 	case ObfuscationMethodShuffle:
 		return o.shuffle(value), nil
 	case ObfuscationMethodDictionary:
