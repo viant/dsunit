@@ -752,6 +752,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 			relativeDates[item] = true
 		}
 	}
+
 	if len(request.Obfuscation) > 0 {
 		for i := range request.Obfuscation {
 			item := request.Obfuscation[i]
@@ -763,6 +764,7 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	if len(records) > 0 {
 
 		for i := range records {
+
 			if request.OmitEmpty {
 				records[i] = toolbox.DeleteEmptyKeys(records[i])
 			}
@@ -772,6 +774,13 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 				return response
 			}
 
+			if len(request.Override) > 0 {
+				for k, v := range request.Override {
+					if _, has := records[i][k]; has {
+						records[i][k] = v
+					}
+				}
+			}
 			if len(request.Ignore) > 0 {
 				var record = data.Map(records[i])
 				for _, path := range request.Ignore {

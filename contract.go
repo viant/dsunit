@@ -469,10 +469,10 @@ type (
 		Ignore           []string          `description:"path to ignore i.e. request.postbody"`
 		Replace          map[string]string `description:"key of path with corresponding replacement value"`
 		LocationTimezone string            `description:"convert time to specified timezone i.e UTC"`
+		Override         map[string]string `description:"overrides column with supplied values"`
 		ASCII            []string          `description:"column values to be ascii sanitized"`
 		RelativeDate     []string          `description:"transform date to date expr"`
 		Obfuscation      []Obfuscation     `description:"obfuscation rules"`
-		ObfuscateMethod  string            `description:"obfu"`
 		Reset            bool              `description:"add extra empty record to truncate before inserting"`
 		TimeFormat       string            `description:"java/ios based time format"`
 		TimeLayout       string            `description:"golang based time layout"`
