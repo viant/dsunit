@@ -753,7 +753,8 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 		}
 	}
 	if len(request.Obfuscation) > 0 {
-		for _, item := range request.Obfuscation {
+		for i := range request.Obfuscation {
+			item := request.Obfuscation[i]
 			item.Init(context.Background())
 		}
 	}
@@ -823,12 +824,16 @@ func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	return response
 }
 
-func obfuscateData(ctx context.Context, m map[string]interface{}, obfuscation []*Obfuscation) error {
+func obfuscateData(ctx context.Context, m map[string]interface{}, obfuscation []Obfuscation) error {
 	if len(obfuscation) == 0 {
 		return nil
 	}
 	var err error
-	for _, o := range obfuscation {
+	for i := range obfuscation {
+		o := &obfuscation[i]
+		if len(o.Columns) == 0 {
+			continue
+		}
 		for _, column := range o.Columns {
 			if value, ok := m[column]; ok {
 				if m[column], err = o.Obfuscate(ctx, toolbox.AsString(value), m, column); err != nil {

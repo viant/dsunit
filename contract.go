@@ -471,7 +471,7 @@ type (
 		LocationTimezone string            `description:"convert time to specified timezone i.e UTC"`
 		ASCII            []string          `description:"column values to be ascii sanitized"`
 		RelativeDate     []string          `description:"transform date to date expr"`
-		Obfuscation      []*Obfuscation    `description:"obfuscation rules"`
+		Obfuscation      []Obfuscation     `description:"obfuscation rules"`
 		ObfuscateMethod  string            `description:"obfu"`
 		Reset            bool              `description:"add extra empty record to truncate before inserting"`
 		TimeFormat       string            `description:"java/ios based time format"`
