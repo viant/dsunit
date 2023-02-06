@@ -28,6 +28,7 @@ type Obfuscation struct {
 	Dictionary    []string
 	Key           *kms.Key
 	IDKey         string
+	Template      string
 }
 
 func (o *Obfuscation) Init(ctx context.Context) {
@@ -58,6 +59,9 @@ func (o *Obfuscation) Init(ctx context.Context) {
 	for _, line := range lines {
 		o.Columns = append(o.Columns, strings.TrimSpace(string(line)))
 	}
+	if o.Template == "" {
+		o.Template = "%s_%v"
+	}
 }
 
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -69,7 +73,7 @@ func (o *Obfuscation) Obfuscate(ctx context.Context, value string, record map[st
 		if !ok {
 			id = int(rnd.Int31())
 		}
-		return fmt.Sprintf("%s %v", column, id), nil
+		return fmt.Sprintf(o.Template, column, id), nil
 	case ObfuscationMethodShuffle:
 		return o.shuffle(value), nil
 	case ObfuscationMethodDictionary:
