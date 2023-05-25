@@ -609,8 +609,23 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 		}
 
 	} else {
-		pkValues := buildBatchedPkValues(expected, table.PkColumns)
-		for _, parametrizedSQL = range sqlBuilder.BuildBatchedQueryOnPk(columns, pkValues, batchSize) {
+
+		indexBy := table.PkColumns
+
+		if len(expected) > 0 {
+			values, ok := expected[0][assertly.IndexByDirective]
+			if ok {
+				switch actual := values.(type) {
+				case string:
+					indexBy = strings.Split(actual, ",")
+				case []string:
+					indexBy = actual
+				}
+			}
+		}
+
+		indexedBy := buildBatchedPkValues(expected, indexBy)
+		for _, parametrizedSQL = range sqlBuilder.BuildBatchedInQuery(columns, indexedBy, indexBy, batchSize) {
 			var batched = make([]interface{}, 0)
 			err := manager.ReadAll(&batched, parametrizedSQL.SQL, parametrizedSQL.Values, mapper)
 			if err != nil {
