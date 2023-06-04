@@ -493,7 +493,12 @@ func (s *service) prepareWithRequest(request *PrepareRequest, response *PrepareR
 
 	var connection dsc.Connection
 	manager := s.registry.Get(request.Datastore)
-	if err = request.Load(); err == nil {
+	err = request.Load()
+	response.SetError(err)
+	if err != nil {
+		return err
+	}
+	if err == nil {
 		if len(request.Datasets) == 0 {
 			return fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix)
 		}
@@ -679,7 +684,9 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	manager := s.registry.Get(request.Datastore)
 	ctx := s.newContext(manager)
 
-	if err = request.Load(); err == nil {
+	err = request.Load()
+	response.SetError(err)
+	if err == nil {
 		if len(request.Datasets) == 0 {
 			response.SetError(fmt.Errorf("no dataset: %v/%v", request.URL, request.Prefix+"*"+request.Postfix))
 			return response
