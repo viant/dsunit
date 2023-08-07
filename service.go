@@ -22,10 +22,10 @@ import (
 
 var batchSize = 200
 
-//SubstitutionMapKey if provided in context, it will be used to substitute/expand dataset
+// SubstitutionMapKey if provided in context, it will be used to substitute/expand dataset
 var SubstitutionMapKey = (*data.Map)(nil)
 
-//Service represents test service
+// Service represents test service
 type Service interface {
 	//registry returns registry of registered database managers
 	Registry() dsc.ManagerRegistry
@@ -126,7 +126,7 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 	return response
 }
 
-//Recreate removes and re-creates datastore
+// Recreate removes and re-creates datastore
 func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
 	var response = &RecreateResponse{
 		BaseResponse: NewBaseOkResponse(),
@@ -139,7 +139,7 @@ func (s *service) Recreate(request *RecreateRequest) *RecreateResponse {
 	return response
 }
 
-//expandSQLIfNeeded expand content of SQL with context.state key
+// expandSQLIfNeeded expand content of SQL with context.state key
 func (s *service) expandSQLIfNeeded(request *RunSQLRequest, manager dsc.Manager) []string {
 	if !request.Expand {
 		return request.SQL
@@ -246,7 +246,7 @@ func (s *service) AddTableMapping(request *MappingRequest) *MappingResponse {
 	return response
 }
 
-//Init datastore, (register, recreated, run sql, add mapping)
+// Init datastore, (register, recreated, run sql, add mapping)
 func (s *service) Init(request *InitRequest) *InitResponse {
 	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
 	err := request.Init()
@@ -413,11 +413,15 @@ func (s *service) populate(datastore string, dataset *Dataset, response *Prepare
 		}
 		return
 	}
+
+	response.mux.Lock()
 	if len(response.Modification) == 0 {
 		response.Modification = make(map[string]*ModificationInfo)
 	}
 
 	response.Modification[dataset.Table] = &ModificationInfo{Subject: dataset.Table, Method: "persist"}
+	response.mux.Unlock()
+
 	var modification = response.Modification[dataset.Table]
 	var table *dsc.TableDescriptor
 	if table, err = s.getTableDescriptor(dataset, manager, context); err != nil {
@@ -450,13 +454,31 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 	if err != nil {
 		response.SetError(err)
 	}
-	ctx := s.newContext(manager)
-	for _, dataset := range request.Datasets {
-		err = s.populate(request.Datastore, dataset, response, ctx, manager, connection)
-		if err != nil {
-			break
-		}
+	threads := request.Threads
+	if threads <= 0 {
+		threads = 1
 	}
+	ctx := s.newContext(manager)
+
+	var pending = make(chan bool, threads)
+	wg := sync.WaitGroup{}
+	for i := range request.Datasets {
+		wg.Add(1)
+		dataset := request.Datasets[i]
+		pending <- true
+		go func(dataset *Dataset) {
+			defer func() {
+				wg.Done()
+				<-pending
+			}()
+			err = s.populate(request.Datastore, dataset, response, ctx, manager, connection)
+			if err != nil {
+				response.SetError(err)
+				return
+			}
+		}(dataset)
+	}
+	wg.Wait()
 	if err == nil {
 		err = connection.Commit()
 	} else {
@@ -702,7 +724,7 @@ func (s *service) Expect(request *ExpectRequest) *ExpectResponse {
 	return response
 }
 
-//Query returns query from database
+// Query returns query from database
 func (s *service) Query(request *QueryRequest) *QueryResponse {
 	var response = &QueryResponse{
 		BaseResponse: NewBaseOkResponse(),
@@ -736,7 +758,7 @@ func (s *service) Query(request *QueryRequest) *QueryResponse {
 	return response
 }
 
-//Freeze creates a dataset from dataset (reverse engineering test setup/verification)
+// Freeze creates a dataset from dataset (reverse engineering test setup/verification)
 func (s *service) Freeze(request *FreezeRequest) *FreezeResponse {
 	var response = &FreezeResponse{BaseResponse: NewBaseOkResponse()}
 	if !validateDatastores(s.registry, response.BaseResponse, request.Datastore) {
@@ -1058,7 +1080,7 @@ func (s *service) getCreateTableDDL(manager dsc.Manager, request *DumpRequest, t
 	return fmt.Sprintf("CREATE TABLE %v.%v(\n%v);\n", strings.ToLower(datastore), table, strings.Join(ddlColumns, ",\n")), nil
 }
 
-//Sequence returns sequence for supplied tables
+// Sequence returns sequence for supplied tables
 func (s *service) Ping(request *PingRequest) *PingResponse {
 	response := &PingResponse{
 		BaseResponse: NewBaseOkResponse(),
@@ -1084,7 +1106,7 @@ func (s *service) Ping(request *PingRequest) *PingResponse {
 	return response
 }
 
-//Sequence returns sequence for supplied tables
+// Sequence returns sequence for supplied tables
 func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
 	var response = &SequenceResponse{
 		BaseResponse: NewBaseOkResponse(),
@@ -1122,7 +1144,7 @@ func (s *service) getAdminManager(datastore string) (dsc.Manager, error) {
 	return adminManager, nil
 }
 
-//createDbIfDoesNotExists create database with registry tables
+// createDbIfDoesNotExists create database with registry tables
 func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore string) error {
 	dialect := GetDatastoreDialect(adminDatastore, s.registry)
 	adminManager := s.registry.Get(adminDatastore)
@@ -1139,7 +1161,7 @@ func (s *service) createDbIfDoesNotExists(datastore string, adminDatastore strin
 	return recreateTables(s.registry, datastore, false)
 }
 
-//Compare compares data between source1 and source2
+// Compare compares data between source1 and source2
 func (s *service) Compare(request *CompareRequest) *CompareResponse {
 	_ = request.Init()
 	var response = &CompareResponse{
@@ -1389,7 +1411,7 @@ func (s *service) CheckSchema(request *CheckSchemaRequest) *CheckSchemaResponse 
 	return response
 }
 
-//CheckSchema checks schema
+// CheckSchema checks schema
 func (s *service) checkSchema(request *CheckSchemaRequest, response *CheckSchemaResponse) error {
 	source, err := s.getTables(request.Source, request.Tables)
 	if err != nil {
@@ -1436,7 +1458,7 @@ func (s *service) checkSchema(request *CheckSchemaRequest, response *CheckSchema
 	return nil
 }
 
-//New creates new dsunit service
+// New creates new dsunit service
 func New() Service {
 	return &service{
 		registry:        dsc.NewManagerRegistry(),
@@ -1445,14 +1467,14 @@ func New() Service {
 	}
 }
 
-//GetDatastoreDialect return GetDatastoreDialect for supplied datastore and registry.
+// GetDatastoreDialect return GetDatastoreDialect for supplied datastore and registry.
 func GetDatastoreDialect(datastore string, registry dsc.ManagerRegistry) dsc.DatastoreDialect {
 	manager := registry.Get(datastore)
 	dbConfig := manager.Config()
 	return dsc.GetDatastoreDialect(dbConfig.DriverName)
 }
 
-//RecreateDatastore recreates target datastore from supplied admin datastore and registry
+// RecreateDatastore recreates target datastore from supplied admin datastore and registry
 func RecreateDatastore(adminDatastore, targetDatastore string, registry dsc.ManagerRegistry) error {
 	dialect := GetDatastoreDialect(adminDatastore, registry)
 	adminManager := registry.Get(adminDatastore)
