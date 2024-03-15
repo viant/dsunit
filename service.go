@@ -1121,7 +1121,8 @@ func (s *service) Sequence(request *SequenceRequest) *SequenceResponse {
 	manager := s.registry.Get(request.Datastore)
 	dialect := GetDatastoreDialect(request.Datastore, s.registry)
 	for _, table := range request.Tables {
-		if sequence, err := dialect.GetSequence(manager, table); err == nil {
+		sequence, err := dialect.GetSequence(manager, table)
+		if err == nil {
 			response.Sequences[table] = int(sequence)
 		}
 	}
