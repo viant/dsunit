@@ -41,8 +41,8 @@ func (o *Obfuscation) Init(ctx context.Context) {
 		if o.Key.Scheme == "" {
 			o.Key.Scheme = "blowfish"
 		}
-		if o.Key.Auth == "" {
-			o.Key.Auth = "default"
+		if o.Key.Kind == "" {
+			o.Key.Kind = "default"
 		}
 	}
 
