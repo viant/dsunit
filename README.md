@@ -14,6 +14,9 @@ Please refer to [`CHANGELOG.md`](CHANGELOG.md) if you encounter breaking changes
 - [License](#License)
 - [Credits and Acknowledgements](#Credits-and-Acknowledgements)
 
+Reserved identifier quoting
+- [Reserved Keywords](#reserved-keywords)
+
 
 
 <a name="Introduction"></a>
@@ -75,6 +78,37 @@ Datastore initialization and dataset data verification can by managed locally or
     
     }
     ```
+
+<a name="reserved-keywords"></a>
+### Reserved Keywords
+
+When inserting/updating or selecting, some column names may be reserved by your SQL dialect and require quoting. You can enable quoting and supply a custom reserved list using a single option: `SQLQuoteReservedKeywords`.
+
+- Value: comma- or space-separated identifiers, e.g. `"select,from,order,user,group"`.
+- Presence implies enablement (no extra flag required).
+- Works at multiple levels:
+  - Register and Init: updates the manager’s config for the datastore.
+  - Prepare and Expect: optional per-call override without mutating manager config.
+
+Examples
+
+- Init (YAML/JSON):
+  - `SQLQuoteReservedKeywords: "select,from,order,user,group"`
+
+- Register (YAML/JSON):
+  - `SQLQuoteReservedKeywords: "select,from,order,user,group"`
+
+- Prepare (per-call):
+  - `SQLQuoteReservedKeywords: "select,from,order"`
+
+- Expect (per-call):
+  - `SQLQuoteReservedKeywords: "select,from,order"`
+
+Precedence
+
+- Prepare/Expect request-level keywords override the manager config for that call only.
+- If not supplied in Prepare/Expect, the manager config from Register/Init is used.
+- Legacy env `SQLQuoteReserved` remains supported by dsc for any remaining global paths.
 2. With shared expected data folder
     ```go
     func Test_Usecase(t *testing.T) {

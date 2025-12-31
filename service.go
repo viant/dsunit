@@ -457,6 +457,9 @@ func (s *service) populate(datastore string, dataset *Dataset, response *Prepare
 		return err
 	}
 	var dmlBuilder = newDatasetDmlProvider(dsc.NewDmlBuilder(table))
+	// Apply manager-level reserved keyword quoting (configured via dsc.Manager.Config()).
+	// This ensures columns like KEY/VALUES/SELECT are quoted in generated DML when requested.
+	dmlBuilder.DmlBuilder.RebuildWithReserved(dsc.NewReservedFromConfig(manager.Config()))
 	// Optional per-call reserved keywords override for Prepare via context
 	if context.Contains(ReservedKeywordsKey) {
 		if v := context.GetOptional(ReservedKeywordsKey); v != nil {
