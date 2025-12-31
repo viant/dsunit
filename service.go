@@ -106,6 +106,20 @@ func (s *service) Register(request *RegisterRequest) *RegisterResponse {
 		response.SetError(err)
 		return response
 	}
+	// Apply SQLQuoteReservedKeywords if provided on Register
+	if kw := strings.TrimSpace(request.SQLQuoteReservedKeywords); kw != "" {
+		// parse comma/space separated list
+		parsed := strings.Fields(strings.ReplaceAll(kw, ",", " "))
+		if len(parsed) > 0 {
+			config.QuoteReserved = true
+			config.ReservedKeywords = parsed
+			if config.Parameters == nil {
+				config.Parameters = map[string]interface{}{}
+			}
+			config.Parameters["reservedKeywords"] = strings.Join(parsed, ",")
+			config.Parameters["quoteReserved"] = true
+		}
+	}
 	manager, err := dsc.NewManagerFactory().Create(config)
 	if err == nil {
 		s.registry.Register(request.Datastore, manager)
@@ -440,6 +454,13 @@ func (s *service) populate(datastore string, dataset *Dataset, response *Prepare
 		return err
 	}
 	var dmlBuilder = newDatasetDmlProvider(dsc.NewDmlBuilder(table))
+	// Optional per-call reserved keywords override for Prepare
+	if rk := strings.TrimSpace(request.SQLQuoteReservedKeywords); rk != "" {
+		parsed := strings.Fields(strings.ReplaceAll(rk, ",", " "))
+		if len(parsed) > 0 {
+			dmlBuilder.DmlBuilder.RebuildWithKeywords(parsed)
+		}
+	}
 	if len(table.PkColumns) == 0 { //no keys perform insert
 		modification.Method = "load"
 		modification.Added, err = manager.PersistData(connection, records, table.Table, nil, insertSQLProvider(dmlBuilder)) //TODO add insert sql provider
@@ -623,6 +644,13 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	var parametrizedSQL *dsc.ParametrizedSQL
 
 	sqlBuilder := dsc.NewQueryBuilder(table, "")
+	// Optional per-call reserved keywords override for Expect
+	if rk := strings.TrimSpace(request.SQLQuoteReservedKeywords); rk != "" {
+		parsed := strings.Fields(strings.ReplaceAll(rk, ",", " "))
+		if len(parsed) > 0 {
+			sqlBuilder = sqlBuilder.WithKeywords(parsed)
+		}
+	}
 	var actual = make([]interface{}, 0)
 	var validation = &DatasetValidation{
 		Dataset: dataset.Table,

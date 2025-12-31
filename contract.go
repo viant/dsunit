@@ -56,6 +56,9 @@ type RegisterRequest struct {
 	Tables      []*dsc.TableDescriptor `description:"optional table descriptors"`
 	PingRequest `json:",inline" yaml:",inline"`
 	Ping        bool `description:"flag to wait for database get online"`
+	// SQLQuoteReservedKeywords enables quoting of reserved identifiers and extends the reserved list.
+	// Provide as comma or space separated identifiers, e.g. "select,from,order,user,group".
+	SQLQuoteReservedKeywords string `description:"comma/space-separated reserved identifiers to quote"`
 }
 
 func (r *RegisterRequest) Init() (err error) {
@@ -249,6 +252,8 @@ type InitRequest struct {
 	Admin *RegisterRequest
 	*MappingRequest
 	*RunScriptRequest
+	// SQLQuoteReservedKeywords applies to the Register config when present.
+	SQLQuoteReservedKeywords string `description:"comma/space-separated reserved identifiers to quote"`
 }
 
 func (r *InitRequest) Init() (err error) {
@@ -266,6 +271,10 @@ func (r *InitRequest) Init() (err error) {
 			if err != nil {
 				return err
 			}
+		}
+		// If SQLQuoteReservedKeywords is set at Init level and not on nested Register, propagate it
+		if r.SQLQuoteReservedKeywords != "" && r.RegisterRequest.SQLQuoteReservedKeywords == "" {
+			r.RegisterRequest.SQLQuoteReservedKeywords = r.SQLQuoteReservedKeywords
 		}
 	}
 	if r.RunScriptRequest != nil {
@@ -321,6 +330,8 @@ type PrepareRequest struct {
 	Expand           bool `description:"substitute $ expression with content of context.state"`
 	Threads          int
 	*DatasetResource `required:"true" description:"datasets resource"`
+	// Optional per-call override; applies to DML built during Prepare only.
+	SQLQuoteReservedKeywords string `description:"comma/space-separated reserved identifiers to quote for this call"`
 }
 
 // Validate checks if request is valid
@@ -373,6 +384,8 @@ type PrepareResponse struct {
 type ExpectRequest struct {
 	*DatasetResource
 	CheckPolicy int `required:"true" description:"0 - FullTableDatasetCheckPolicy, 1 - SnapshotDatasetCheckPolicy"`
+	// Optional per-call override; applies to query builders used for Expect only.
+	SQLQuoteReservedKeywords string `description:"comma/space-separated reserved identifiers to quote for this call"`
 }
 
 // Validate checks if request is valid
