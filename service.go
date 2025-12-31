@@ -25,6 +25,9 @@ var batchSize = 200
 // SubstitutionMapKey if provided in context, it will be used to substitute/expand dataset
 var SubstitutionMapKey = (*data.Map)(nil)
 
+// ReservedKeywordsKey if provided in context, carries a per-call reserved keywords override.
+var ReservedKeywordsKey = (*[]string)(nil)
+
 // Service represents test service
 type Service interface {
 	//registry returns registry of registered database managers
@@ -454,11 +457,12 @@ func (s *service) populate(datastore string, dataset *Dataset, response *Prepare
 		return err
 	}
 	var dmlBuilder = newDatasetDmlProvider(dsc.NewDmlBuilder(table))
-	// Optional per-call reserved keywords override for Prepare
-	if rk := strings.TrimSpace(request.SQLQuoteReservedKeywords); rk != "" {
-		parsed := strings.Fields(strings.ReplaceAll(rk, ",", " "))
-		if len(parsed) > 0 {
-			dmlBuilder.DmlBuilder.RebuildWithKeywords(parsed)
+	// Optional per-call reserved keywords override for Prepare via context
+	if context.Contains(ReservedKeywordsKey) {
+		if v := context.GetOptional(ReservedKeywordsKey); v != nil {
+			if parsed, ok := v.(*[]string); ok && parsed != nil && len(*parsed) > 0 {
+				dmlBuilder.DmlBuilder.RebuildWithKeywords(*parsed)
+			}
 		}
 	}
 	if len(table.PkColumns) == 0 { //no keys perform insert
@@ -480,6 +484,13 @@ func (s *service) prepare(request *PrepareRequest, response *PrepareResponse, ma
 		threads = 1
 	}
 	ctx := s.newContext(manager)
+	// Stash per-call reserved keywords into context if provided
+	if rk := strings.TrimSpace(request.SQLQuoteReservedKeywords); rk != "" {
+		parsed := strings.Fields(strings.ReplaceAll(rk, ",", " "))
+		if len(parsed) > 0 {
+			_ = ctx.Replace(ReservedKeywordsKey, &parsed)
+		}
+	}
 
 	var pending = make(chan bool, threads)
 	wg := sync.WaitGroup{}
@@ -644,11 +655,12 @@ func (s *service) expect(policy int, dataset *Dataset, response *ExpectResponse,
 	var parametrizedSQL *dsc.ParametrizedSQL
 
 	sqlBuilder := dsc.NewQueryBuilder(table, "")
-	// Optional per-call reserved keywords override for Expect
-	if rk := strings.TrimSpace(request.SQLQuoteReservedKeywords); rk != "" {
-		parsed := strings.Fields(strings.ReplaceAll(rk, ",", " "))
-		if len(parsed) > 0 {
-			sqlBuilder = sqlBuilder.WithKeywords(parsed)
+	// Optional per-call reserved keywords override for Expect via context
+	if context.Contains(ReservedKeywordsKey) {
+		if v := context.GetOptional(ReservedKeywordsKey); v != nil {
+			if parsed, ok := v.(*[]string); ok && parsed != nil && len(*parsed) > 0 {
+				sqlBuilder = sqlBuilder.WithKeywords(*parsed)
+			}
 		}
 	}
 	var actual = make([]interface{}, 0)
