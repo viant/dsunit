@@ -30,7 +30,7 @@ var errorHandler = func(router *toolbox.ServiceRouter, responseWriter http.Respo
 	}
 }
 
-//StartServer start dsunit server
+// StartServer start dsunit server
 func StartServer(port string) {
 	var service = New()
 	serviceRouter := toolbox.NewServiceRouter(

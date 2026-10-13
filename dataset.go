@@ -22,13 +22,13 @@ const (
 	FromQueryAliasDirective = "@fromQueryAlias@"
 )
 
-//Records represent data records
+// Records represent data records
 type Dataset struct {
 	Table   string  `required:"true"`
 	Records Records `required:"true"`
 }
 
-//NewDataset creates a new dataset for supplied table and records.
+// NewDataset creates a new dataset for supplied table and records.
 func NewDataset(table string, records ...map[string]interface{}) *Dataset {
 	return &Dataset{
 		Table:   table,
@@ -36,10 +36,10 @@ func NewDataset(table string, records ...map[string]interface{}) *Dataset {
 	}
 }
 
-//Records represents table records
+// Records represents table records
 type Records []map[string]interface{}
 
-//Records returns non empty records //directive a filtered out
+// Records returns non empty records //directive a filtered out
 func (r *Records) Expand(context toolbox.Context, includeDirectives bool) (result []interface{}, err error) {
 	result = make([]interface{}, 0)
 
@@ -68,7 +68,7 @@ func (r *Records) Expand(context toolbox.Context, includeDirectives bool) (resul
 	return result, nil
 }
 
-//ShouldDeleteAll checks if dataset contains empty record (indicator to delete all)
+// ShouldDeleteAll checks if dataset contains empty record (indicator to delete all)
 func (r *Records) ShouldDeleteAll() bool {
 	var result = len(*r) == 0
 	directiveScan(*r, func(record Record) {
@@ -79,7 +79,7 @@ func (r *Records) ShouldDeleteAll() bool {
 	return result
 }
 
-//UniqueKeys returns value for unique key directive, it test keys in the following order: @Autoincrement@, @IndexBy@
+// UniqueKeys returns value for unique key directive, it test keys in the following order: @Autoincrement@, @IndexBy@
 func (r *Records) UniqueKeys() []string {
 	var result []string
 	directiveScan(*r, func(record Record) {
@@ -96,7 +96,7 @@ func (r *Records) UniqueKeys() []string {
 	return result
 }
 
-//FromQuery returns value for @FromQuery@ directive
+// FromQuery returns value for @FromQuery@ directive
 func (r *Records) FromQuery() (string, string) {
 	var fromQuery string
 	var alias string
@@ -113,7 +113,7 @@ func (r *Records) FromQuery() (string, string) {
 	return fromQuery, alias
 }
 
-//PrimaryKey returns primary key directive if matched in the following order: @Autoincrement@, @IndexBy@
+// PrimaryKey returns primary key directive if matched in the following order: @Autoincrement@, @IndexBy@
 func (r *Records) Autoincrement() bool {
 	var result = false
 	directiveScan(*r, func(record Record) {
@@ -126,7 +126,7 @@ func (r *Records) Autoincrement() bool {
 	return result
 }
 
-//Columns returns unique column names for this dataset
+// Columns returns unique column names for this dataset
 func (r *Records) Columns() []string {
 	var result = make([]string, 0)
 	var unique = make(map[string]bool)
@@ -144,14 +144,14 @@ func (r *Records) Columns() []string {
 	return result
 }
 
-//DatastoreDatasets represents a collection of datastore datasets
+// DatastoreDatasets represents a collection of datastore datasets
 type DatastoreDatasets struct {
 	Datastore string                              `required:"true" description:"register datastore"`
 	Datasets  []*Dataset                          `description:"collection of dataset per table"`
 	Data      map[string][]map[string]interface{} `description:"map, where each pair represent table name and records (backwad compatiblity)"`
 }
 
-//DatasetResource represents a dataset resource
+// DatasetResource represents a dataset resource
 type DatasetResource struct {
 	*url.Resource      ` description:"data file location, csv, json, ndjson formats are supported"`
 	*DatastoreDatasets `required:"true" description:"datastore datasets"`
@@ -188,7 +188,7 @@ func (r *DatasetResource) loadDataset() (err error) {
 	return err
 }
 
-//Loads dataset from specified resource or data map
+// Loads dataset from specified resource or data map
 func (r *DatasetResource) Load() (err error) {
 	if r == nil {
 		return errors.New("dataset resource was empty")

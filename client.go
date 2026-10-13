@@ -9,21 +9,21 @@ type serviceClient struct {
 	serverURL string
 }
 
-//Registry returns registry of registered database managers
+// Registry returns registry of registered database managers
 func (c *serviceClient) Registry() dsc.ManagerRegistry {
 	return dsc.NewManagerRegistry()
 }
 
-//Register register database connection
+// Register register database connection
 func (c *serviceClient) Register(request *RegisterRequest) *RegisterResponse {
 	var response = &RegisterResponse{BaseResponse: NewBaseOkResponse()}
-	err := toolbox.RouteToService("post", c.serverURL+registerURI, request, response)
+	err := toolbox.RouteToService("post", c.serverURL+registerURI, wireRegisterRequest(request), response)
 	response.SetError(err)
 	return response
 
 }
 
-//Recreate remove and creates datastore
+// Recreate remove and creates datastore
 func (c *serviceClient) Recreate(request *RecreateRequest) *RecreateResponse {
 	var response = &RecreateResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+recreateURI, request, response)
@@ -39,7 +39,7 @@ func (c *serviceClient) CheckSchema(request *CheckSchemaRequest) *CheckSchemaRes
 	return response
 }
 
-//RunSQL runs supplied SQL
+// RunSQL runs supplied SQL
 func (c *serviceClient) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+sqlURI, request, response)
@@ -48,7 +48,7 @@ func (c *serviceClient) RunSQL(request *RunSQLRequest) *RunSQLResponse {
 
 }
 
-//RunScript runs supplied SQL scripts
+// RunScript runs supplied SQL scripts
 func (c *serviceClient) RunScript(request *RunScriptRequest) *RunSQLResponse {
 	var response = &RunSQLResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+scriptURI, request, response)
@@ -57,7 +57,7 @@ func (c *serviceClient) RunScript(request *RunScriptRequest) *RunSQLResponse {
 
 }
 
-//Add table mapping
+// Add table mapping
 func (c *serviceClient) AddTableMapping(request *MappingRequest) *MappingResponse {
 	var response = &MappingResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+mappingURI, request, response)
@@ -68,12 +68,12 @@ func (c *serviceClient) AddTableMapping(request *MappingRequest) *MappingRespons
 
 func (c *serviceClient) Init(request *InitRequest) *InitResponse {
 	var response = &InitResponse{BaseResponse: NewBaseOkResponse()}
-	err := toolbox.RouteToService("post", c.serverURL+initURI, request, response)
+	err := toolbox.RouteToService("post", c.serverURL+initURI, wireInitRequest(request), response)
 	response.SetError(err)
 	return response
 }
 
-//Populate database with datasets
+// Populate database with datasets
 func (c *serviceClient) Prepare(request *PrepareRequest) *PrepareResponse {
 	var response = &PrepareResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+prepareURI, request, response)
@@ -82,7 +82,7 @@ func (c *serviceClient) Prepare(request *PrepareRequest) *PrepareResponse {
 
 }
 
-//Verify datastore with supplied expected datasets
+// Verify datastore with supplied expected datasets
 func (c *serviceClient) Expect(request *ExpectRequest) *ExpectResponse {
 	var response = &ExpectResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+expectURI, request, response)
@@ -90,7 +90,7 @@ func (c *serviceClient) Expect(request *ExpectRequest) *ExpectResponse {
 	return response
 }
 
-//Query returns query from database
+// Query returns query from database
 func (c *serviceClient) Query(request *QueryRequest) *QueryResponse {
 	var response = &QueryResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+queryURI, request, response)
@@ -99,7 +99,7 @@ func (c *serviceClient) Query(request *QueryRequest) *QueryResponse {
 
 }
 
-//Freeze create a dataset from existing database
+// Freeze create a dataset from existing database
 func (c *serviceClient) Freeze(request *FreezeRequest) *FreezeResponse {
 	var response = &FreezeResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+freezeURI, request, response)
@@ -107,7 +107,7 @@ func (c *serviceClient) Freeze(request *FreezeRequest) *FreezeResponse {
 	return response
 }
 
-//Dump creates schema from existing database
+// Dump creates schema from existing database
 func (c *serviceClient) Dump(request *DumpRequest) *DumpResponse {
 	var response = &DumpResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+freezeURI, request, response)
@@ -116,7 +116,7 @@ func (c *serviceClient) Dump(request *DumpRequest) *DumpResponse {
 
 }
 
-//Sequence returns sequence for supplied tables
+// Sequence returns sequence for supplied tables
 func (c *serviceClient) Sequence(request *SequenceRequest) *SequenceResponse {
 	var response = &SequenceResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+sequenceURI, request, response)
@@ -128,7 +128,7 @@ func (s *serviceClient) SetContext(context toolbox.Context) {
 
 }
 
-//Compare compares supplied SQLs data
+// Compare compares supplied SQLs data
 func (c *serviceClient) Compare(request *CompareRequest) *CompareResponse {
 	var response = &CompareResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("post", c.serverURL+sequenceURI, request, response)
@@ -136,7 +136,7 @@ func (c *serviceClient) Compare(request *CompareRequest) *CompareResponse {
 	return response
 }
 
-//Compare compares supplied SQLs data
+// Compare compares supplied SQLs data
 func (c *serviceClient) Ping(request *PingRequest) *PingResponse {
 	var response = &PingResponse{BaseResponse: NewBaseOkResponse()}
 	err := toolbox.RouteToService("ping", c.serverURL+sequenceURI, request, response)
@@ -144,8 +144,37 @@ func (c *serviceClient) Ping(request *PingRequest) *PingResponse {
 	return response
 }
 
-//NewServiceClient returns a new dsunit service client
+// NewServiceClient returns a new dsunit service client
 func NewServiceClient(serverURL string) Service {
 	var result Service = &serviceClient{serverURL: serverURL}
 	return result
+}
+
+// Wire requests promote legacy connection fields before JSON encoding. DSC
+// deliberately excludes DriverName and Descriptor from its JSON contract.
+func wireRegisterRequest(request *RegisterRequest) *RegisterRequest {
+	if request == nil {
+		return nil
+	}
+	clone := *request
+	if request.Config != nil {
+		config := *request.Config
+		if config.Driver == "" {
+			config.Driver = config.DriverName
+		}
+		if config.DSN == "" {
+			config.DSN = config.Descriptor
+		}
+		clone.Config = &config
+	}
+	return &clone
+}
+func wireInitRequest(request *InitRequest) *InitRequest {
+	if request == nil {
+		return nil
+	}
+	clone := *request
+	clone.RegisterRequest = wireRegisterRequest(request.RegisterRequest)
+	clone.Admin = wireRegisterRequest(request.Admin)
+	return &clone
 }

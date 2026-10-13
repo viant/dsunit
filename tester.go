@@ -237,13 +237,12 @@ func (s *localTester) PrepareDatastore(t *testing.T, datastore string) bool {
 // populate datastore with all listed dataset
 // Note the matchable dataset files in the base directory have the following naming:
 //
-//  <lower_underscore method name>_populate_<table>.[json|csv]
-//  To prepare dataset to populate datastore table: 'users' and 'permissions' for test method ReadAll you would
-//  have you create the following files in the baseDirectory
+//	<lower_underscore method name>_populate_<table>.[json|csv]
+//	To prepare dataset to populate datastore table: 'users' and 'permissions' for test method ReadAll you would
+//	have you create the following files in the baseDirectory
 //
-//  read_all_prepare_travelers2.json
-//  read_all_populate_permissions.json
-//
+//	read_all_prepare_travelers2.json
+//	read_all_populate_permissions.json
 func (s *localTester) PrepareFor(t *testing.T, datastore, baseDirectory, method string) bool {
 	method = convertToLowerUnderscore(method)
 	request := &PrepareRequest{
@@ -288,13 +287,12 @@ func (s *localTester) ExpectDatasets(t *testing.T, datastore string, checkPolicy
 // verify that all listed dataset values are present in datastore
 // Note the matchable dataset files in the base directory have the following naming:
 //
-//  <lower_underscore method name>_expect_<table>.[json|csv]
-//  To prepare expected dataset table: 'users' and 'permissions' for test method ReadAll you would
-//  have you create the following files in the baseDirectory
+//	<lower_underscore method name>_expect_<table>.[json|csv]
+//	To prepare expected dataset table: 'users' and 'permissions' for test method ReadAll you would
+//	have you create the following files in the baseDirectory
 //
-//  read_all_expect_users.json
-//  read_all_expect_permissions.json
-//
+//	read_all_expect_users.json
+//	read_all_expect_permissions.json
 func (s *localTester) ExpectFor(t *testing.T, datastore string, checkPolicy int, baseDirectory, method string) bool {
 	method = convertToLowerUnderscore(method)
 	request := &ExpectRequest{

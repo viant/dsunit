@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-//DatafileInfo represent data file
+// DatafileInfo represent data file
 type DatafileInfo struct {
 	Filename string
 	Name     string
@@ -14,7 +14,7 @@ type DatafileInfo struct {
 	Postfix  string
 }
 
-//NewDatafileInfo returns new datafile info if supplied filedinfo matches prefix, postfix
+// NewDatafileInfo returns new datafile info if supplied filedinfo matches prefix, postfix
 func NewDatafileInfo(filename, prefix, postfix string) *DatafileInfo {
 	var result = &DatafileInfo{
 		Filename: filename,

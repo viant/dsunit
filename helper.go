@@ -52,7 +52,7 @@ func dropTables(registry dsc.ManagerRegistry, datastore string, tables []string)
 	return nil
 }
 
-//recreateTables recreate registry or all datastorre table, or just create new if drop flag is false
+// recreateTables recreate registry or all datastorre table, or just create new if drop flag is false
 func recreateTables(registry dsc.ManagerRegistry, datastore string, drop bool) error {
 	manager := registry.Get(datastore)
 	dialect := GetDatastoreDialect(datastore, registry)
@@ -149,7 +149,7 @@ func insertSQLProvider(provider *datasetDmlProvider) func(item interface{}) *dsc
 	}
 }
 
-//validateDatastores check if registry has all supplied datastore
+// validateDatastores check if registry has all supplied datastore
 func validateDatastores(registry dsc.ManagerRegistry, response *BaseResponse, datastores ...string) bool {
 	for _, datastore := range datastores {
 		if registry.Get(datastore) == nil {
